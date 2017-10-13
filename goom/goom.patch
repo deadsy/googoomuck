@@ -1,0 +1,66 @@
+--- ./20140628/main.c	2014-06-28 15:17:04.000000000 -0700
++++ ./20140628/main.c	2017-10-13 13:46:39.354942891 -0700
+@@ -123,12 +123,12 @@
+   } patch[NCHAN];
+ 
+ // external assembler routines
+-extern void inton();  // interrupt enable
+-extern void intoff(); // interrupt disable
+-extern void wavupa(); // waveform generation code
++extern void inton(void);  // interrupt enable
++extern void intoff(void); // interrupt disable
++extern void wavupa(void); // waveform generation code
+ 
+ // called twice per sample, once for L and once for R output ~70kHz=72MHz/1024
+-void CT16B0handler() {
++void CT16B0handler(void) {
+   int i;
+   unsigned int u;
+   CT16B0_IR=1;    // clear interrupt
+@@ -151,7 +151,7 @@
+   }
+ 
+ // called once every 4 samples ~9kHz=72MHz/8192
+-void CT32B0handler() {
++void CT32B0handler(void) {
+   int h,i,j,k,n;
+   struct voicedata*v;
+   struct patchdata*p;
+@@ -340,7 +340,7 @@
+ 
+ 
+ // system initialisation
+-void init() {
++void init(void) {
+   intoff();
+   i0cnt=i1cnt=0;
+ 
+@@ -365,8 +365,8 @@
+   SYSCON_SYSAHBCLKCTRL=0x00013bdf; // clock everything
+   SYSCON_PRESETCTRL=0xffffffff; // remove reset from everything
+ 
+-  memset(obuf,0,sizeof(obuf)); // clear all buffers
+-  memset(tbuf,0,sizeof(tbuf));
++  memset((void*)obuf,0,sizeof(obuf)); // clear all buffers
++  memset((void*)tbuf,0,sizeof(tbuf));
+   memset(sus,0,sizeof(sus));
+   memset(pbend,0,sizeof(pbend));
+   memset(vcs,0,sizeof(vcs));
+@@ -438,7 +438,7 @@
+ unsigned char rxbp0,rxbp1; // indices into rxbuf
+ 
+ // wait for one byte, updating controller information in any spare time
+-char w1ch() {
++char w1ch(void) {
+   int c,i,j=0;
+ 
+   for(;;) {
+@@ -487,7 +487,7 @@
+   inton();
+   }
+ 
+-int main() {
++int main(void) {
+   int b0,b1,b2; // three bytes of message received
+   int c,ch,i,mi,u,mu;
+   struct voicedata*v;
