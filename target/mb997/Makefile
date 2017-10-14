@@ -9,16 +9,19 @@ SRC += $(HAL_DIR)/stm32f4xx_hal.c \
        $(HAL_DIR)/stm32f4xx_hal_rcc.c \
        $(HAL_DIR)/stm32f4xx_hal_cortex.c \
        $(HAL_DIR)/stm32f4xx_hal_gpio.c \
-       $(HAL_DIR)/stm32f4xx_hal_tim.c \
-       $(HAL_DIR)/stm32f4xx_hal_tim_ex.c \
+
+#       $(HAL_DIR)/stm32f4xx_hal_tim.c \
+#       $(HAL_DIR)/stm32f4xx_hal_tim_ex.c \
+
+# soc library sources
+LIB_DIR = $(TOP)/soc/st/stm32f4/lib/src
+SRC += $(LIB_DIR)/gpio.c \
 
 # target sources
 TARGET_DIR = $(TOP)/target/mb997
 SRC += $(TARGET_DIR)/main.c \
        $(TARGET_DIR)/system_stm32f4xx.c \
-       $(TARGET_DIR)/stm32f4xx_it.c \
        $(TARGET_DIR)/syscalls.c \
-       $(TARGET_DIR)/gpio.c \
 
 # rtt logging
 RTT_DIR = $(TOP)/common/rtt
@@ -29,13 +32,13 @@ SRC += $(RTT_DIR)/SEGGER_RTT.c \
 COMMON_DIR = $(TOP)/common
 SRC += $(COMMON_DIR)/logging.c \
 
-
 OBJ = $(patsubst %.c, %.o, $(SRC))
 OBJ += $(TARGET_DIR)/start.o
 
 # include files
 
 # include paths
+INCLUDE += -I$(TOP)/soc/st/stm32f4/lib/inc
 INCLUDE += -I$(TOP)/soc/st/stm32f4/hal/inc
 INCLUDE += -I$(TOP)/soc/st/stm32f4/cmsis
 INCLUDE += -I$(TARGET_DIR)

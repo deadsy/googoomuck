@@ -5,9 +5,31 @@
 //-----------------------------------------------------------------------------
 
 #include "stm32f4xx_hal.h"
+#include "stm32f4_soc.h"
 #include "SEGGER_RTT.h"
 
-#include "gpio.h"
+#define DEBUG
+#include "logging.h"
+
+//-----------------------------------------------------------------------------
+// gpio configuration info
+
+// standard board GPIO
+#define LED_GREEN       GPIO_NUM(PORTD, 12)
+#define LED_AMBER       GPIO_NUM(PORTD, 13)
+#define LED_RED         GPIO_NUM(PORTD, 14)
+#define LED_BLUE        GPIO_NUM(PORTD, 15)
+#define PUSH_BUTTON     GPIO_NUM(PORTA, 0)	// 0 = open, 1 = pressed
+
+static const GPIO_INFO gpio_info[] = {
+	// leds
+	{LED_RED, GPIO_MODE_OUTPUT_PP, GPIO_PULLUP, GPIO_SPEED_FAST, 0, GPIO_PIN_RESET},
+	{LED_BLUE, GPIO_MODE_OUTPUT_PP, GPIO_PULLUP, GPIO_SPEED_FAST, 0, GPIO_PIN_RESET},
+	{LED_GREEN, GPIO_MODE_OUTPUT_PP, GPIO_PULLUP, GPIO_SPEED_FAST, 0, GPIO_PIN_RESET},
+	{LED_AMBER, GPIO_MODE_OUTPUT_PP, GPIO_PULLUP, GPIO_SPEED_FAST, 0, GPIO_PIN_RESET},
+	// push buttons
+	{PUSH_BUTTON, GPIO_MODE_IT_FALLING, GPIO_NOPULL, 0, 0, -1},
+};
 
 //-----------------------------------------------------------------------------
 
@@ -19,6 +41,38 @@ void assert_failed(uint8_t * file, uint32_t line) {
 
 void Error_Handler(void) {
 	while (1) ;
+}
+
+//-----------------------------------------------------------------------------
+
+void NMI_Handler(void) {
+}
+void HardFault_Handler(void) {
+	while (1) ;
+}
+void MemManage_Handler(void) {
+	while (1) ;
+}
+void BusFault_Handler(void) {
+	while (1) ;
+}
+void UsageFault_Handler(void) {
+	while (1) ;
+}
+void SVC_Handler(void) {
+}
+void DebugMon_Handler(void) {
+}
+void PendSV_Handler(void) {
+}
+
+void SysTick_Handler(void) {
+	uint32_t ticks = HAL_GetTick();
+	// blink the green led every 512 ms
+	if ((ticks & 511) == 0) {
+		gpio_toggle(LED_GREEN);
+	}
+	HAL_IncTick();
 }
 
 //-----------------------------------------------------------------------------
@@ -64,14 +118,16 @@ int main(void) {
 	HAL_Init();
 	SystemClock_Config();
 	SEGGER_RTT_Init();
-	gpio_init();
+	gpio_init(gpio_info, sizeof(gpio_info) / sizeof(GPIO_INFO));
 
 	SEGGER_RTT_TerminalOut(0, "msg1on0");
 	SEGGER_RTT_TerminalOut(0, "message2on0");
 	SEGGER_RTT_TerminalOut(1, "msg3on1");
 	SEGGER_RTT_TerminalOut(1, "message4on1");
 
-	while (1) ;
+	while (1) {
+		DBG0("in the while loop\n");
+	}
 
 	return 0;
 }
