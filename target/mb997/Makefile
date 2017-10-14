@@ -1,10 +1,10 @@
-TOP = ../../../..
+TOP = ../..
 include $(TOP)/mk/common.mk
 
 OUTPUT = ggm
 
 # hal sources
-HAL_DIR = $(TOP)/board/st/stm32f4/hal/src
+HAL_DIR = $(TOP)/soc/st/stm32f4/hal/src
 SRC += $(HAL_DIR)/stm32f4xx_hal.c \
        $(HAL_DIR)/stm32f4xx_hal_rcc.c \
        $(HAL_DIR)/stm32f4xx_hal_cortex.c \
@@ -12,13 +12,13 @@ SRC += $(HAL_DIR)/stm32f4xx_hal.c \
        $(HAL_DIR)/stm32f4xx_hal_tim.c \
        $(HAL_DIR)/stm32f4xx_hal_tim_ex.c \
 
-# board sources
-BOARD_DIR = $(TOP)/board/st/stm32f4/mb997
-SRC += $(BOARD_DIR)/main.c \
-       $(BOARD_DIR)/system_stm32f4xx.c \
-       $(BOARD_DIR)/stm32f4xx_it.c \
-       $(BOARD_DIR)/syscalls.c \
-       $(BOARD_DIR)/gpio.c \
+# target sources
+TARGET_DIR = $(TOP)/target/mb997
+SRC += $(TARGET_DIR)/main.c \
+       $(TARGET_DIR)/system_stm32f4xx.c \
+       $(TARGET_DIR)/stm32f4xx_it.c \
+       $(TARGET_DIR)/syscalls.c \
+       $(TARGET_DIR)/gpio.c \
 
 # rtt logging
 RTT_DIR = $(TOP)/common/rtt
@@ -31,14 +31,14 @@ SRC += $(COMMON_DIR)/logging.c \
 
 
 OBJ = $(patsubst %.c, %.o, $(SRC))
-OBJ += $(BOARD_DIR)/start.o
+OBJ += $(TARGET_DIR)/start.o
 
 # include files
 
 # include paths
-INCLUDE += -I$(TOP)/board/st/stm32f4/hal/inc
-INCLUDE += -I$(TOP)/board/st/stm32f4/cmsis
-INCLUDE += -I$(BOARD_DIR)
+INCLUDE += -I$(TOP)/soc/st/stm32f4/hal/inc
+INCLUDE += -I$(TOP)/soc/st/stm32f4/cmsis
+INCLUDE += -I$(TARGET_DIR)
 INCLUDE += -I$(RTT_DIR)
 INCLUDE += -I$(COMMON_DIR)
 
