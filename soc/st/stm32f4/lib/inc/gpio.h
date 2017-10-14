@@ -10,6 +10,11 @@ GPIO Control for the STM32F4 Discovery Board
 #define GPIO_H
 
 //-----------------------------------------------------------------------------
+
+#include <inttypes.h>
+#include "stm32f4xx_hal_gpio.h"
+
+//-----------------------------------------------------------------------------
 // port numbers
 
 #define PORTA 0
@@ -63,6 +68,19 @@ static inline int gpio_rd(int n) {
 
 static inline int gpio_rd_inv(int n) {
 	return (~(GPIO_BASE(n)->IDR) >> GPIO_PIN(n)) & 1;
+}
+
+static inline void gpio_dirn_in(int n) {
+  // set the MODER bits to 0 (input) for the pin
+  GPIO_BASE(n)->MODER &= ~(3 << (GPIO_PIN(n) * 2));
+}
+
+static inline void gpio_dirn_out(int n) {
+  // set the MODER bits to 1 (ouput) for the pin
+  uint32_t mode = GPIO_BASE(n)->MODER;
+  mode &= ~(3 << (GPIO_PIN(n) * 2));
+  mode |= (1 << (GPIO_PIN(n) * 2));
+  GPIO_BASE(n)->MODER = mode;
 }
 
 void gpio_init(const GPIO_INFO * info, size_t n);

@@ -8,18 +8,13 @@
 #include "stm32f4_soc.h"
 #include "SEGGER_RTT.h"
 
+#include "target.h"
+
 #define DEBUG
 #include "logging.h"
 
 //-----------------------------------------------------------------------------
 // gpio configuration info
-
-// standard board GPIO
-#define LED_GREEN       GPIO_NUM(PORTD, 12)
-#define LED_AMBER       GPIO_NUM(PORTD, 13)
-#define LED_RED         GPIO_NUM(PORTD, 14)
-#define LED_BLUE        GPIO_NUM(PORTD, 15)
-#define PUSH_BUTTON     GPIO_NUM(PORTA, 0)	// 0 = open, 1 = pressed
 
 static const GPIO_INFO gpio_info[] = {
 	// leds
@@ -29,6 +24,9 @@ static const GPIO_INFO gpio_info[] = {
 	{LED_AMBER, GPIO_MODE_OUTPUT_PP, GPIO_PULLUP, GPIO_SPEED_FAST, 0, GPIO_PIN_RESET},
 	// push buttons
 	{PUSH_BUTTON, GPIO_MODE_IT_FALLING, GPIO_NOPULL, 0, 0, -1},
+	// i2c
+	{GPIO_I2C_SCL, GPIO_MODE_INPUT, GPIO_NOPULL, GPIO_SPEED_FAST, 0, GPIO_PIN_RESET},
+	{GPIO_I2C_SDA, GPIO_MODE_INPUT, GPIO_NOPULL, GPIO_SPEED_FAST, 0, GPIO_PIN_RESET},
 };
 
 //-----------------------------------------------------------------------------
@@ -115,7 +113,7 @@ static void SystemClock_Config(void) {
 //-----------------------------------------------------------------------------
 
 int main(void) {
-  int i = 0;
+	int i = 0;
 
 	HAL_Init();
 	SystemClock_Config();
@@ -124,8 +122,8 @@ int main(void) {
 
 	while (1) {
 		DBG("in the while loop %d\r\n", i);
-    mdelay(500);
-    i += 1;
+		mdelay(500);
+		i += 1;
 	}
 
 	return 0;
