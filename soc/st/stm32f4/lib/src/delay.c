@@ -1,21 +1,25 @@
 //-----------------------------------------------------------------------------
 /*
 
-STM32F4 SoC top-level include file
+Polled Delays
 
 */
 //-----------------------------------------------------------------------------
 
-#ifndef STM32F4_SOC_H
-#define STM32F4_SOC_H
-
-//-----------------------------------------------------------------------------
-
-#include "gpio.h"
+#include "stm32f4xx_hal.h"
 #include "delay.h"
 
 //-----------------------------------------------------------------------------
 
-#endif				// STM32F4_SOC_H
+void mdelay(unsigned long msecs) {
+	HAL_Delay(msecs);
+}
+
+/*
+void ndelay(unsigned long nsecs) {
+}
+void udelay(unsigned long usecs) {
+}
+*/
 
 //-----------------------------------------------------------------------------

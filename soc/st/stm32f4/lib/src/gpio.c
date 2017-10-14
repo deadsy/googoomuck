@@ -11,7 +11,7 @@ GPIO Control for the STM32F4 Discovery Board
 
 //-----------------------------------------------------------------------------
 
-void gpio_init(const GPIO_INFO *info, size_t n) {
+void gpio_init(const GPIO_INFO * info, size_t n) {
 	unsigned int i;
 	for (i = 0; i < n; i++) {
 		const GPIO_INFO *gpio = &info[i];

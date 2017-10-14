@@ -10,12 +10,10 @@ SRC += $(HAL_DIR)/stm32f4xx_hal.c \
        $(HAL_DIR)/stm32f4xx_hal_cortex.c \
        $(HAL_DIR)/stm32f4xx_hal_gpio.c \
 
-#       $(HAL_DIR)/stm32f4xx_hal_tim.c \
-#       $(HAL_DIR)/stm32f4xx_hal_tim_ex.c \
-
 # soc library sources
 LIB_DIR = $(TOP)/soc/st/stm32f4/lib/src
 SRC += $(LIB_DIR)/gpio.c \
+       $(LIB_DIR)/delay.c \
 
 # target sources
 TARGET_DIR = $(TOP)/target/mb997

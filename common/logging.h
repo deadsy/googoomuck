@@ -16,9 +16,9 @@ Logging Functions
 //-----------------------------------------------------------------------------
 
 #if defined(DEBUG)
-#define DBG0(...) log_printf(__VA_ARGS__)
+#define DBG(...) log_printf(__VA_ARGS__)
 #else
-#define DBG0(...)
+#define DBG(...)
 #endif
 
 //-----------------------------------------------------------------------------

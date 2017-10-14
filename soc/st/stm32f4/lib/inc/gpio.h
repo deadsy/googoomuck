@@ -65,7 +65,7 @@ static inline int gpio_rd_inv(int n) {
 	return (~(GPIO_BASE(n)->IDR) >> GPIO_PIN(n)) & 1;
 }
 
-void gpio_init(const GPIO_INFO *info, size_t n);
+void gpio_init(const GPIO_INFO * info, size_t n);
 
 //-----------------------------------------------------------------------------
 

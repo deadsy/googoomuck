@@ -115,18 +115,17 @@ static void SystemClock_Config(void) {
 //-----------------------------------------------------------------------------
 
 int main(void) {
+  int i = 0;
+
 	HAL_Init();
 	SystemClock_Config();
 	SEGGER_RTT_Init();
 	gpio_init(gpio_info, sizeof(gpio_info) / sizeof(GPIO_INFO));
 
-	SEGGER_RTT_TerminalOut(0, "msg1on0");
-	SEGGER_RTT_TerminalOut(0, "message2on0");
-	SEGGER_RTT_TerminalOut(1, "msg3on1");
-	SEGGER_RTT_TerminalOut(1, "message4on1");
-
 	while (1) {
-		DBG0("in the while loop\n");
+		DBG("in the while loop %d\r\n", i);
+    mdelay(500);
+    i += 1;
 	}
 
 	return 0;
