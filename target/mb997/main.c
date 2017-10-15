@@ -12,30 +12,34 @@
 #include "logging.h"
 
 //-----------------------------------------------------------------------------
-// gpio configuration info
+// io configuration
 
-// standard board GPIO
+// leds
 #define LED_GREEN       GPIO_NUM(PORTD, 12)
 #define LED_AMBER       GPIO_NUM(PORTD, 13)
 #define LED_RED         GPIO_NUM(PORTD, 14)
 #define LED_BLUE        GPIO_NUM(PORTD, 15)
+
+// push button
 #define PUSH_BUTTON     GPIO_NUM(PORTA, 0)	// 0 = open, 1 = pressed
 
-// i2c bus
-#define AUDIO_I2C_SCL    GPIO_NUM(PORTB, 6)
-#define AUDIO_I2C_SDA    GPIO_NUM(PORTB, 9)
+// audio codec
+#define AUDIO_I2C_SCL   GPIO_NUM(PORTB, 6)
+#define AUDIO_I2C_SDA   GPIO_NUM(PORTB, 9)
+#define AUDIO_RESET     GPIO_NUM(PORTD, 4)
 
-static const GPIO_INFO gpio_info[] = {
+static const struct gpio_info gpios[] = {
 	// leds
-	{LED_RED, GPIO_MODE_OUTPUT_PP, GPIO_PULLUP, GPIO_SPEED_FAST, 0, GPIO_PIN_RESET},
-	{LED_BLUE, GPIO_MODE_OUTPUT_PP, GPIO_PULLUP, GPIO_SPEED_FAST, 0, GPIO_PIN_RESET},
-	{LED_GREEN, GPIO_MODE_OUTPUT_PP, GPIO_PULLUP, GPIO_SPEED_FAST, 0, GPIO_PIN_RESET},
-	{LED_AMBER, GPIO_MODE_OUTPUT_PP, GPIO_PULLUP, GPIO_SPEED_FAST, 0, GPIO_PIN_RESET},
+	{LED_RED, GPIO_MODER_OUT, GPIO_OTYPER_PP, GPIO_OSPEEDR_LO, GPIO_PUPD_NONE, GPIO_AF0, 0},
+	{LED_BLUE, GPIO_MODER_OUT, GPIO_OTYPER_PP, GPIO_OSPEEDR_LO, GPIO_PUPD_NONE, GPIO_AF0, 0},
+	{LED_GREEN, GPIO_MODER_OUT, GPIO_OTYPER_PP, GPIO_OSPEEDR_LO, GPIO_PUPD_NONE, GPIO_AF0, 0},
+	{LED_AMBER, GPIO_MODER_OUT, GPIO_OTYPER_PP, GPIO_OSPEEDR_LO, GPIO_PUPD_NONE, GPIO_AF0, 0},
 	// push buttons
-	{PUSH_BUTTON, GPIO_MODE_IT_FALLING, GPIO_NOPULL, 0, 0, -1},
-	// audio i2c
-	{AUDIO_I2C_SCL, GPIO_MODE_INPUT, GPIO_NOPULL, GPIO_SPEED_FAST, 0, -1},
-	{AUDIO_I2C_SDA, GPIO_MODE_INPUT, GPIO_NOPULL, GPIO_SPEED_FAST, 0, -1},
+	{PUSH_BUTTON, GPIO_MODER_IN, GPIO_OTYPER_PP, GPIO_OSPEEDR_LO, GPIO_PUPD_PU, GPIO_AF0, 0},
+	// audio codec
+	{AUDIO_RESET, GPIO_MODER_OUT, GPIO_OTYPER_PP, GPIO_OSPEEDR_LO, GPIO_PUPD_NONE, GPIO_AF0, 1},
+	{AUDIO_I2C_SCL, GPIO_MODER_IN, GPIO_OTYPER_PP, GPIO_OSPEEDR_LO, GPIO_PUPD_NONE, GPIO_AF0, 0},
+	{AUDIO_I2C_SDA, GPIO_MODER_IN, GPIO_OTYPER_PP, GPIO_OSPEEDR_LO, GPIO_PUPD_NONE, GPIO_AF0, 0},
 };
 
 //-----------------------------------------------------------------------------
@@ -126,25 +130,19 @@ static void SystemClock_Config(void) {
 //-----------------------------------------------------------------------------
 
 int main(void) {
-
-	uint8_t buf[1];
-
 	int i = 0;
 
 	HAL_Init();
 	SystemClock_Config();
 	SEGGER_RTT_Init();
 
-	gpio_init(gpio_info, sizeof(gpio_info) / sizeof(GPIO_INFO));
+	gpio_init(gpios, sizeof(gpios) / sizeof(struct gpio_info));
 	i2c_init(&audio_i2c, AUDIO_I2C_SCL, AUDIO_I2C_SDA);
 
-	DBG("response 34 %d\r\n", i2c_rd_buf(&audio_i2c, 0x34, buf, sizeof(buf)));
-	DBG("response 94 %d\r\n", i2c_rd_buf(&audio_i2c, 0x94, buf, sizeof(buf)));
-	DBG("response 96 %d\r\n", i2c_rd_buf(&audio_i2c, 0x96, buf, sizeof(buf)));
-
+	// scan the i2c bus
 	for (i = 0; i < 256; i += 2) {
 		if (i2c_scan(&audio_i2c, i) != 0) {
-			DBG("device found %02x\r\n", i);
+			DBG("i2c device found %02x\r\n", i);
 		}
 	}
 
