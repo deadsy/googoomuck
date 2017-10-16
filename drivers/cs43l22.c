@@ -118,6 +118,26 @@ static int cs4x_id(struct cs4x_dac *dac) {
 
 //-----------------------------------------------------------------------------
 
+// set the output device
+int cs4x_output(struct cs4x_dac *dac, unsigned int out) {
+	const uint8_t ctrl[DAC_OUTPUT_MAX] = { 0xff, 0xfa, 0xaf, 0xaa, 0x05 };
+	if (out >= DAC_OUTPUT_MAX) {
+		out = DAC_OUTPUT_OFF;
+	}
+	return cs4x_wr(dac, CS43L22_REG_Power_Ctl_2, ctrl[out]);
+}
+
+// set the master volume
+int cs4x_volume(struct cs4x_dac *dac, uint8_t vol) {
+	int rc;
+	// TODO - vol conversion
+	rc = cs4x_wr(dac, CS43L22_REG_Master_A_Vol, vol);
+	rc |= cs4x_wr(dac, CS43L22_REG_Master_B_Vol, vol);
+	return rc;
+}
+
+//-----------------------------------------------------------------------------
+
 int cs4x_init(struct cs4x_dac *dac, struct i2c_bus *i2c, uint8_t adr, int rst) {
 	int rc;
 
@@ -144,6 +164,29 @@ int cs4x_init(struct cs4x_dac *dac, struct i2c_bus *i2c, uint8_t adr, int rst) {
 	rc |= cs4x_wr(dac, 0, 0);
 
 	// TODO clock setup
+
+	// set the output to AUTO
+	rc |= cs4x_output(dac, DAC_OUTPUT_AUTO);
+	// Clock configuration: Auto detection
+	rc |= cs4x_wr(dac, CS43L22_REG_Clocking_Ctl, 0x81);
+	// Set the Slave Mode and the audio Standard
+	rc |= cs4x_wr(dac, CS43L22_REG_Interface_Ctl_1, 0x04);
+
+#if 0
+
+	// Set the Master volume
+	counter += cs43l22_SetVolume(DeviceAddr, Volume);
+
+	/* If the Speaker is enabled, set the Mono mode and volume attenuation level */
+	if (OutputDevice != OUTPUT_DEVICE_HEADPHONE) {
+		/* Set the Speaker Mono mode */
+		counter += CODEC_IO_Write(DeviceAddr, 0x0F, 0x06);
+
+		/* Set the Speaker attenuation level */
+		counter += CODEC_IO_Write(DeviceAddr, 0x24, 0x00);
+		counter += CODEC_IO_Write(DeviceAddr, 0x25, 0x00);
+	}
+#endif
 
 	// 4.9 Recommended Power-Up Sequence (6)
 	rc |= cs4x_wr(dac, CS43L22_REG_Power_Ctl_1, 0x9e);
