@@ -74,7 +74,7 @@ static void gpio_enable(int port) {
 
 //-----------------------------------------------------------------------------
 
-void gpio_init(const struct gpio_info *info, size_t n) {
+int gpio_init(const struct gpio_info *info, size_t n) {
 	unsigned int i;
 	for (i = 0; i < n; i++) {
 		const struct gpio_info *x = &info[i];
@@ -93,6 +93,7 @@ void gpio_init(const struct gpio_info *info, size_t n) {
 			gpio_set(x->num);
 		}
 	}
+	return 0;
 }
 
 //-----------------------------------------------------------------------------

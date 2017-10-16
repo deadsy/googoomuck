@@ -16,9 +16,9 @@ I2C Bit-Bang Driver
 
 //-----------------------------------------------------------------------------
 
-struct i2cbus {
-	uint16_t scl;
-	uint16_t sda;
+struct i2c_bus {
+	int scl;
+	int sda;
 };
 
 //-----------------------------------------------------------------------------
@@ -31,10 +31,10 @@ struct i2cbus {
 
 //-----------------------------------------------------------------------------
 
-int i2c_init(struct i2cbus *bus, uint16_t scl, uint16_t sda);
-int i2c_wr_buf(struct i2cbus *bus, uint8_t adr, uint8_t * buf, size_t n);
-int i2c_rd_buf(struct i2cbus *bus, uint8_t adr, uint8_t * buf, size_t n);
-int i2c_scan(struct i2cbus *bus, uint8_t adr);
+int i2c_init(struct i2c_bus *bus, uint16_t scl, uint16_t sda);
+int i2c_wr_buf(struct i2c_bus *bus, uint8_t adr, uint8_t * buf, size_t n);
+int i2c_rd_buf(struct i2c_bus *bus, uint8_t adr, uint8_t * buf, size_t n);
+int i2c_scan(struct i2c_bus *bus, uint8_t adr);
 
 //-----------------------------------------------------------------------------
 

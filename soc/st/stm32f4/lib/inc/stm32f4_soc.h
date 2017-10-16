@@ -11,6 +11,7 @@ STM32F4 SoC top-level include file
 
 //-----------------------------------------------------------------------------
 
+#include "stm32f4xx_hal.h"
 #include "gpio.h"
 #include "delay.h"
 #include "i2c.h"

@@ -14,32 +14,32 @@ I2C Bit-Bang Driver
 // Low level SCL/SDA routines
 
 // set high impedance of the SCL line
-static inline void scl_rel(struct i2cbus *bus) {
+static inline void scl_rel(struct i2c_bus *bus) {
 	gpio_dirn_in(bus->scl);
 }
 
 // set high impedance of the SDA line
-static inline void sda_rel(struct i2cbus *bus) {
+static inline void sda_rel(struct i2c_bus *bus) {
 	gpio_dirn_in(bus->sda);
 }
 
 // drive SCL line low
-static inline void scl_lo(struct i2cbus *bus) {
+static inline void scl_lo(struct i2c_bus *bus) {
 	gpio_dirn_out(bus->scl);
 }
 
 // drive SDA line low
-static inline void sda_lo(struct i2cbus *bus) {
+static inline void sda_lo(struct i2c_bus *bus) {
 	gpio_dirn_out(bus->sda);
 }
 
 // read the SCL line
-static inline int scl_rd(struct i2cbus *bus) {
+static inline int scl_rd(struct i2c_bus *bus) {
 	return gpio_rd(bus->scl);
 }
 
 // read the SDA line
-static inline int sda_rd(struct i2cbus *bus) {
+static inline int sda_rd(struct i2c_bus *bus) {
 	return gpio_rd(bus->sda);
 }
 
@@ -51,7 +51,7 @@ static void i2c_delay(void) {
 //-----------------------------------------------------------------------------
 
 // Initialise the i2c bus.
-int i2c_init(struct i2cbus *bus, uint16_t scl, uint16_t sda) {
+int i2c_init(struct i2c_bus *bus, uint16_t scl, uint16_t sda) {
 	bus->scl = scl;
 	bus->sda = sda;
 	gpio_dirn_in(bus->scl);
@@ -62,7 +62,7 @@ int i2c_init(struct i2cbus *bus, uint16_t scl, uint16_t sda) {
 }
 
 // return non-zero if the device acks
-int i2c_scan(struct i2cbus *bus, uint8_t adr) {
+int i2c_scan(struct i2c_bus *bus, uint8_t adr) {
 	uint8_t buf[1];
 	return i2c_rd_buf(bus, adr, buf, sizeof(buf)) == I2C_OK;
 }
@@ -71,7 +71,7 @@ int i2c_scan(struct i2cbus *bus, uint8_t adr) {
 
 // Create start condition- SDA goes low while SCL is high.
 // On Exit- SDA and SCL are held low.
-static int i2c_start(struct i2cbus *bus) {
+static int i2c_start(struct i2c_bus *bus) {
 	// release the clock and data lines
 	scl_rel(bus);
 	sda_rel(bus);
@@ -89,7 +89,7 @@ static int i2c_start(struct i2cbus *bus) {
 
 // Create stop condition- SDA goes high while SCL is high.
 // On Exit- SDA and SCL are released.
-static void i2c_stop(struct i2cbus *bus) {
+static void i2c_stop(struct i2c_bus *bus) {
 	scl_lo(bus);
 	i2c_delay();
 	sda_lo(bus);
@@ -105,7 +105,7 @@ static void i2c_stop(struct i2cbus *bus) {
 // Clock SCL and read SDA at clock high.
 // On Entry- SCL is held low.
 // On Exit- SCL is held low, SDA =0/1 is returned.
-static int i2c_clock(struct i2cbus *bus) {
+static int i2c_clock(struct i2c_bus *bus) {
 	int delay = I2C_SLAVE_DELAY;
 	i2c_delay();
 	scl_rel(bus);
@@ -129,7 +129,7 @@ static int i2c_clock(struct i2cbus *bus) {
 // Write a byte of data to the slave.
 // On Entry- SCL is held low.
 // On Exit- SDA is released, SCL is held low.
-static void i2c_wr_byte(struct i2cbus *bus, uint8_t val) {
+static void i2c_wr_byte(struct i2c_bus *bus, uint8_t val) {
 	uint8_t mask = 0x80;
 	while (mask != 0) {
 		if (val & mask) {
@@ -146,7 +146,7 @@ static void i2c_wr_byte(struct i2cbus *bus, uint8_t val) {
 // Read a byte from a slave.
 // On Entry- SCL is held low.
 // On Exit- SDA is released, SCL is held low
-static uint8_t i2c_rd_byte(struct i2cbus *bus) {
+static uint8_t i2c_rd_byte(struct i2c_bus *bus) {
 	uint8_t val = 0;
 	int i;
 	sda_rel(bus);
@@ -158,7 +158,7 @@ static uint8_t i2c_rd_byte(struct i2cbus *bus) {
 }
 
 // Send an ack to the slave.
-static void i2c_wr_ack(struct i2cbus *bus) {
+static void i2c_wr_ack(struct i2c_bus *bus) {
 	sda_lo(bus);
 	i2c_clock(bus);
 	sda_rel(bus);
@@ -166,13 +166,13 @@ static void i2c_wr_ack(struct i2cbus *bus) {
 
 // Clock in the SDA level from the slave.
 // Return: 0 = no ack, 1 = ack
-static int i2c_rd_ack(struct i2cbus *bus) {
+static int i2c_rd_ack(struct i2c_bus *bus) {
 	sda_rel(bus);
 	return i2c_clock(bus) == 0;
 }
 
 // Read n bytes from device adr
-int i2c_rd_buf(struct i2cbus *bus, uint8_t adr, uint8_t * buf, size_t n) {
+int i2c_rd_buf(struct i2c_bus *bus, uint8_t adr, uint8_t * buf, size_t n) {
 	unsigned int i;
 	// start a read cycle
 	if (i2c_start(bus) < 0) {
@@ -197,7 +197,7 @@ int i2c_rd_buf(struct i2cbus *bus, uint8_t adr, uint8_t * buf, size_t n) {
 }
 
 // Write a buffer of bytes to device adr
-int i2c_wr_buf(struct i2cbus *bus, uint8_t adr, uint8_t * buf, size_t n) {
+int i2c_wr_buf(struct i2c_bus *bus, uint8_t adr, uint8_t * buf, size_t n) {
 	unsigned int i;
 	// start a write cycle
 	if (i2c_start(bus) < 0) {

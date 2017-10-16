@@ -1,34 +1,32 @@
 //-----------------------------------------------------------------------------
 /*
 
-Logging Functions
+Cirrus Logic CS43L22 Stereo DAC
 
 */
 //-----------------------------------------------------------------------------
 
-#ifndef LOGGING_H
-#define LOGGING_H
+#ifndef CS43L22_H
+#define CS43L22_H
 
 //-----------------------------------------------------------------------------
 
-#include <stdarg.h>
-#include "SEGGER_RTT.h"
+#include <inttypes.h>
 
 //-----------------------------------------------------------------------------
 
-#if defined(DEBUG)
-#define DBG(...) log_printf(__VA_ARGS__)
-#else
-#define DBG(...)
-#endif
+struct cs4x_dac {
+	struct i2c_bus *i2c;	// i2c bus
+	uint8_t adr;		// device i2c bus address
+	int rst;		// gpio for reset pin
+};
 
 //-----------------------------------------------------------------------------
 
-int log_init(void);
-void log_printf(char *format_msg, ...);
+int cs4x_init(struct cs4x_dac *dac, struct i2c_bus *i2c, uint8_t adr, int rst);
 
 //-----------------------------------------------------------------------------
 
-#endif				// LOGGING_H
+#endif				// CS43L22_H
 
 //-----------------------------------------------------------------------------

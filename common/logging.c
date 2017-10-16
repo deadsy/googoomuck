@@ -13,6 +13,13 @@ Logging Functions
 
 //-----------------------------------------------------------------------------
 
+int log_init(void) {
+	SEGGER_RTT_Init();
+	return 0;
+}
+
+//-----------------------------------------------------------------------------
+
 int SEGGER_RTT_vprintf(unsigned BufferIndex, const char *sFormat, va_list * pParamList);
 
 void log_printf(char *format_msg, ...) {

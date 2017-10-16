@@ -4,11 +4,10 @@
 */
 //-----------------------------------------------------------------------------
 
-#include "stm32f4xx_hal.h"
-#include "stm32f4_soc.h"
-#include "SEGGER_RTT.h"
-
 #define DEBUG
+
+#include "stm32f4_soc.h"
+#include "cs43l22.h"
 #include "logging.h"
 
 //-----------------------------------------------------------------------------
@@ -37,14 +36,17 @@ static const struct gpio_info gpios[] = {
 	// push buttons
 	{PUSH_BUTTON, GPIO_MODER_IN, GPIO_OTYPER_PP, GPIO_OSPEEDR_LO, GPIO_PUPD_PU, GPIO_AF0, 0},
 	// audio codec
-	{AUDIO_RESET, GPIO_MODER_OUT, GPIO_OTYPER_PP, GPIO_OSPEEDR_LO, GPIO_PUPD_NONE, GPIO_AF0, 1},
+	{AUDIO_RESET, GPIO_MODER_OUT, GPIO_OTYPER_PP, GPIO_OSPEEDR_LO, GPIO_PUPD_NONE, GPIO_AF0, 0},
 	{AUDIO_I2C_SCL, GPIO_MODER_IN, GPIO_OTYPER_PP, GPIO_OSPEEDR_LO, GPIO_PUPD_NONE, GPIO_AF0, 0},
 	{AUDIO_I2C_SDA, GPIO_MODER_IN, GPIO_OTYPER_PP, GPIO_OSPEEDR_LO, GPIO_PUPD_NONE, GPIO_AF0, 0},
 };
 
 //-----------------------------------------------------------------------------
 
-static struct i2cbus audio_i2c;
+#define CS43L22_I2C_ADR 0x94
+
+static struct i2c_bus audio_i2c;
+static struct cs4x_dac cs43l22_dac;
 
 //-----------------------------------------------------------------------------
 
@@ -130,29 +132,40 @@ static void SystemClock_Config(void) {
 //-----------------------------------------------------------------------------
 
 int main(void) {
-	int i = 0;
+	int rc;
 
 	HAL_Init();
 	SystemClock_Config();
-	SEGGER_RTT_Init();
 
-	gpio_init(gpios, sizeof(gpios) / sizeof(struct gpio_info));
-	i2c_init(&audio_i2c, AUDIO_I2C_SCL, AUDIO_I2C_SDA);
-
-	// scan the i2c bus
-	for (i = 0; i < 256; i += 2) {
-		if (i2c_scan(&audio_i2c, i) != 0) {
-			DBG("i2c device found %02x\r\n", i);
-		}
+	rc = log_init();
+	if (rc != 0) {
+		DBG("log_init failed %d\r\n", rc);
+		goto exit;
 	}
 
-	i = 0;
-	while (1) {
-		DBG("in the while loop %d\r\n", i);
-		mdelay(2000);
-		i += 1;
+	rc = gpio_init(gpios, sizeof(gpios) / sizeof(struct gpio_info));
+	if (rc != 0) {
+		DBG("gpio_init failed %d\r\n", rc);
+		goto exit;
 	}
 
+	rc = i2c_init(&audio_i2c, AUDIO_I2C_SCL, AUDIO_I2C_SDA);
+	if (rc != 0) {
+		DBG("i2c_init failed %d\r\n", rc);
+		goto exit;
+	}
+
+	rc = cs4x_init(&cs43l22_dac, &audio_i2c, CS43L22_I2C_ADR, AUDIO_RESET);
+	if (rc != 0) {
+		DBG("cs43l22_init failed %d\r\n", rc);
+		goto exit;
+	}
+
+	DBG("init good\r\n");
+	while (1) ;
+
+ exit:
+	while (1) ;
 	return 0;
 }
 

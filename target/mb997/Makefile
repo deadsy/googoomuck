@@ -31,6 +31,11 @@ SRC += $(RTT_DIR)/SEGGER_RTT.c \
 COMMON_DIR = $(TOP)/common
 SRC += $(COMMON_DIR)/logging.c \
 
+# drivers
+DRIVERS_DIR = $(TOP)/drivers
+SRC += $(DRIVERS_DIR)/cs43l22.c \
+
+
 OBJ = $(patsubst %.c, %.o, $(SRC))
 OBJ += $(TARGET_DIR)/start.o
 
@@ -40,6 +45,7 @@ OBJ += $(TARGET_DIR)/start.o
 INCLUDE += -I$(TOP)/soc/st/stm32f4/lib/inc
 INCLUDE += -I$(TOP)/soc/st/stm32f4/hal/inc
 INCLUDE += -I$(TOP)/soc/st/stm32f4/cmsis
+INCLUDE += -I$(DRIVERS_DIR)
 INCLUDE += -I$(TARGET_DIR)
 INCLUDE += -I$(RTT_DIR)
 INCLUDE += -I$(COMMON_DIR)

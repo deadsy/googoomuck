@@ -125,7 +125,7 @@ static inline void gpio_dirn_out(int n) {
 	GPIO_BASE(n)->MODER = mode;
 }
 
-void gpio_init(const struct gpio_info *info, size_t n);
+int gpio_init(const struct gpio_info *info, size_t n);
 
 //-----------------------------------------------------------------------------
 
