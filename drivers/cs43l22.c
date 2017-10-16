@@ -130,18 +130,18 @@ int cs4x_output(struct cs4x_dac *dac, unsigned int out) {
 
 //-----------------------------------------------------------------------------
 
-#define VOL_0DB (float)(102.0/114.0)
+#define VOL_0DB (102.0f/114.0f)
 
 // set the master volume
 int cs4x_volume(struct cs4x_dac *dac, float vol) {
 	uint8_t x;
 	int rc;
-	vol = clamp(vol, 0.0, 1.0);
+	vol = clamp(vol, 0.0f, 1.0f);
 	// piecewise linear mapping from float vol to byte
 	if (vol < VOL_0DB) {
-		x = 52 + (uint8_t) (vol * ((256.0 - 52.0) / VOL_0DB));
+		x = 52 + (uint8_t) (vol * ((256.0f - 52.0f) / VOL_0DB));
 	} else {
-		x = (uint8_t) ((vol - VOL_0DB) * (24.0) / (1.0 - VOL_0DB));
+		x = (uint8_t) ((vol - VOL_0DB) * (24.0f / (1.0f - VOL_0DB)));
 	}
 	rc = cs4x_wr(dac, CS43L22_REG_Master_A_Vol, x);
 	rc |= cs4x_wr(dac, CS43L22_REG_Master_B_Vol, x);
