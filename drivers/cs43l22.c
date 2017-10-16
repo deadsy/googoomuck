@@ -10,8 +10,9 @@ Cirrus Logic CS43L22 Stereo DAC
 
 #include "cs43l22.h"
 #include "stm32f4_soc.h"
-#include "delay.h"
+//#include "delay.h"
 #include "logging.h"
+#include "utils.h"
 
 //-----------------------------------------------------------------------------
 
@@ -127,12 +128,23 @@ int cs4x_output(struct cs4x_dac *dac, unsigned int out) {
 	return cs4x_wr(dac, CS43L22_REG_Power_Ctl_2, ctrl[out]);
 }
 
+//-----------------------------------------------------------------------------
+
+#define VOL_0DB (float)(102.0/114.0)
+
 // set the master volume
-int cs4x_volume(struct cs4x_dac *dac, uint8_t vol) {
+int cs4x_volume(struct cs4x_dac *dac, float vol) {
+	uint8_t x;
 	int rc;
-	// TODO - vol conversion
-	rc = cs4x_wr(dac, CS43L22_REG_Master_A_Vol, vol);
-	rc |= cs4x_wr(dac, CS43L22_REG_Master_B_Vol, vol);
+	vol = clamp(vol, 0.0, 1.0);
+	// piecewise linear mapping from float vol to byte
+	if (vol < VOL_0DB) {
+		x = 52 + (uint8_t) (vol * ((256.0 - 52.0) / VOL_0DB));
+	} else {
+		x = (uint8_t) ((vol - VOL_0DB) * (24.0) / (1.0 - VOL_0DB));
+	}
+	rc = cs4x_wr(dac, CS43L22_REG_Master_A_Vol, x);
+	rc |= cs4x_wr(dac, CS43L22_REG_Master_B_Vol, x);
 	return rc;
 }
 
@@ -172,10 +184,10 @@ int cs4x_init(struct cs4x_dac *dac, struct i2c_bus *i2c, uint8_t adr, int rst) {
 	// Set the Slave Mode and the audio Standard
 	rc |= cs4x_wr(dac, CS43L22_REG_Interface_Ctl_1, 0x04);
 
-#if 0
-
 	// Set the Master volume
-	counter += cs43l22_SetVolume(DeviceAddr, Volume);
+	rc |= cs4x_volume(dac, 0.5);
+
+#if 0
 
 	/* If the Speaker is enabled, set the Mono mode and volume attenuation level */
 	if (OutputDevice != OUTPUT_DEVICE_HEADPHONE) {
