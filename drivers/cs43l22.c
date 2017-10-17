@@ -6,6 +6,8 @@ Cirrus Logic CS43L22 Stereo DAC
 */
 //-----------------------------------------------------------------------------
 
+#include <string.h>
+
 #define DEBUG
 
 #include "cs43l22.h"
@@ -122,29 +124,70 @@ static int cs4x_id(struct cs4x_dac *dac) {
 // set the output device
 int cs4x_output(struct cs4x_dac *dac, unsigned int out) {
 	const uint8_t ctrl[DAC_OUTPUT_MAX] = { 0xff, 0xfa, 0xaf, 0xaa, 0x05 };
+	int rc;
 	if (out >= DAC_OUTPUT_MAX) {
 		out = DAC_OUTPUT_OFF;
 	}
-	return cs4x_wr(dac, CS43L22_REG_Power_Ctl_2, ctrl[out]);
+	rc = cs4x_wr(dac, CS43L22_REG_Power_Ctl_2, ctrl[out]);
+	if (rc != 0) {
+		return rc;
+	}
+	dac->out = out;
+	return 0;
 }
 
 //-----------------------------------------------------------------------------
+// volume controls
 
-#define VOL_0DB (102.0f/114.0f)
+#define MASTER_VOL_0DB (102.0f/114.0f)
 
 // set the master volume
-int cs4x_volume(struct cs4x_dac *dac, float vol) {
+int cs4x_master_volume(struct cs4x_dac *dac, float vol) {
 	uint8_t x;
 	int rc;
 	vol = clamp(vol, 0.0f, 1.0f);
 	// piecewise linear mapping from float vol to byte
-	if (vol < VOL_0DB) {
-		x = 52 + (uint8_t) (vol * ((256.0f - 52.0f) / VOL_0DB));
+	if (vol < MASTER_VOL_0DB) {
+		x = 52 + (uint8_t) (vol * ((256.0f - 52.0f) / MASTER_VOL_0DB));
 	} else {
-		x = (uint8_t) ((vol - VOL_0DB) * (24.0f / (1.0f - VOL_0DB)));
+		x = (uint8_t) ((vol - MASTER_VOL_0DB) * (24.0f / (1.0f - MASTER_VOL_0DB)));
 	}
 	rc = cs4x_wr(dac, CS43L22_REG_Master_A_Vol, x);
 	rc |= cs4x_wr(dac, CS43L22_REG_Master_B_Vol, x);
+	return rc;
+}
+
+int cs4x_headphone_volume(struct cs4x_dac *dac, float vol) {
+	uint8_t x;
+	int rc;
+	vol = clamp(vol, 0.0f, 1.0f);
+	// piecewise linear mapping from float vol to byte
+	if (vol == 0.0f) {
+		x = 1;		// muted
+	} else if (vol == 1.0f) {
+		x = 0;		// full volume
+	} else {
+		x = 52 + (uint8_t) (vol * (256.0f - 52.0f));
+	}
+	rc = cs4x_wr(dac, CS43L22_REG_Headphone_A_Volume, x);
+	rc |= cs4x_wr(dac, CS43L22_REG_Headphone_B_Volume, x);
+	return rc;
+}
+
+int cs4x_speaker_volume(struct cs4x_dac *dac, uint8_t vol) {
+	uint32_t x;
+	int rc;
+	// piecewise linear mapping from vol to control byte
+	if (vol == 0) {
+		x = 1;		// muted
+	} else if (vol == 0xff) {
+		x = 0;		// full
+	} else {
+		x = (64 << 16) + (((256 - 64) << 16) / (255 - 1)) * (vol - 1);
+		x >>= 16;
+	}
+	rc = cs4x_wr(dac, CS43L22_REG_Speaker_A_Volume, x);
+	rc |= cs4x_wr(dac, CS43L22_REG_Speaker_B_Volume, x);
 	return rc;
 }
 
@@ -152,7 +195,9 @@ int cs4x_volume(struct cs4x_dac *dac, float vol) {
 
 int cs4x_init(struct cs4x_dac *dac, struct i2c_bus *i2c, uint8_t adr, int rst) {
 	int rc;
+	int i;
 
+	memset(dac, 0, sizeof(struct cs4x_dac));
 	dac->i2c = i2c;
 	dac->adr = adr;
 	dac->rst = rst;
@@ -185,20 +230,18 @@ int cs4x_init(struct cs4x_dac *dac, struct i2c_bus *i2c, uint8_t adr, int rst) {
 	rc |= cs4x_wr(dac, CS43L22_REG_Interface_Ctl_1, 0x04);
 
 	// Set the Master volume
-	rc |= cs4x_volume(dac, 0.5);
+	rc |= cs4x_master_volume(dac, 0.5);
 
-#if 0
-
-	/* If the Speaker is enabled, set the Mono mode and volume attenuation level */
-	if (OutputDevice != OUTPUT_DEVICE_HEADPHONE) {
-		/* Set the Speaker Mono mode */
-		counter += CODEC_IO_Write(DeviceAddr, 0x0F, 0x06);
-
-		/* Set the Speaker attenuation level */
-		counter += CODEC_IO_Write(DeviceAddr, 0x24, 0x00);
-		counter += CODEC_IO_Write(DeviceAddr, 0x25, 0x00);
+	// If the Speaker is enabled, set the Mono mode and volume attenuation level
+	if (dac->out != DAC_OUTPUT_OFF && dac->out != DAC_OUTPUT_HEADPHONE) {
+		// Set the Speaker Mono mode
+		rc |= cs4x_wr(dac, CS43L22_REG_Playback_Ctl_2, 0x06);
+		rc |= cs4x_speaker_volume(dac, 255);
 	}
-#endif
+
+	for (i = 0; i < 256; i++) {
+		rc |= cs4x_speaker_volume(dac, i);
+	}
 
 	// 4.9 Recommended Power-Up Sequence (6)
 	rc |= cs4x_wr(dac, CS43L22_REG_Power_Ctl_1, 0x9e);

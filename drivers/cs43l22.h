@@ -16,7 +16,7 @@ Cirrus Logic CS43L22 Stereo DAC
 //-----------------------------------------------------------------------------
 
 enum {
-	DAC_OUTPUT_OFF,
+	DAC_OUTPUT_OFF,		// must be 0
 	DAC_OUTPUT_SPEAKER,
 	DAC_OUTPUT_HEADPHONE,
 	DAC_OUTPUT_BOTH,
@@ -30,13 +30,16 @@ struct cs4x_dac {
 	struct i2c_bus *i2c;	// i2c bus
 	uint8_t adr;		// device i2c bus address
 	int rst;		// gpio for reset pin
+	unsigned int out;	// output device
 };
 
 //-----------------------------------------------------------------------------
 
 int cs4x_init(struct cs4x_dac *dac, struct i2c_bus *i2c, uint8_t adr, int rst);
 int cs4x_output(struct cs4x_dac *dac, unsigned int out);
-int cs4x_volume(struct cs4x_dac *dac, float vol);
+int cs4x_master_volume(struct cs4x_dac *dac, float vol);
+int cs4x_headphone_volume(struct cs4x_dac *dac, float vol);
+int cs4x_speaker_volume(struct cs4x_dac *dac, uint8_t vol);
 
 //-----------------------------------------------------------------------------
 
