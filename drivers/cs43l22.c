@@ -136,6 +136,8 @@ int cs4x_output(struct cs4x_dac *dac, unsigned int out) {
 
 //-----------------------------------------------------------------------------
 // volume controls
+// Map 0..255 to the control value for a volume register.
+// 0 is minium volume (or mute), 255 is maximum volume.
 
 // set the master volume
 int cs4x_master_volume(struct cs4x_dac *dac, uint8_t vol) {
@@ -194,6 +196,21 @@ int cs4x_pcm_volume(struct cs4x_dac *dac, uint8_t vol) {
 	}
 	rc = cs4x_wr(dac, CS43L22_REG_PCMA_Vol, x);
 	rc |= cs4x_wr(dac, CS43L22_REG_PCMB_Vol, x);
+	return rc;
+}
+
+//-----------------------------------------------------------------------------
+// mute on/off
+
+static int cs4x_mute_on(struct cs4x_dac *dac) {
+	int rc = cs4x_wr(dac, CS43L22_REG_Power_Ctl_2, 0xff);
+	rc |= cs4x_headphone_volume(dac, 0);
+	return rc;
+}
+
+static int cs4x_mute_off(struct cs4x_dac *dac) {
+	int rc = cs4x_headphone_volume(dac, 0xff);
+	rc |= cs4x_output(dac, dac->out);
 	return rc;
 }
 
@@ -257,14 +274,49 @@ int cs4x_init(struct cs4x_dac *dac, struct i2c_bus *i2c, uint8_t adr, int rst) {
 	// Disable the limiter attack level
 	rc |= cs4x_wr(dac, CS43L22_REG_Limit_Ctl_1_Thresholds, 0x00);
 	// Adjust Bass and Treble levels
-	rc |= cs4x_wr(dac, CS43L22_REG_Tone_Ctl, 0x0F);
+	rc |= cs4x_wr(dac, CS43L22_REG_Tone_Ctl, 0x0f);
 	// Adjust PCM volume level
 	rc |= cs4x_pcm_volume(dac, 241);
 
-	// 4.9 Recommended Power-Up Sequence (6)
-	rc |= cs4x_wr(dac, CS43L22_REG_Power_Ctl_1, 0x9e);
-
  exit:
+	return rc;
+}
+
+//-----------------------------------------------------------------------------
+
+int cs4x_play(struct cs4x_dac *dac) {
+	// Enable the digital soft ramp
+	int rc = cs4x_wr(dac, CS43L22_REG_Misc_Ctl, 0x06);
+	// Enable Output device
+	rc |= cs4x_mute_off(dac);
+	// Power on the Codec
+	rc |= cs4x_wr(dac, CS43L22_REG_Power_Ctl_1, 0x9e);
+	return rc;
+}
+
+int cs4x_stop(struct cs4x_dac *dac) {
+	// Mute the output
+	int rc = cs4x_mute_on(dac);
+	// Disable the digital soft ramp
+	rc |= cs4x_wr(dac, CS43L22_REG_Misc_Ctl, 0x04);
+	// Power down the DAC and the speaker (PMDAC and PMSPK bits)
+	rc |= cs4x_wr(dac, CS43L22_REG_Power_Ctl_1, 0x9f);
+	return rc;
+}
+
+int cs4x_pause(struct cs4x_dac *dac) {
+	// Mute the output
+	int rc = cs4x_mute_on(dac);
+	// Put the Codec in Power save mode
+	rc |= cs4x_wr(dac, CS43L22_REG_Power_Ctl_1, 0x01);
+	return rc;
+}
+
+int cs4x_resume(struct cs4x_dac *dac) {
+	// Unmute the output
+	int rc = cs4x_mute_off(dac);
+	// Power on the Codec
+	rc |= cs4x_wr(dac, CS43L22_REG_Power_Ctl_1, 0x9e);
 	return rc;
 }
 
