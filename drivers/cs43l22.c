@@ -12,7 +12,6 @@ Cirrus Logic CS43L22 Stereo DAC
 
 #include "cs43l22.h"
 #include "stm32f4_soc.h"
-//#include "delay.h"
 #include "logging.h"
 #include "utils.h"
 
@@ -79,28 +78,27 @@ static int cs4x_wr(struct cs4x_dac *dac, uint8_t reg, uint8_t val) {
 	return i2c_wr_buf(dac->i2c, dac->adr, buf, 2);
 }
 
-// set bits in a register
-static int cs4x_set(struct cs4x_dac *dac, uint8_t reg, uint8_t bits) {
-	uint8_t val;
+// read/modify/write a register
+static int cs4x_rmw(struct cs4x_dac *dac, uint8_t reg, uint8_t mask, uint8_t val) {
+	uint8_t x;
 	int rc;
-	rc = cs4x_rd(dac, reg, &val);
+	rc = cs4x_rd(dac, reg, &x);
 	if (rc != 0) {
 		return rc;
 	}
-	val |= bits;
-	return cs4x_wr(dac, reg, val);
+	x &= ~mask;
+	x |= val & mask;
+	return cs4x_wr(dac, reg, x);
+}
+
+// set bits in a register
+static int cs4x_set(struct cs4x_dac *dac, uint8_t reg, uint8_t bits) {
+	return cs4x_rmw(dac, reg, bits, 0xff);
 }
 
 // clear bits in a register
 static int cs4x_clr(struct cs4x_dac *dac, uint8_t reg, uint8_t bits) {
-	uint8_t val;
-	int rc;
-	rc = cs4x_rd(dac, reg, &val);
-	if (rc != 0) {
-		return rc;
-	}
-	val &= ~bits;
-	return cs4x_wr(dac, reg, val);
+	return cs4x_rmw(dac, reg, bits, 0);
 }
 
 //-----------------------------------------------------------------------------
@@ -139,18 +137,13 @@ int cs4x_output(struct cs4x_dac *dac, unsigned int out) {
 //-----------------------------------------------------------------------------
 // volume controls
 
-#define MASTER_VOL_0DB (((102 << 24) / 114) >> 16)
-
 // set the master volume
 int cs4x_master_volume(struct cs4x_dac *dac, uint8_t vol) {
 	uint32_t x;
 	int rc;
-	if (vol < MASTER_VOL_0DB) {
-		x = (((256 - 52) << 16) / (MASTER_VOL_0DB)) * vol + (52 << 16);
-	} else {
-		x = ((25 << 16) / (255 - MASTER_VOL_0DB)) * (vol - MASTER_VOL_0DB);
-	}
+	x = (((281 - 52) << 16) / 255) * vol + (52 << 16);
 	x >>= 16;
+	x &= 255;
 	rc = cs4x_wr(dac, CS43L22_REG_Master_A_Vol, x);
 	rc |= cs4x_wr(dac, CS43L22_REG_Master_B_Vol, x);
 	return rc;
@@ -162,11 +155,10 @@ int cs4x_headphone_volume(struct cs4x_dac *dac, uint8_t vol) {
 	int rc;
 	if (vol == 0) {
 		x = 1;		// muted
-	} else if (vol == 255) {
-		x = 0;		// full volume
 	} else {
-		x = (52 << 16) + (((256 - 52) << 16) / (255 - 1)) * (vol - 1);
+		x = (((257 - 52) << 16) / 255) * (vol - 1) + (52 << 16);
 		x >>= 16;
+		x &= 255;
 	}
 	rc = cs4x_wr(dac, CS43L22_REG_Headphone_A_Volume, x);
 	rc |= cs4x_wr(dac, CS43L22_REG_Headphone_B_Volume, x);
@@ -179,14 +171,29 @@ int cs4x_speaker_volume(struct cs4x_dac *dac, uint8_t vol) {
 	int rc;
 	if (vol == 0) {
 		x = 1;		// muted
-	} else if (vol == 255) {
-		x = 0;		// full
 	} else {
-		x = (64 << 16) + (((256 - 64) << 16) / (255 - 1)) * (vol - 1);
+		x = (((257 - 64) << 16) / 255) * (vol - 1) + (64 << 16);
 		x >>= 16;
+		x &= 255;
 	}
 	rc = cs4x_wr(dac, CS43L22_REG_Speaker_A_Volume, x);
 	rc |= cs4x_wr(dac, CS43L22_REG_Speaker_B_Volume, x);
+	return rc;
+}
+
+// set the pcm volume
+int cs4x_pcm_volume(struct cs4x_dac *dac, uint8_t vol) {
+	uint32_t x;
+	int rc;
+	if (vol == 0) {
+		x = 0x80;	// muted
+	} else {
+		x = (((281 - 25) << 16) / (255 - 1)) * (vol - 1) + (25 << 16);
+		x >>= 16;
+		x &= 255;
+	}
+	rc = cs4x_wr(dac, CS43L22_REG_PCMA_Vol, x);
+	rc |= cs4x_wr(dac, CS43L22_REG_PCMB_Vol, x);
 	return rc;
 }
 
@@ -194,7 +201,6 @@ int cs4x_speaker_volume(struct cs4x_dac *dac, uint8_t vol) {
 
 int cs4x_init(struct cs4x_dac *dac, struct i2c_bus *i2c, uint8_t adr, int rst) {
 	int rc;
-	int i;
 
 	memset(dac, 0, sizeof(struct cs4x_dac));
 	dac->i2c = i2c;
@@ -229,7 +235,7 @@ int cs4x_init(struct cs4x_dac *dac, struct i2c_bus *i2c, uint8_t adr, int rst) {
 	rc |= cs4x_wr(dac, CS43L22_REG_Interface_Ctl_1, 0x04);
 
 	// Set the Master volume
-	rc |= cs4x_master_volume(dac, 0x80);
+	rc |= cs4x_master_volume(dac, 169);
 
 	// If the Speaker is enabled, set the Mono mode and volume attenuation level
 	if (dac->out != DAC_OUTPUT_OFF && dac->out != DAC_OUTPUT_HEADPHONE) {
@@ -237,17 +243,26 @@ int cs4x_init(struct cs4x_dac *dac, struct i2c_bus *i2c, uint8_t adr, int rst) {
 		rc |= cs4x_wr(dac, CS43L22_REG_Playback_Ctl_2, 0x06);
 		rc |= cs4x_speaker_volume(dac, 0xff);
 	}
+	// Additional configuration for the CODEC. These configurations are done to reduce
+	// the time needed for the Codec to power off. If these configurations are removed,
+	// then a long delay should be added between powering off the Codec and switching
+	// off the I2S peripheral MCLK clock (which is the operating clock for Codec).
+	// If this delay is not inserted, then the codec will not shut down properly and
+	// it results in high noise after shut down.
 
-	for (i = 0; i < 256; i++) {
-		rc |= cs4x_speaker_volume(dac, i);
-	}
+	// Disable the analog soft ramp
+	rc |= cs4x_rmw(dac, CS43L22_REG_Analog_ZC_and_SR_Settings, 0x0f, 0x00);
+	// Disable the digital soft ramp
+	rc |= cs4x_wr(dac, CS43L22_REG_Misc_Ctl, 0x04);
+	// Disable the limiter attack level
+	rc |= cs4x_wr(dac, CS43L22_REG_Limit_Ctl_1_Thresholds, 0x00);
+	// Adjust Bass and Treble levels
+	rc |= cs4x_wr(dac, CS43L22_REG_Tone_Ctl, 0x0F);
+	// Adjust PCM volume level
+	rc |= cs4x_pcm_volume(dac, 241);
 
 	// 4.9 Recommended Power-Up Sequence (6)
 	rc |= cs4x_wr(dac, CS43L22_REG_Power_Ctl_1, 0x9e);
-
-	if (rc != 0) {
-		goto exit;
-	}
 
  exit:
 	return rc;

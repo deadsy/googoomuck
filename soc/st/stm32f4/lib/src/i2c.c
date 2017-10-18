@@ -6,6 +6,8 @@ I2C Bit-Bang Driver
 */
 //-----------------------------------------------------------------------------
 
+#include <string.h>
+
 #include "i2c.h"
 #include "gpio.h"
 #include "delay.h"
@@ -43,21 +45,25 @@ static inline int sda_rd(struct i2c_bus *bus) {
 	return gpio_rd(bus->sda);
 }
 
-// relatively slow clocking ~10kHz.
-static void i2c_delay(void) {
-	udelay(100);
+static inline void i2c_delay(struct i2c_bus *bus) {
+	udelay(bus->delay);
 }
 
 //-----------------------------------------------------------------------------
 
 // Initialise the i2c bus.
-int i2c_init(struct i2c_bus *bus, uint16_t scl, uint16_t sda) {
+int i2c_init(struct i2c_bus *bus, int scl, int sda, int delay) {
+
+	memset(bus, 0, sizeof(struct i2c_bus));
 	bus->scl = scl;
 	bus->sda = sda;
+	bus->delay = delay;
+
 	gpio_dirn_in(bus->scl);
 	gpio_dirn_in(bus->sda);
 	gpio_clr(bus->scl);
 	gpio_clr(bus->sda);
+
 	return I2C_OK;
 }
 
@@ -76,14 +82,14 @@ static int i2c_start(struct i2c_bus *bus) {
 	scl_rel(bus);
 	sda_rel(bus);
 	// check that scl and sda are both high (no bus contention)
-	i2c_delay();
+	i2c_delay(bus);
 	if (!sda_rd(bus) || !scl_rd(bus)) {
 		return I2C_ERR_BUS;
 	}
 	sda_lo(bus);
-	i2c_delay();
+	i2c_delay(bus);
 	scl_lo(bus);
-	i2c_delay();
+	i2c_delay(bus);
 	return I2C_OK;
 }
 
@@ -91,13 +97,13 @@ static int i2c_start(struct i2c_bus *bus) {
 // On Exit- SDA and SCL are released.
 static void i2c_stop(struct i2c_bus *bus) {
 	scl_lo(bus);
-	i2c_delay();
+	i2c_delay(bus);
 	sda_lo(bus);
-	i2c_delay();
+	i2c_delay(bus);
 	scl_rel(bus);
-	i2c_delay();
+	i2c_delay(bus);
 	sda_rel(bus);
-	i2c_delay();
+	i2c_delay(bus);
 }
 
 #define I2C_SLAVE_DELAY 100
@@ -107,7 +113,7 @@ static void i2c_stop(struct i2c_bus *bus) {
 // On Exit- SCL is held low, SDA =0/1 is returned.
 static int i2c_clock(struct i2c_bus *bus) {
 	int delay = I2C_SLAVE_DELAY;
-	i2c_delay();
+	i2c_delay(bus);
 	scl_rel(bus);
 	// wait for any slave clock stretching
 	while (!scl_rd(bus) && delay > 0) {
@@ -119,10 +125,10 @@ static int i2c_clock(struct i2c_bus *bus) {
 		return I2C_ERR_SLV;
 	}
 	// read the data
-	i2c_delay();
+	i2c_delay(bus);
 	int val = sda_rd(bus);
 	scl_lo(bus);
-	i2c_delay();
+	i2c_delay(bus);
 	return val;
 }
 

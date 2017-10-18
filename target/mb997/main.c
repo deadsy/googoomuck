@@ -157,7 +157,7 @@ int main(void) {
 		goto exit;
 	}
 
-	rc = i2c_init(&audio_i2c, AUDIO_I2C_SCL, AUDIO_I2C_SDA);
+	rc = i2c_init(&audio_i2c, AUDIO_I2C_SCL, AUDIO_I2C_SDA, 20);
 	if (rc != 0) {
 		DBG("i2c_init failed %d\r\n", rc);
 		goto exit;
