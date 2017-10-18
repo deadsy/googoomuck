@@ -11,10 +11,10 @@ Polled Delays
 
 //-----------------------------------------------------------------------------
 
-#define TICK_CLK 168 // systick count down clock in MHz
+#define TICK_CLK 168		// systick count down clock in MHz
 
 static uint64_t get_current_usecs(void) {
-  return (HAL_GetTick() * 1000) + 1000 - (SysTick->VAL / TICK_CLK);
+	return (HAL_GetTick() * 1000) + 1000 - (SysTick->VAL / TICK_CLK);
 }
 
 //-----------------------------------------------------------------------------
@@ -24,8 +24,8 @@ void mdelay(unsigned long msecs) {
 }
 
 void udelay(unsigned long usecs) {
- uint64_t timeout = get_current_usecs() + usecs;
-  while (get_current_usecs() < timeout);
+	uint64_t timeout = get_current_usecs() + usecs;
+	while (get_current_usecs() < timeout) ;
 }
 
 //-----------------------------------------------------------------------------
