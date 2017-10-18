@@ -9,6 +9,10 @@ GPIO Control for the STM32F4 Discovery Board
 #ifndef GPIO_H
 #define GPIO_H
 
+#ifndef STM32F4_SOC_H
+#warning "please include this file using the toplevel stm32f4_soc.h"
+#endif
+
 //-----------------------------------------------------------------------------
 
 #include <inttypes.h>

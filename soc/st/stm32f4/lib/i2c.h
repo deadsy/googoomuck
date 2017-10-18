@@ -9,6 +9,10 @@ I2C Bit-Bang Driver
 #ifndef I2C_H
 #define I2C_H
 
+#ifndef STM32F4_SOC_H
+#warning "please include this file using the toplevel stm32f4_soc.h"
+#endif
+
 //-----------------------------------------------------------------------------
 
 #include <inttypes.h>

@@ -8,9 +8,7 @@ I2C Bit-Bang Driver
 
 #include <string.h>
 
-#include "i2c.h"
-#include "gpio.h"
-#include "delay.h"
+#include "stm32f4_soc.h"
 
 //-----------------------------------------------------------------------------
 // Low level SCL/SDA routines

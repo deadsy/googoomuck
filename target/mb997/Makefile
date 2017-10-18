@@ -15,6 +15,7 @@ LIB_DIR = $(TOP)/soc/st/stm32f4/lib
 SRC += $(LIB_DIR)/gpio.c \
        $(LIB_DIR)/delay.c \
        $(LIB_DIR)/i2c.c \
+       $(LIB_DIR)/i2s.c \
 
 # target sources
 TARGET_DIR = $(TOP)/target/mb997
