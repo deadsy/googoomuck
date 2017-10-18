@@ -11,7 +11,7 @@ SRC += $(HAL_DIR)/stm32f4xx_hal.c \
        $(HAL_DIR)/stm32f4xx_hal_gpio.c \
 
 # soc library sources
-LIB_DIR = $(TOP)/soc/st/stm32f4/lib/src
+LIB_DIR = $(TOP)/soc/st/stm32f4/lib
 SRC += $(LIB_DIR)/gpio.c \
        $(LIB_DIR)/delay.c \
        $(LIB_DIR)/i2c.c \
@@ -42,7 +42,7 @@ OBJ += $(TARGET_DIR)/start.o
 # include files
 
 # include paths
-INCLUDE += -I$(TOP)/soc/st/stm32f4/lib/inc
+INCLUDE += -I$(TOP)/soc/st/stm32f4/lib
 INCLUDE += -I$(TOP)/soc/st/stm32f4/hal/inc
 INCLUDE += -I$(TOP)/soc/st/stm32f4/cmsis
 INCLUDE += -I$(DRIVERS_DIR)
