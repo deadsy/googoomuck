@@ -9,7 +9,10 @@ I2S Driver
 #include <string.h>
 #include <assert.h>
 
+#define DEBUG
+
 #include "stm32f4_soc.h"
+#include "logging.h"
 
 //-----------------------------------------------------------------------------
 
@@ -43,9 +46,13 @@ static void spi_enable(struct i2s_drv *i2s) {
 
 int i2s_init(struct i2s_drv *i2s, struct i2s_cfg *cfg) {
 	uint32_t val;
+	uint32_t i2s_clk;
 
 	memset(i2s, 0, sizeof(struct i2s_drv));
 	i2s->cfg = *cfg;
+
+	// TODO support full duplex mode
+	assert(i2s->cfg.fdx_mode == 0);
 
 	spi_enable(i2s);
 
@@ -63,8 +70,9 @@ int i2s_init(struct i2s_drv *i2s, struct i2s_cfg *cfg) {
 	val |= (i2s->cfg.mode | i2s->cfg.standard | i2s->cfg.clk_polarity | i2s->cfg.data_format);
 	i2s->base->I2SCFGR = val;
 
-	// TODO support full duplex mode
-	assert(i2s->cfg.fdx_mode == 0);
+	i2s_clk = HAL_RCCEx_GetPeriphCLKFreq(RCC_PERIPHCLK_I2S);
+
+	DBG("i2s_clk %d\r\n", i2s_clk);
 
 #if 0
 

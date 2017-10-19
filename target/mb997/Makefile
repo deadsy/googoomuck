@@ -7,6 +7,7 @@ OUTPUT = ggm
 HAL_DIR = $(TOP)/soc/st/stm32f4/hal/src
 SRC += $(HAL_DIR)/stm32f4xx_hal.c \
        $(HAL_DIR)/stm32f4xx_hal_rcc.c \
+       $(HAL_DIR)/stm32f4xx_hal_rcc_ex.c \
        $(HAL_DIR)/stm32f4xx_hal_cortex.c \
        $(HAL_DIR)/stm32f4xx_hal_gpio.c \
 

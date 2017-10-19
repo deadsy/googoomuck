@@ -40,6 +40,17 @@ I2S Driver
 #define I2S_CPOL_LOW (0 << 3)
 #define I2S_CPOL_HIGH (1 << 3)
 
+// audio frequency
+#define I2S_AUDIOFREQ_192K (192000U)
+#define I2S_AUDIOFREQ_96K (96000U)
+#define I2S_AUDIOFREQ_48K (48000U)
+#define I2S_AUDIOFREQ_44K (44100U)
+#define I2S_AUDIOFREQ_32K (32000U)
+#define I2S_AUDIOFREQ_22K (22050U)
+#define I2S_AUDIOFREQ_16K (16000U)
+#define I2S_AUDIOFREQ_11K (11025U)
+#define I2S_AUDIOFREQ_8K (8000U)
+
 //-----------------------------------------------------------------------------
 
 struct i2s_cfg {
@@ -48,7 +59,7 @@ struct i2s_cfg {
 	uint32_t standard;	// standard used
 	uint32_t data_format;	// data format
 	int mclk_output;	// is mclk output enabled?
-	int audio_freq;		// frequency
+	uint32_t audio_freq;	// frequency
 	uint32_t clk_polarity;	// clock polarity
 	int clk_src;		// clock source
 	int fdx_mode;		// is full duplex mode enabled?
