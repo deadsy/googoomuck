@@ -54,13 +54,12 @@ static const struct gpio_info gpios[] = {
 // I2S setup
 static struct i2s_cfg audio_i2s_cfg = {
 	.idx = 3,
-	.mode = 0,
-	.standard = 0,
-	.data_format = 0,
-	.mclk_output = 0,
-	.audio_freq = 0,
-	.clk_polarity = 0,
-	.clk_src = 0,
+	.mode = I2S_MODE_MASTER_TX,
+	.standard = I2S_STANDARD_PHILIPS,
+	.data_format = I2S_DATAFORMAT_16B,
+	.mclk_output = I2S_MCLKOUTPUT_ENABLE,
+	.audio_freq = I2S_AUDIOFREQ_44100,
+	.clk_polarity = I2S_CPOL_LOW,
 	.fdx_mode = 0,
 };
 

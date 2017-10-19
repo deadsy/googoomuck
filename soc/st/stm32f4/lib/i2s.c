@@ -13,6 +13,7 @@ I2S Driver
 
 #include "stm32f4_soc.h"
 #include "logging.h"
+#include "utils.h"
 
 //-----------------------------------------------------------------------------
 
@@ -44,9 +45,12 @@ static void spi_enable(struct i2s_drv *i2s) {
 
 //-----------------------------------------------------------------------------
 
+#define I2SCFGR_MASK ((0x1f << 7) | 0x3f)
+#define I2SPR_MASK (0x3ff)
+
 int i2s_init(struct i2s_drv *i2s, struct i2s_cfg *cfg) {
 	uint32_t val;
-	uint32_t i2s_clk;
+	uint32_t clk, odd, div;
 
 	memset(i2s, 0, sizeof(struct i2s_drv));
 	i2s->cfg = *cfg;
@@ -58,33 +62,24 @@ int i2s_init(struct i2s_drv *i2s, struct i2s_cfg *cfg) {
 
 	i2s->base = spi_base(i2s->cfg.idx);
 
-	// clear I2SCFGR - preserve reserved bits
-	i2s->base->I2SCFGR &= (15 << 12) | (1 << 6);
+	// clear I2SCFGR
+	reg_clr(&i2s->base->I2SCFGR, I2SCFGR_MASK);
 	// set I2SPR to the reset value
-	i2s->base->I2SPR = 2;
+	reg_rmw(&i2s->base->I2SPR, I2SPR_MASK, 2);
 
 	// setup I2SCFGR
-	val = i2s->base->I2SCFGR;
-	val |= (1 << 11 /*I2SMOD */ );	// I2S is enabled
-	val |= (0 << 10 /*I2SE */ );	// I2S peripheral is disabled
+	val = (1 << 11 /*I2SMOD */ );
 	val |= (i2s->cfg.mode | i2s->cfg.standard | i2s->cfg.clk_polarity | i2s->cfg.data_format);
-	i2s->base->I2SCFGR = val;
+	reg_rmw(&i2s->base->I2SCFGR, I2SCFGR_MASK, val);
 
-	i2s_clk = HAL_RCCEx_GetPeriphCLKFreq(RCC_PERIPHCLK_I2S);
+	// setup I2SPR
+	clk = HAL_RCCEx_GetPeriphCLKFreq(RCC_PERIPHCLK_I2S);
+	DBG("clk %d\r\n", clk);
+	//TODO derive values
+	odd = 1;
+	div = 6;
+	reg_rmw(&i2s->base->I2SPR, 0x3ff, (odd << 8) | (div << 0) | i2s->cfg.mclk_output);
 
-	DBG("i2s_clk %d\r\n", i2s_clk);
-
-#if 0
-
-	haudio_in_i2s.Init.AudioFreq = 4 * AudioFreq;
-	haudio_in_i2s.Init.ClockSource = I2S_CLOCK_PLL;
-	haudio_in_i2s.Init.CPOL = I2S_CPOL_HIGH;
-	haudio_in_i2s.Init.DataFormat = I2S_DATAFORMAT_16B;
-	haudio_in_i2s.Init.MCLKOutput = I2S_MCLKOUTPUT_DISABLE;
-	haudio_in_i2s.Init.Mode = I2S_MODE_MASTER_RX;
-	haudio_in_i2s.Init.Standard = I2S_STANDARD_LSB;
-
-#endif
 	return 0;
 }
 
