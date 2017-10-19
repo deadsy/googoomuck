@@ -26,27 +26,31 @@ enum {
 
 //-----------------------------------------------------------------------------
 
-struct cs4x_dac {
-	struct i2c_bus *i2c;	// i2c bus
+struct cs4x_cfg {
+	struct i2c_drv *i2c;	// i2c bus
 	uint8_t adr;		// device i2c bus address
 	int rst;		// gpio for reset pin
-	unsigned int out;	// output device
+	int out;		// output device
+};
+
+struct cs4x_drv {
+	struct cs4x_cfg cfg;
 };
 
 //-----------------------------------------------------------------------------
 
-int cs4x_init(struct cs4x_dac *dac, struct i2c_bus *i2c, uint8_t adr, int rst);
+int cs4x_init(struct cs4x_drv *dac, struct cs4x_cfg *cfg);
 
-int cs4x_play(struct cs4x_dac *dac);
-int cs4x_stop(struct cs4x_dac *dac);
-int cs4x_pause(struct cs4x_dac *dac);
-int cs4x_resume(struct cs4x_dac *dac);
+int cs4x_play(struct cs4x_drv *dac);
+int cs4x_stop(struct cs4x_drv *dac);
+int cs4x_pause(struct cs4x_drv *dac);
+int cs4x_resume(struct cs4x_drv *dac);
 
-int cs4x_output(struct cs4x_dac *dac, unsigned int out);
-int cs4x_master_volume(struct cs4x_dac *dac, uint8_t vol);
-int cs4x_headphone_volume(struct cs4x_dac *dac, uint8_t vol);
-int cs4x_speaker_volume(struct cs4x_dac *dac, uint8_t vol);
-int cs4x_pcm_volume(struct cs4x_dac *dac, uint8_t vol);
+int cs4x_output(struct cs4x_drv *dac, unsigned int out);
+int cs4x_master_volume(struct cs4x_drv *dac, uint8_t vol);
+int cs4x_headphone_volume(struct cs4x_drv *dac, uint8_t vol);
+int cs4x_speaker_volume(struct cs4x_drv *dac, uint8_t vol);
+int cs4x_pcm_volume(struct cs4x_drv *drv, uint8_t vol);
 
 //-----------------------------------------------------------------------------
 

@@ -20,10 +20,14 @@ I2C Bit-Bang Driver
 
 //-----------------------------------------------------------------------------
 
-struct i2c_bus {
+struct i2c_cfg {
 	int scl;
 	int sda;
 	int delay;
+};
+
+struct i2c_drv {
+	struct i2c_cfg cfg;
 };
 
 //-----------------------------------------------------------------------------
@@ -36,10 +40,10 @@ struct i2c_bus {
 
 //-----------------------------------------------------------------------------
 
-int i2c_init(struct i2c_bus *bus, int scl, int sda, int delay);
-int i2c_wr_buf(struct i2c_bus *bus, uint8_t adr, uint8_t * buf, size_t n);
-int i2c_rd_buf(struct i2c_bus *bus, uint8_t adr, uint8_t * buf, size_t n);
-int i2c_scan(struct i2c_bus *bus, uint8_t adr);
+int i2c_init(struct i2c_drv *bus, struct i2c_cfg *cfg);
+int i2c_wr(struct i2c_drv *bus, uint8_t adr, uint8_t * buf, size_t n);
+int i2c_rd(struct i2c_drv *bus, uint8_t adr, uint8_t * buf, size_t n);
+int i2c_scan(struct i2c_drv *bus, uint8_t adr);
 
 //-----------------------------------------------------------------------------
 

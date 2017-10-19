@@ -11,7 +11,7 @@
 #include "logging.h"
 
 //-----------------------------------------------------------------------------
-// io configuration
+// IO configuration
 
 // leds
 #define LED_GREEN       GPIO_NUM(PORTD, 12)
@@ -22,7 +22,7 @@
 // push button
 #define PUSH_BUTTON     GPIO_NUM(PORTA, 0)	// 0 = open, 1 = pressed
 
-// audio codec
+// audio
 #define AUDIO_I2C_SCL   GPIO_NUM(PORTB, 6)
 #define AUDIO_I2C_SDA   GPIO_NUM(PORTB, 9)
 #define AUDIO_RESET     GPIO_NUM(PORTD, 4)
@@ -51,10 +51,43 @@ static const struct gpio_info gpios[] = {
 
 //-----------------------------------------------------------------------------
 
-#define CS43L22_I2C_ADR 0x94
+// I2S setup
+static struct i2s_cfg audio_i2s_cfg = {
+	.idx = 3,
+	.mode = 0,
+	.standard = 0,
+	.data_format = 0,
+	.mclk_output = 0,
+	.audio_freq = 0,
+	.clk_polarity = 0,
+	.clk_src = 0,
+	.fdx_mode = 0,
+};
 
-static struct i2c_bus audio_i2c;
-static struct cs4x_dac cs43l22_dac;
+static struct i2s_drv audio_i2s;
+
+//-----------------------------------------------------------------------------
+
+// I2C setup
+static struct i2c_cfg audio_i2c_cfg = {
+	.scl = AUDIO_I2C_SCL,
+	.sda = AUDIO_I2C_SDA,
+	.delay = 20,
+};
+
+static struct i2c_drv audio_i2c;
+
+//-----------------------------------------------------------------------------
+
+// cs43l22 DAC setup
+static struct cs4x_cfg audio_dac_cfg = {
+	.i2c = &audio_i2c,
+	.adr = 0x94,
+	.rst = AUDIO_RESET,
+	.out = DAC_OUTPUT_AUTO,
+};
+
+static struct cs4x_drv audio_dac;
 
 //-----------------------------------------------------------------------------
 
@@ -157,15 +190,21 @@ int main(void) {
 		goto exit;
 	}
 
-	rc = i2c_init(&audio_i2c, AUDIO_I2C_SCL, AUDIO_I2C_SDA, 20);
+	rc = i2s_init(&audio_i2s, &audio_i2s_cfg);
+	if (rc != 0) {
+		DBG("i2s_init failed %d\r\n", rc);
+		goto exit;
+	}
+
+	rc = i2c_init(&audio_i2c, &audio_i2c_cfg);
 	if (rc != 0) {
 		DBG("i2c_init failed %d\r\n", rc);
 		goto exit;
 	}
 
-	rc = cs4x_init(&cs43l22_dac, &audio_i2c, CS43L22_I2C_ADR, AUDIO_RESET);
+	rc = cs4x_init(&audio_dac, &audio_dac_cfg);
 	if (rc != 0) {
-		DBG("cs43l22_init failed %d\r\n", rc);
+		DBG("cs4x_init failed %d\r\n", rc);
 		goto exit;
 	}
 

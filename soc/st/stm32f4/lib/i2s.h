@@ -18,6 +18,7 @@ I2S Driver
 //-----------------------------------------------------------------------------
 
 struct i2s_cfg {
+	int idx;		// i2s device to use
 	int mode;		// operating mode
 	int standard;		// standard used
 	int data_format;	// data format
@@ -29,13 +30,14 @@ struct i2s_cfg {
 };
 
 struct i2s_drv {
-	SPI_TypeDef *base;	// base address of SPI/I2S peripheral
 	struct i2s_cfg cfg;	// configuration values
+	SPI_TypeDef *base;	// base address of SPI/I2S peripheral
+
 };
 
 //-----------------------------------------------------------------------------
 
-int i2s_init(struct i2s_drv *i2s, struct i2s_cfg *cfg, SPI_TypeDef * base);
+int i2s_init(struct i2s_drv *i2s, struct i2s_cfg *cfg);
 
 //-----------------------------------------------------------------------------
 

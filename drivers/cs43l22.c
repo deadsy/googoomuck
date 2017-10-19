@@ -57,14 +57,14 @@ Cirrus Logic CS43L22 Stereo DAC
 //-----------------------------------------------------------------------------
 
 // read a dac register
-static int cs4x_rd(struct cs4x_dac *dac, uint8_t reg, uint8_t * val) {
+static int cs4x_rd(struct cs4x_drv *dac, uint8_t reg, uint8_t * val) {
 	uint8_t buf[1] = { reg };
 	int rc;
-	rc = i2c_wr_buf(dac->i2c, dac->adr, buf, 1);
+	rc = i2c_wr(dac->cfg.i2c, dac->cfg.adr, buf, 1);
 	if (rc != 0) {
 		return rc;
 	}
-	rc = i2c_rd_buf(dac->i2c, dac->adr, buf, 1);
+	rc = i2c_rd(dac->cfg.i2c, dac->cfg.adr, buf, 1);
 	if (rc != 0) {
 		return rc;
 	}
@@ -73,13 +73,13 @@ static int cs4x_rd(struct cs4x_dac *dac, uint8_t reg, uint8_t * val) {
 }
 
 // write a dac register
-static int cs4x_wr(struct cs4x_dac *dac, uint8_t reg, uint8_t val) {
+static int cs4x_wr(struct cs4x_drv *dac, uint8_t reg, uint8_t val) {
 	uint8_t buf[2] = { reg, val };
-	return i2c_wr_buf(dac->i2c, dac->adr, buf, 2);
+	return i2c_wr(dac->cfg.i2c, dac->cfg.adr, buf, 2);
 }
 
 // read/modify/write a register
-static int cs4x_rmw(struct cs4x_dac *dac, uint8_t reg, uint8_t mask, uint8_t val) {
+static int cs4x_rmw(struct cs4x_drv *dac, uint8_t reg, uint8_t mask, uint8_t val) {
 	uint8_t x;
 	int rc;
 	rc = cs4x_rd(dac, reg, &x);
@@ -92,19 +92,19 @@ static int cs4x_rmw(struct cs4x_dac *dac, uint8_t reg, uint8_t mask, uint8_t val
 }
 
 // set bits in a register
-static int cs4x_set(struct cs4x_dac *dac, uint8_t reg, uint8_t bits) {
+static int cs4x_set(struct cs4x_drv *dac, uint8_t reg, uint8_t bits) {
 	return cs4x_rmw(dac, reg, bits, 0xff);
 }
 
 // clear bits in a register
-static int cs4x_clr(struct cs4x_dac *dac, uint8_t reg, uint8_t bits) {
+static int cs4x_clr(struct cs4x_drv *dac, uint8_t reg, uint8_t bits) {
 	return cs4x_rmw(dac, reg, bits, 0);
 }
 
 //-----------------------------------------------------------------------------
 
 // read and verify the device id
-static int cs4x_id(struct cs4x_dac *dac) {
+static int cs4x_id(struct cs4x_drv *dac) {
 	uint8_t id;
 	int rc;
 	rc = cs4x_rd(dac, CS43L22_REG_ID, &id);
@@ -120,7 +120,7 @@ static int cs4x_id(struct cs4x_dac *dac) {
 //-----------------------------------------------------------------------------
 
 // set the output device
-int cs4x_output(struct cs4x_dac *dac, unsigned int out) {
+int cs4x_output(struct cs4x_drv *dac, unsigned int out) {
 	const uint8_t ctrl[DAC_OUTPUT_MAX] = { 0xff, 0xfa, 0xaf, 0xaa, 0x05 };
 	int rc;
 	if (out >= DAC_OUTPUT_MAX) {
@@ -130,7 +130,7 @@ int cs4x_output(struct cs4x_dac *dac, unsigned int out) {
 	if (rc != 0) {
 		return rc;
 	}
-	dac->out = out;
+	dac->cfg.out = out;
 	return 0;
 }
 
@@ -140,7 +140,7 @@ int cs4x_output(struct cs4x_dac *dac, unsigned int out) {
 // 0 is minium volume (or mute), 255 is maximum volume.
 
 // set the master volume
-int cs4x_master_volume(struct cs4x_dac *dac, uint8_t vol) {
+int cs4x_master_volume(struct cs4x_drv *dac, uint8_t vol) {
 	uint32_t x;
 	int rc;
 	x = (((281 - 52) << 16) / 255) * vol + (52 << 16);
@@ -152,7 +152,7 @@ int cs4x_master_volume(struct cs4x_dac *dac, uint8_t vol) {
 }
 
 // set the headphone volume
-int cs4x_headphone_volume(struct cs4x_dac *dac, uint8_t vol) {
+int cs4x_headphone_volume(struct cs4x_drv *dac, uint8_t vol) {
 	uint32_t x;
 	int rc;
 	if (vol == 0) {
@@ -168,7 +168,7 @@ int cs4x_headphone_volume(struct cs4x_dac *dac, uint8_t vol) {
 }
 
 // set the speaker volume
-int cs4x_speaker_volume(struct cs4x_dac *dac, uint8_t vol) {
+int cs4x_speaker_volume(struct cs4x_drv *dac, uint8_t vol) {
 	uint32_t x;
 	int rc;
 	if (vol == 0) {
@@ -184,7 +184,7 @@ int cs4x_speaker_volume(struct cs4x_dac *dac, uint8_t vol) {
 }
 
 // set the pcm volume
-int cs4x_pcm_volume(struct cs4x_dac *dac, uint8_t vol) {
+int cs4x_pcm_volume(struct cs4x_drv *dac, uint8_t vol) {
 	uint32_t x;
 	int rc;
 	if (vol == 0) {
@@ -202,32 +202,30 @@ int cs4x_pcm_volume(struct cs4x_dac *dac, uint8_t vol) {
 //-----------------------------------------------------------------------------
 // mute on/off
 
-static int cs4x_mute_on(struct cs4x_dac *dac) {
+static int cs4x_mute_on(struct cs4x_drv *dac) {
 	int rc = cs4x_wr(dac, CS43L22_REG_Power_Ctl_2, 0xff);
 	rc |= cs4x_headphone_volume(dac, 0);
 	return rc;
 }
 
-static int cs4x_mute_off(struct cs4x_dac *dac) {
+static int cs4x_mute_off(struct cs4x_drv *dac) {
 	int rc = cs4x_headphone_volume(dac, 0xff);
-	rc |= cs4x_output(dac, dac->out);
+	rc |= cs4x_output(dac, dac->cfg.out);
 	return rc;
 }
 
 //-----------------------------------------------------------------------------
 
-int cs4x_init(struct cs4x_dac *dac, struct i2c_bus *i2c, uint8_t adr, int rst) {
+int cs4x_init(struct cs4x_drv *dac, struct cs4x_cfg *cfg) {
 	int rc;
 
-	memset(dac, 0, sizeof(struct cs4x_dac));
-	dac->i2c = i2c;
-	dac->adr = adr;
-	dac->rst = rst;
+	memset(dac, 0, sizeof(struct cs4x_drv));
+	dac->cfg = *cfg;
 
 	// 4.9 Recommended Power-Up Sequence (1,2)
 	// reset the dac
-	gpio_clr(dac->rst);
-	gpio_set(dac->rst);
+	gpio_clr(dac->cfg.rst);
+	gpio_set(dac->cfg.rst);
 
 	rc = cs4x_id(dac);
 	if (rc != 0) {
@@ -255,7 +253,7 @@ int cs4x_init(struct cs4x_dac *dac, struct i2c_bus *i2c, uint8_t adr, int rst) {
 	rc |= cs4x_master_volume(dac, 169);
 
 	// If the Speaker is enabled, set the Mono mode and volume attenuation level
-	if (dac->out != DAC_OUTPUT_OFF && dac->out != DAC_OUTPUT_HEADPHONE) {
+	if (dac->cfg.out != DAC_OUTPUT_OFF && dac->cfg.out != DAC_OUTPUT_HEADPHONE) {
 		// Set the Speaker Mono mode
 		rc |= cs4x_wr(dac, CS43L22_REG_Playback_Ctl_2, 0x06);
 		rc |= cs4x_speaker_volume(dac, 0xff);
@@ -284,7 +282,7 @@ int cs4x_init(struct cs4x_dac *dac, struct i2c_bus *i2c, uint8_t adr, int rst) {
 
 //-----------------------------------------------------------------------------
 
-int cs4x_play(struct cs4x_dac *dac) {
+int cs4x_play(struct cs4x_drv *dac) {
 	// Enable the digital soft ramp
 	int rc = cs4x_wr(dac, CS43L22_REG_Misc_Ctl, 0x06);
 	// Enable Output device
@@ -294,7 +292,7 @@ int cs4x_play(struct cs4x_dac *dac) {
 	return rc;
 }
 
-int cs4x_stop(struct cs4x_dac *dac) {
+int cs4x_stop(struct cs4x_drv *dac) {
 	// Mute the output
 	int rc = cs4x_mute_on(dac);
 	// Disable the digital soft ramp
@@ -304,7 +302,7 @@ int cs4x_stop(struct cs4x_dac *dac) {
 	return rc;
 }
 
-int cs4x_pause(struct cs4x_dac *dac) {
+int cs4x_pause(struct cs4x_drv *dac) {
 	// Mute the output
 	int rc = cs4x_mute_on(dac);
 	// Put the Codec in Power save mode
@@ -312,7 +310,7 @@ int cs4x_pause(struct cs4x_dac *dac) {
 	return rc;
 }
 
-int cs4x_resume(struct cs4x_dac *dac) {
+int cs4x_resume(struct cs4x_drv *dac) {
 	// Unmute the output
 	int rc = cs4x_mute_off(dac);
 	// Power on the Codec
