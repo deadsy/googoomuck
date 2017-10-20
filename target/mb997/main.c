@@ -51,43 +51,6 @@ static const struct gpio_info gpios[] = {
 
 //-----------------------------------------------------------------------------
 
-// I2S setup
-static struct i2s_cfg audio_i2s_cfg = {
-	.idx = 3,
-	.mode = I2S_MODE_MASTER_TX,
-	.standard = I2S_STANDARD_PHILIPS,
-	.data_format = I2S_DATAFORMAT_16B,
-	.mclk_output = I2S_MCLKOUTPUT_ENABLE,
-	.audio_freq = I2S_AUDIOFREQ_44100,
-	.clk_polarity = I2S_CPOL_LOW,
-	.fdx_mode = 0,
-};
-
-static struct i2s_drv audio_i2s;
-
-//-----------------------------------------------------------------------------
-
-// I2C setup
-static struct i2c_cfg audio_i2c_cfg = {
-	.scl = AUDIO_I2C_SCL,
-	.sda = AUDIO_I2C_SDA,
-	.delay = 20,
-};
-
-static struct i2c_drv audio_i2c;
-
-//-----------------------------------------------------------------------------
-
-// cs43l22 DAC setup
-static struct cs4x_cfg audio_dac_cfg = {
-	.i2c = &audio_i2c,
-	.adr = 0x94,
-	.rst = AUDIO_RESET,
-	.out = DAC_OUTPUT_AUTO,
-};
-
-static struct cs4x_drv audio_dac;
-
 //-----------------------------------------------------------------------------
 
 #ifdef USE_FULL_ASSERT
@@ -170,6 +133,86 @@ static void SystemClock_Config(void) {
 }
 
 //-----------------------------------------------------------------------------
+// Audio Initialisation
+// Configuring for 44.1 KHz sample rate, 16 bits per sample, 2 channels.
+// The DAC wants a master clock input, so we enable that.
+
+// 44099.506579: sn 429 sr 2 div 9 odd 1 (chlen = 16, mckoe = 1)
+#define AUDIO_I2SPLLN 429U
+#define AUDIO_I2SPLLR 2U
+#define AUDIO_I2SDIV 9U
+#define AUDIO_I2SODD 1U
+
+// I2S setup
+static struct i2s_cfg audio_i2s_cfg = {
+	.idx = 3,
+	.mode = I2S_MODE_MASTER_TX,
+	.standard = I2S_STANDARD_PHILIPS,
+	.data_format = I2S_DATAFORMAT_16B,
+	.mckoe = I2S_MCLKOUTPUT_ENABLE,
+	.fs = I2S_FS_44100,
+	.cpol = I2S_CPOL_LOW,
+	.div = AUDIO_I2SDIV,
+	.odd = AUDIO_I2SODD,
+	.fdx = 0,
+};
+
+static struct i2s_drv audio_i2s;
+
+// I2C setup
+static struct i2c_cfg audio_i2c_cfg = {
+	.scl = AUDIO_I2C_SCL,
+	.sda = AUDIO_I2C_SDA,
+	.delay = 20,
+};
+
+static struct i2c_drv audio_i2c;
+
+// cs43l22 DAC setup
+static struct cs4x_cfg audio_dac_cfg = {
+	.i2c = &audio_i2c,
+	.adr = 0x94,
+	.rst = AUDIO_RESET,
+	.out = DAC_OUTPUT_AUTO,
+};
+
+static struct cs4x_drv audio_dac;
+
+static int audio_init(void) {
+	int rc = 0;
+
+	// Setup the i2s pll to generate i2s_clk
+	rc = i2s_clk_init(AUDIO_I2SPLLN, AUDIO_I2SPLLR);
+	if (rc != 0) {
+		DBG("i2s clock setup failed %d\r\n", rc);
+		goto exit;
+	}
+	DBG("i2s_clk %d\r\n", i2c_clk_get());
+
+	// setup the i2s interface
+	rc = i2s_init(&audio_i2s, &audio_i2s_cfg);
+	if (rc != 0) {
+		DBG("i2s_init failed %d\r\n", rc);
+		goto exit;
+	}
+	// setup the i2c bus used to control the dac
+	rc = i2c_init(&audio_i2c, &audio_i2c_cfg);
+	if (rc != 0) {
+		DBG("i2c_init failed %d\r\n", rc);
+		goto exit;
+	}
+	// setup the dac
+	rc = cs4x_init(&audio_dac, &audio_dac_cfg);
+	if (rc != 0) {
+		DBG("cs4x_init failed %d\r\n", rc);
+		goto exit;
+	}
+
+ exit:
+	return rc;
+}
+
+//-----------------------------------------------------------------------------
 
 int main(void) {
 	int rc;
@@ -189,27 +232,9 @@ int main(void) {
 		goto exit;
 	}
 
-	rc = i2s_clock(96000);
+	rc = audio_init();
 	if (rc != 0) {
-		DBG("i2s_clock failed %d\r\n", rc);
-		goto exit;
-	}
-
-	rc = i2s_init(&audio_i2s, &audio_i2s_cfg);
-	if (rc != 0) {
-		DBG("i2s_init failed %d\r\n", rc);
-		goto exit;
-	}
-
-	rc = i2c_init(&audio_i2c, &audio_i2c_cfg);
-	if (rc != 0) {
-		DBG("i2c_init failed %d\r\n", rc);
-		goto exit;
-	}
-
-	rc = cs4x_init(&audio_dac, &audio_dac_cfg);
-	if (rc != 0) {
-		DBG("cs4x_init failed %d\r\n", rc);
+		DBG("audio_init failed %d\r\n", rc);
 		goto exit;
 	}
 
