@@ -344,61 +344,6 @@ I2SPR           : 40003c20[31:0] = 0x00000306   I2S prescaler register
   ODD[8]        : 1                             Odd factor for the prescaler
   I2SDIV[7:0]   : 6                             I2S Linear prescaler
 
-mb997c*> regs I2S3ext *
-CR1             : 40004000[31:0] = 0            control register 1
-  BIDIMODE[15]  : 0                             Bidirectional data mode enable
-  BIDIOE[14]    : 0                             Output enable in bidirectional mode
-  CRCEN[13]     : 0                             Hardware CRC calculation enable
-  CRCNEXT[12]   : 0                             CRC transfer next
-  DFF[11]       : 0                             Data frame format
-  RXONLY[10]    : 0                             Receive only
-  SSM[9]        : 0                             Software slave management
-  SSI[8]        : 0                             Internal slave select
-  LSBFIRST[7]   : 0                             Frame format
-  SPE[6]        : 0                             SPI enable
-  BR[5:3]       : 0                             Baud rate control
-  MSTR[2]       : 0                             Master selection
-  CPOL[1]       : 0                             Clock polarity
-  CPHA[0]       : 0                             Clock phase
-CR2             : 40004004[31:0] = 0            control register 2
-  TXEIE[7]      : 0                             Tx buffer empty interrupt enable
-  RXNEIE[6]     : 0                             RX buffer not empty interrupt enable
-  ERRIE[5]      : 0                             Error interrupt enable
-  FRF[4]        : 0                             Frame format
-  SSOE[2]       : 0                             SS output enable
-  TXDMAEN[1]    : 0                             Tx buffer DMA enable
-  RXDMAEN[0]    : 0                             Rx buffer DMA enable
-SR              : 40004008[31:0] = 0x00000002   status register
-  TIFRFE[8]     : 0                             TI frame format error
-  BSY[7]        : 0                             Busy flag
-  OVR[6]        : 0                             Overrun flag
-  MODF[5]       : 0                             Mode fault
-  CRCERR[4]     : 0                             CRC error flag
-  UDR[3]        : 0                             Underrun flag
-  CHSIDE[2]     : 0                             Channel side
-  TXE[1]        : 1                             Transmit buffer empty
-  RXNE[0]       : 0                             Receive buffer not empty
-DR              : 4000400c[31:0] = 0            data register
-  DR[15:0]      : 0                             Data register
-CRCPR           : 40004010[31:0] = 0x00000007   CRC polynomial register
-  CRCPOLY[15:0] : 7                             CRC polynomial register
-RXCRCR          : 40004014[31:0] = 0            RX CRC register
-  RxCRC[15:0]   : 0                             Rx CRC register
-TXCRCR          : 40004018[31:0] = 0            TX CRC register
-  TxCRC[15:0]   : 0                             Tx CRC register
-I2SCFGR         : 4000401c[31:0] = 0            I2S configuration register
-  I2SMOD[11]    : 0                             I2S mode selection
-  I2SE[10]      : 0                             I2S Enable
-  I2SCFG[9:8]   : 0                             I2S configuration mode
-  PCMSYNC[7]    : 0                             PCM frame synchronization
-  I2SSTD[5:4]   : 0                             I2S standard selection
-  CKPOL[3]      : 0                             Steady state clock polarity
-  DATLEN[2:1]   : 0                             Data length to be transferred
-  CHLEN[0]      : 0                             Channel length (number of bits per audio channel)
-I2SPR           : 40004020[31:0] = 0x00000002   I2S prescaler register
-  MCKOE[9]      : 0                             Master clock output enable
-  ODD[8]        : 0                             Odd factor for the prescaler
-  I2SDIV[7:0]   : 2                             I2S Linear prescaler
 
 0x01 : 0xe3 ID
 0x02 : 0x9e Power Ctl 1

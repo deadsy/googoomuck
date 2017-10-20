@@ -189,6 +189,12 @@ int main(void) {
 		goto exit;
 	}
 
+	rc = i2s_clock(96000);
+	if (rc != 0) {
+		DBG("i2s_clock failed %d\r\n", rc);
+		goto exit;
+	}
+
 	rc = i2s_init(&audio_i2s, &audio_i2s_cfg);
 	if (rc != 0) {
 		DBG("i2s_init failed %d\r\n", rc);
