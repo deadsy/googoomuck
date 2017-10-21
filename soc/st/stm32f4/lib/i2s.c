@@ -123,7 +123,7 @@ static inline int i2s_tx_empty(struct i2s_drv *i2s) {
 	return i2s->base->SR & (1 << 1 /*TXE*/);
 }
 
-int i2s_wr(struct i2s_drv *i2s, uint16_t val) {
+int i2s_wr(struct i2s_drv *i2s, int16_t val) {
 	int rc = 0;
 	int delay = 10;
 	while (!i2s_tx_empty(i2s) && (delay > 0)) {
@@ -131,7 +131,7 @@ int i2s_wr(struct i2s_drv *i2s, uint16_t val) {
 		delay -= 1;
 	}
 	if (delay > 0) {
-		i2s->base->DR = val;
+		i2s->base->DR = (uint16_t) val;
 	} else {
 		rc = -1;
 	}

@@ -16,6 +16,7 @@ STM32F4 SoC top-level include file
 #include "delay.h"
 #include "i2c.h"
 #include "i2s.h"
+#include "dma.h"
 
 //-----------------------------------------------------------------------------
 

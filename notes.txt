@@ -381,3 +381,121 @@ I2SPR           : 40003c20[31:0] = 0x00000306   I2S prescaler register
 0x30 : 0x00 VP Battery Level
 0x31 : 0x80 Speaker Status
 0x34 : 0x5f Charge Pump Frequency
+
+
+mb997c*> vtable
+priority group : pppp.... 4 bits group 3
+vector table   : 08000000
+
+Name                 Exc Irq EPA Prio Vector
+Reset              : 1   -       -3   0800ed40
+NMI                : 2   -   e.  -2   0800b474
+HardFault          : 3   -       -1   0800b470
+MemManage          : 4   -   ... 0.0  0800b46c
+BusFault           : 5   -   ... 0.0  0800b468
+UsageFault         : 6   -   ... 0.0  0800b464
+SVCall             : 11  -    .. 0.0  0800b460
+DebugMonitor       : 12  -     . 0.0  0800b45c
+PendSV             : 14  -    .  0.0  0800b458
+SysTick            : 15  -   e.  15.0 0800a440
+EXTI0              : 22  6   e.. 15.0 0800a42c EXTI Line0 interrupt
+I2C1_EV            : 47  31  e.. 0.0  0800ed90 I2C1 event interrupt
+I2C1_ER            : 48  32  e.. 0.0  0800ed90 I2C1 error interrupt
+DMA1_Stream7       : 63  47  e.a 6.0  0800a40c DMA1 Stream7 global interrupt
+
+mb997c*> regs DMA1
+LISR   : 40026000[31:0] = 0            low interrupt status register
+HISR   : 40026004[31:0] = 0            high interrupt status register
+LIFCR  : 40026008[31:0] = 0            low interrupt flag clear register
+HIFCR  : 4002600c[31:0] = 0            high interrupt flag clear register
+S0CR   : 40026010[31:0] = 0            stream x configuration register
+S0NDTR : 40026014[31:0] = 0            stream x number of data register
+S0PAR  : 40026018[31:0] = 0            stream x peripheral address register
+S0M0AR : 4002601c[31:0] = 0            stream x memory 0 address register
+S0M1AR : 40026020[31:0] = 0            stream x memory 1 address register
+S0FCR  : 40026024[31:0] = 0x00000021   stream x FIFO control register
+S1CR   : 40026028[31:0] = 0            stream x configuration register
+S1NDTR : 4002602c[31:0] = 0            stream x number of data register
+S1PAR  : 40026030[31:0] = 0            stream x peripheral address register
+S1M0AR : 40026034[31:0] = 0            stream x memory 0 address register
+S1M1AR : 40026038[31:0] = 0            stream x memory 1 address register
+S1FCR  : 4002603c[31:0] = 0x00000021   stream x FIFO control register
+S2CR   : 40026040[31:0] = 0            stream x configuration register
+S2NDTR : 40026044[31:0] = 0            stream x number of data register
+S2PAR  : 40026048[31:0] = 0            stream x peripheral address register
+S2M0AR : 4002604c[31:0] = 0            stream x memory 0 address register
+S2M1AR : 40026050[31:0] = 0            stream x memory 1 address register
+S2FCR  : 40026054[31:0] = 0x00000021   stream x FIFO control register
+S3CR   : 40026058[31:0] = 0            stream x configuration register
+S3NDTR : 4002605c[31:0] = 0            stream x number of data register
+S3PAR  : 40026060[31:0] = 0            stream x peripheral address register
+S3M0AR : 40026064[31:0] = 0            stream x memory 0 address register
+S3M1AR : 40026068[31:0] = 0            stream x memory 1 address register
+S3FCR  : 4002606c[31:0] = 0x00000021   stream x FIFO control register
+S4CR   : 40026070[31:0] = 0            stream x configuration register
+S4NDTR : 40026074[31:0] = 0            stream x number of data register
+S4PAR  : 40026078[31:0] = 0            stream x peripheral address register
+S4M0AR : 4002607c[31:0] = 0            stream x memory 0 address register
+S4M1AR : 40026080[31:0] = 0            stream x memory 1 address register
+S4FCR  : 40026084[31:0] = 0x00000021   stream x FIFO control register
+S5CR   : 40026088[31:0] = 0            stream x configuration register
+S5NDTR : 4002608c[31:0] = 0            stream x number of data register
+S5PAR  : 40026090[31:0] = 0            stream x peripheral address register
+S5M0AR : 40026094[31:0] = 0            stream x memory 0 address register
+S5M1AR : 40026098[31:0] = 0            stream x memory 1 address register
+S5FCR  : 4002609c[31:0] = 0x00000021   stream x FIFO control register
+S6CR   : 400260a0[31:0] = 0            stream x configuration register
+S6NDTR : 400260a4[31:0] = 0            stream x number of data register
+S6PAR  : 400260a8[31:0] = 0            stream x peripheral address register
+S6M0AR : 400260ac[31:0] = 0            stream x memory 0 address register
+S6M1AR : 400260b0[31:0] = 0            stream x memory 1 address register
+S6FCR  : 400260b4[31:0] = 0x00000021   stream x FIFO control register
+S7CR   : 400260b8[31:0] = 0x00022d5f   stream x configuration register
+S7NDTR : 400260bc[31:0] = 0x00000073 * stream x number of data register
+S7PAR  : 400260c0[31:0] = 0x40003c0c   stream x peripheral address register
+S7M0AR : 400260c4[31:0] = 0x200008d4   stream x memory 0 address register
+S7M1AR : 400260c8[31:0] = 0            stream x memory 1 address register
+S7FCR  : 400260cc[31:0] = 0x0000008f * stream x FIFO control register
+
+mb997c*> regs DMA1 *
+
+S7CR            : 400260b8[31:0] = 0x00022d5f   stream x configuration register
+  CHSEL[27:25]  : 0                             Channel selection
+  MBURST[24:23] : 0                             Memory burst transfer configuration
+  PBURST[22:21] : 0                             Peripheral burst transfer configuration
+  ACK[20]       : 0                             ACK
+  CT[19]        : 0                             Current target (only in double buffer mode)
+  DBM[18]       : 0                             Double buffer mode
+  PL[17:16]     : 2                             Priority level
+  PINCOS[15]    : 0                             Peripheral increment offset size
+  MSIZE[14:13]  : 1                             Memory data size
+  PSIZE[12:11]  : 1                             Peripheral data size
+  MINC[10]      : 1                             Memory increment mode
+  PINC[9]       : 0                             Peripheral increment mode
+  CIRC[8]       : 1                             Circular mode
+  DIR[7:6]      : 1                             Data transfer direction
+  PFCTRL[5]     : 0                             Peripheral flow controller
+  TCIE[4]       : 1                             Transfer complete interrupt enable
+  HTIE[3]       : 1                             Half transfer interrupt enable
+  TEIE[2]       : 1                             Transfer error interrupt enable
+  DMEIE[1]      : 1                             Direct mode error interrupt enable
+  EN[0]         : 1                             Stream enable / flag stream ready when read low
+S7NDTR          : 400260bc[31:0] = 0x00000055 * stream x number of data register
+  NDT[15:0]     : 0x55                          Number of data items to transfer
+S7PAR           : 400260c0[31:0] = 0x40003c0c   stream x peripheral address register
+  PA[31:0]      : 0x40003c0c                    Peripheral address
+S7M0AR          : 400260c4[31:0] = 0x200008d4   stream x memory 0 address register
+  M0A[31:0]     : 0x200008d4                    Memory 0 address
+S7M1AR          : 400260c8[31:0] = 0            stream x memory 1 address register
+  M1A[31:0]     : 0                             Memory 1 address (used in case of Double buffer mode)
+S7FCR           : 400260cc[31:0] = 0x00000097 * stream x FIFO control register
+  FEIE[7]       : 1                             FIFO error interrupt enable
+  FS[5:3]       : 2                             FIFO status
+  DMDIS[2]      : 1                             Direct mode disable
+  FTH[1:0]      : 3                             FIFO threshold selection
+
+Note:
+DMA1->S7PAR == SPI3->DR
+DMA1->S7M0AR == buffer address in sram
+
+

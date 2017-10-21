@@ -237,17 +237,20 @@ static struct osc_lut osc_sin1;
 static struct osc_lut osc_sin2;
 
 static void synth(void) {
-	osc_sin_init(&osc_sin0, 261.6f, AUDIO_SAMPLE_RATE);
-	osc_sin_init(&osc_sin1, 329.6f, AUDIO_SAMPLE_RATE);
-	osc_sin_init(&osc_sin2, 392.0f, AUDIO_SAMPLE_RATE);
+	uint8_t notes[3];
+	major_chord(notes, 60);
+
+	osc_sin_init(&osc_sin0, midi_to_frequency(notes[0]), AUDIO_SAMPLE_RATE);
+	osc_sin_init(&osc_sin1, midi_to_frequency(notes[1]), AUDIO_SAMPLE_RATE);
+	osc_sin_init(&osc_sin2, midi_to_frequency(notes[2]), AUDIO_SAMPLE_RATE);
 
 	while (1) {
 		float x = lut_sample(&osc_sin0);
 		x += lut_sample(&osc_sin1);
 		x += lut_sample(&osc_sin2);
 		x *= 2000.0f;
-		i2s_wr(&audio_i2s, (uint16_t) x);
-		i2s_wr(&audio_i2s, (uint16_t) x);
+		i2s_wr(&audio_i2s, (int16_t) x);
+		i2s_wr(&audio_i2s, (int16_t) x);
 	}
 }
 

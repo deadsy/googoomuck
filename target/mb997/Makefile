@@ -17,6 +17,7 @@ SRC += $(LIB_DIR)/gpio.c \
        $(LIB_DIR)/delay.c \
        $(LIB_DIR)/i2c.c \
        $(LIB_DIR)/i2s.c \
+       $(LIB_DIR)/dma.c \
 
 # target sources
 TARGET_DIR = $(TOP)/target/mb997
@@ -40,7 +41,7 @@ SRC += $(DRIVERS_DIR)/cs43l22.c \
 # synth
 SYNTH_DIR = $(TOP)/synth
 SRC += $(SYNTH_DIR)/osc.c \
-
+       $(SYNTH_DIR)/midi.c \
 
 OBJ = $(patsubst %.c, %.o, $(SRC))
 OBJ += $(TARGET_DIR)/start.o

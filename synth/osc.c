@@ -8,6 +8,9 @@ Oscillators
 
 #include <string.h>
 
+#define DEBUG
+
+#include "logging.h"
 #include "synth.h"
 
 //-----------------------------------------------------------------------------
