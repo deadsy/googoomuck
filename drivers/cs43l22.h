@@ -51,6 +51,7 @@ int cs4x_master_volume(struct cs4x_drv *dac, uint8_t vol);
 int cs4x_headphone_volume(struct cs4x_drv *dac, uint8_t vol);
 int cs4x_speaker_volume(struct cs4x_drv *dac, uint8_t vol);
 int cs4x_pcm_volume(struct cs4x_drv *drv, uint8_t vol);
+int cs4x_beep(struct cs4x_drv *dac);
 
 //-----------------------------------------------------------------------------
 

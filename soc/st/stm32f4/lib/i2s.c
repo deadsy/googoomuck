@@ -45,22 +45,8 @@ static void spi_enable(struct i2s_drv *i2s) {
 
 //-----------------------------------------------------------------------------
 
-#if 0
-
-static void i2s_enable(struct i2s_drv *i2s) {
-	i2s->base->I2SCFGR |= (1 << 10);	// I2SE
-}
-
-static void i2s_disable(struct i2s_drv *i2s) {
-	i2s->base->I2SCFGR &= ~(1 << 10);	// I2SE
-}
-
-#endif
-
-//-----------------------------------------------------------------------------
-
 // Initialise the i2s clock.
-int i2s_clk_init(uint32_t plln, uint32_t pllr) {
+int set_i2sclk(uint32_t plln, uint32_t pllr) {
 	RCC_PeriphCLKInitTypeDef rccclkinit;
 	// Setup the i2s pll to generate i2s_clk
 	HAL_RCCEx_GetPeriphCLKConfig(&rccclkinit);
@@ -70,9 +56,31 @@ int i2s_clk_init(uint32_t plln, uint32_t pllr) {
 	return (int)HAL_RCCEx_PeriphCLKConfig(&rccclkinit);
 }
 
-// Get the i2s clock rate.
-uint32_t i2c_clk_get(void) {
+// return the i2s clock rate
+uint32_t get_i2sclk(void) {
 	return HAL_RCCEx_GetPeriphCLKFreq(RCC_PERIPHCLK_I2S);
+}
+
+//-----------------------------------------------------------------------------
+
+// return the configured sampling frequency
+uint32_t i2s_get_fsclk(struct i2s_drv * i2s) {
+	uint32_t chlen = i2s->base->I2SCFGR & 1;
+	uint32_t spr = i2s->base->I2SPR;
+	uint32_t mckoe = (spr >> 9) & 1;
+	uint32_t odd = (spr >> 8) & 1;
+	uint32_t div = spr & 0xff;
+	uint32_t fs = get_i2sclk() / ((div << 1) + odd);
+	if (mckoe) {
+		fs >>= 8;
+	} else {
+		if (chlen) {	// 32 bits
+			fs >>= 6;
+		} else {	// 16 bits
+			fs >>= 5;
+		}
+	}
+	return fs;
 }
 
 //-----------------------------------------------------------------------------
@@ -107,6 +115,27 @@ int i2s_init(struct i2s_drv *i2s, struct i2s_cfg *cfg) {
 	// setup I2SPR
 	reg_rmw(&i2s->base->I2SPR, 0x3ff, (i2s->cfg.odd << 8) | (i2s->cfg.div << 0) | i2s->cfg.mckoe);
 	return 0;
+}
+
+//-----------------------------------------------------------------------------
+
+static inline int i2s_tx_empty(struct i2s_drv *i2s) {
+	return i2s->base->SR & (1 << 1 /*TXE*/);
+}
+
+int i2s_wr(struct i2s_drv *i2s, uint16_t val) {
+	int rc = 0;
+	int delay = 10;
+	while (!i2s_tx_empty(i2s) && (delay > 0)) {
+		udelay(10);
+		delay -= 1;
+	}
+	if (delay > 0) {
+		i2s->base->DR = val;
+	} else {
+		rc = -1;
+	}
+	return rc;
 }
 
 //-----------------------------------------------------------------------------

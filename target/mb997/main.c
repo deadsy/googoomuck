@@ -9,6 +9,7 @@
 #include "stm32f4_soc.h"
 #include "cs43l22.h"
 #include "logging.h"
+#include "synth.h"
 
 //-----------------------------------------------------------------------------
 // IO configuration
@@ -48,8 +49,6 @@ static const struct gpio_info gpios[] = {
 	{AUDIO_I2S_SD, GPIO_MODER_AF, GPIO_OTYPER_PP, GPIO_OSPEEDR_FAST, GPIO_PUPD_NONE, GPIO_AF6, 0},
 	{AUDIO_I2S_WS, GPIO_MODER_AF, GPIO_OTYPER_PP, GPIO_OSPEEDR_FAST, GPIO_PUPD_NONE, GPIO_AF6, 0},
 };
-
-//-----------------------------------------------------------------------------
 
 //-----------------------------------------------------------------------------
 
@@ -135,8 +134,10 @@ static void SystemClock_Config(void) {
 //-----------------------------------------------------------------------------
 // Audio Initialisation
 // Configuring for 44.1 KHz sample rate, 16 bits per sample, 2 channels.
-// The DAC wants a master clock input, so we enable that.
 
+#define AUDIO_SAMPLE_RATE 44100U
+
+// from ./scripts/i2sclk.py
 // 44099.506579: sn 429 sr 2 div 9 odd 1 (chlen = 16, mckoe = 1)
 #define AUDIO_I2SPLLN 429U
 #define AUDIO_I2SPLLR 2U
@@ -182,12 +183,12 @@ static int audio_init(void) {
 	int rc = 0;
 
 	// Setup the i2s pll to generate i2s_clk
-	rc = i2s_clk_init(AUDIO_I2SPLLN, AUDIO_I2SPLLR);
+	rc = set_i2sclk(AUDIO_I2SPLLN, AUDIO_I2SPLLR);
 	if (rc != 0) {
-		DBG("i2s clock setup failed %d\r\n", rc);
+		DBG("i2sclk_init failed %d\r\n", rc);
 		goto exit;
 	}
-	DBG("i2s_clk %d\r\n", i2c_clk_get());
+	DBG("i2sclk %d Hz\r\n", get_i2sclk());
 
 	// setup the i2s interface
 	rc = i2s_init(&audio_i2s, &audio_i2s_cfg);
@@ -195,6 +196,10 @@ static int audio_init(void) {
 		DBG("i2s_init failed %d\r\n", rc);
 		goto exit;
 	}
+	// start the i2s clocking
+	i2s_enable(&audio_i2s);
+	DBG("fs %d Hz\r\n", i2s_get_fsclk(&audio_i2s));
+
 	// setup the i2c bus used to control the dac
 	rc = i2c_init(&audio_i2c, &audio_i2c_cfg);
 	if (rc != 0) {
@@ -207,9 +212,43 @@ static int audio_init(void) {
 		DBG("cs4x_init failed %d\r\n", rc);
 		goto exit;
 	}
+	// start the dac
+	rc = cs4x_play(&audio_dac);
+	if (rc != 0) {
+		DBG("cs4x_play failed %d\r\n", rc);
+		goto exit;
+	}
+#if 0
+	rc = cs4x_beep(&audio_dac);
+	if (rc != 0) {
+		DBG("cs4x_beep failed %d\r\n", rc);
+		goto exit;
+	}
+#endif
 
  exit:
 	return rc;
+}
+
+//-----------------------------------------------------------------------------
+
+static struct osc_lut osc_sin0;
+static struct osc_lut osc_sin1;
+static struct osc_lut osc_sin2;
+
+static void synth(void) {
+	osc_sin_init(&osc_sin0, 261.6f, AUDIO_SAMPLE_RATE);
+	osc_sin_init(&osc_sin1, 329.6f, AUDIO_SAMPLE_RATE);
+	osc_sin_init(&osc_sin2, 392.0f, AUDIO_SAMPLE_RATE);
+
+	while (1) {
+		float x = lut_sample(&osc_sin0);
+		x += lut_sample(&osc_sin1);
+		x += lut_sample(&osc_sin2);
+		x *= 2000.0f;
+		i2s_wr(&audio_i2s, (uint16_t) x);
+		i2s_wr(&audio_i2s, (uint16_t) x);
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -239,6 +278,8 @@ int main(void) {
 	}
 
 	DBG("init good\r\n");
+
+	synth();
 	while (1) ;
 
  exit:

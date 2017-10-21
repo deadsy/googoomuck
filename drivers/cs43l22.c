@@ -319,3 +319,12 @@ int cs4x_resume(struct cs4x_drv *dac) {
 }
 
 //-----------------------------------------------------------------------------
+
+int cs4x_beep(struct cs4x_drv *dac) {
+	int rc = cs4x_wr(dac, CS43L22_REG_BEEP_Freq_On_Time, 0x00);
+	rc |= cs4x_wr(dac, CS43L22_REG_BEEP_Vol_Off_Time, 0x00);
+	rc |= cs4x_wr(dac, CS43L22_REG_BEEP_Tone_Cfg, 3 << 6);
+	return rc;
+}
+
+//-----------------------------------------------------------------------------

@@ -10,6 +10,7 @@ src_dirs = (
   'soc/st/stm32f4/lib',
   'common',
   'drivers',
+  'synth',
 )
 
 src_filter_out = (
