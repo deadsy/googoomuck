@@ -160,6 +160,14 @@ static struct i2s_cfg audio_i2s_cfg = {
 
 static struct i2s_drv audio_i2s;
 
+// DMA setup
+static struct dma_cfg audio_dma_cfg = {
+	.controller = 1,
+	.stream = 7,
+};
+
+static struct dma_drv audio_dma;
+
 // I2C setup
 static struct i2c_cfg audio_i2c_cfg = {
 	.scl = AUDIO_I2C_SCL,
@@ -178,6 +186,8 @@ static struct cs4x_cfg audio_dac_cfg = {
 };
 
 static struct cs4x_drv audio_dac;
+
+static int16_t audio_buffer[128];
 
 static int audio_init(void) {
 	int rc = 0;
@@ -200,6 +210,14 @@ static int audio_init(void) {
 	i2s_enable(&audio_i2s);
 	DBG("fs %d Hz\r\n", i2s_get_fsclk(&audio_i2s));
 
+	// setup the dma to feed the i2s
+	audio_dma_cfg.par = i2s_get_DR(&audio_i2s);
+	audio_dma_cfg.mar = (uint32_t) audio_buffer;
+	rc = dma_init(&audio_dma, &audio_dma_cfg);
+	if (rc != 0) {
+		DBG("dma_init failed %d\r\n", rc);
+		goto exit;
+	}
 	// setup the i2c bus used to control the dac
 	rc = i2c_init(&audio_i2c, &audio_i2c_cfg);
 	if (rc != 0) {
@@ -218,13 +236,6 @@ static int audio_init(void) {
 		DBG("cs4x_play failed %d\r\n", rc);
 		goto exit;
 	}
-#if 0
-	rc = cs4x_beep(&audio_dac);
-	if (rc != 0) {
-		DBG("cs4x_beep failed %d\r\n", rc);
-		goto exit;
-	}
-#endif
 
  exit:
 	return rc;
@@ -248,7 +259,7 @@ static void synth(void) {
 		float x = lut_sample(&osc_sin0);
 		x += lut_sample(&osc_sin1);
 		x += lut_sample(&osc_sin2);
-		x *= 2000.0f;
+		x *= 10000.0f;
 		i2s_wr(&audio_i2s, (int16_t) x);
 		i2s_wr(&audio_i2s, (int16_t) x);
 	}

@@ -90,6 +90,7 @@ static inline void i2s_disable(struct i2s_drv *i2s) {
 int i2s_init(struct i2s_drv *i2s, struct i2s_cfg *cfg);
 int i2s_wr(struct i2s_drv *i2s, int16_t val);
 uint32_t i2s_get_fsclk(struct i2s_drv *i2s);
+uint32_t i2s_get_DR(struct i2s_drv *i2s);
 
 int set_i2sclk(uint32_t plln, uint32_t pllr);
 uint32_t get_i2sclk(void);

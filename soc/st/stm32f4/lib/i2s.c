@@ -83,6 +83,11 @@ uint32_t i2s_get_fsclk(struct i2s_drv * i2s) {
 	return fs;
 }
 
+// return the DR address (needed for DMA)
+uint32_t i2s_get_DR(struct i2s_drv * i2s) {
+	return (uint32_t) & i2s->base->DR;
+}
+
 //-----------------------------------------------------------------------------
 
 #define I2SCFGR_MASK ((0x1f << 7) | 0x3f)
