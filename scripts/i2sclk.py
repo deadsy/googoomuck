@@ -74,8 +74,8 @@ def filter_results(results, fs, chlen, mckoe):
 
 def main():
   results = build_results()
-  results = filter_results(results, 44100, 16, 1)
+  results = filter_results(results, 35156.25, 16, 1)
   for (fs, sn, sr, chlen, mckoe, div, odd) in results:
-    print('%f: sn %d sr %d div %d odd %d' % (fs, sn, sr, div, odd))
+    print('%f: sn %d sr %d div %d odd %d mckoe %d chlen %d' % (fs, sn, sr, div, odd, mckoe, chlen))
 
 main()

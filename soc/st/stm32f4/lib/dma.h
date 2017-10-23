@@ -28,8 +28,6 @@ typedef struct {
 struct dma_cfg {
 	int controller;		// dma controller to use
 	int stream;		// dma stream to use
-	uint32_t par;		// peripheral address register
-	uint32_t mar;		// memory address register
 };
 
 struct dma_drv {
