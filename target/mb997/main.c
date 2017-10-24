@@ -137,6 +137,8 @@ static void SystemClock_Config(void) {
 // Configuring for AUDIO_SAMPLE_RATE, 16 bits per sample, 2 channels.
 #define AUDIO_SAMPLE_RATE 35156U
 
+static int16_t audio_buffer[128];
+
 // I2S setup
 static struct i2s_cfg audio_i2s_cfg = {
 	.idx = 3,
@@ -152,8 +154,23 @@ static struct i2s_drv audio_i2s;
 
 // DMA setup
 static struct dma_cfg audio_dma_cfg = {
-	.controller = 1,
+	.controller = DMA1_BASE,
 	.stream = 7,
+	.chsel = DMA_CHSEL(0),
+	.pl = DMA_PL(2),
+	.dir = DMA_DIR_M2P,
+	.msize = DMA_MSIZE(16),
+	.psize = DMA_PSIZE(16),
+	.mburst = DMA_MBURST_INCR1,
+	.pburst = DMA_PBURST_INCR1,
+	.minc = DMA_MINC_ON,
+	.pinc = DMA_PINC_OFF,
+	.circ = DMA_CIRC_ON,
+	.pfctrl = DMA_PFCTRL_DMA,
+	.fifo = DMA_FIFO_ENABLE,
+	.fth = DMA_FTH(3),
+	.src = (uint32_t) audio_buffer,
+	.nitems = sizeof(audio_buffer) / sizeof(int16_t),
 };
 
 static struct dma_drv audio_dma;
@@ -199,6 +216,7 @@ static int audio_init(void) {
 	DBG("fs %d Hz\r\n", i2s_get_fsclk(&audio_i2s));
 
 	// setup the dma to feed the i2s
+	audio_dma_cfg.dst = i2s_get_DR(&audio_i2s);
 	rc = dma_init(&audio_dma, &audio_dma_cfg);
 	if (rc != 0) {
 		DBG("dma_init failed %d\r\n", rc);
@@ -233,8 +251,6 @@ static struct osc_lut osc_sin0;
 static struct osc_lut osc_sin1;
 static struct osc_lut osc_sin2;
 
-//static int16_t audio_buffer[128];
-
 static void synth(void) {
 	uint8_t notes[3];
 	major_chord(notes, 60);
@@ -251,9 +267,6 @@ static void synth(void) {
 		i2s_wr(&audio_i2s, (int16_t) x);
 		i2s_wr(&audio_i2s, (int16_t) x);
 	}
-
-	//audio_dma_cfg.par = i2s_get_DR(&audio_i2s);
-	//audio_dma_cfg.mar = (uint32_t) audio_buffer;
 
 }
 
