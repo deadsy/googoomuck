@@ -43,7 +43,7 @@ static void lut_set_table(struct lut_osc *osc, const uint32_t * table, uint32_t 
 	osc->xrange = (float)n;
 }
 
-static void lut_set_step(struct lut_osc *osc, float f, uint32_t rate) {
+void lut_set_frequency(struct lut_osc *osc, float f, uint32_t rate) {
 	osc->xstep = f * osc->xrange / (float)rate;
 }
 
@@ -73,7 +73,7 @@ float lut_sample(struct lut_osc *osc) {
 void osc_sin(struct lut_osc *osc, float f, uint32_t rate) {
 	memset(osc, 0, sizeof(struct lut_osc));
 	lut_set_table(osc, cos_table, COS_TABLE_SIZE);
-	lut_set_step(osc, f, rate);
+	lut_set_frequency(osc, f, rate);
 }
 
 //-----------------------------------------------------------------------------

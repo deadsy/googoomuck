@@ -26,6 +26,7 @@ struct lut_osc {
 };
 
 float lut_sample(struct lut_osc *lut);
+void lut_set_frequency(struct lut_osc *osc, float f, uint32_t rate);
 
 //-----------------------------------------------------------------------------
 // midi

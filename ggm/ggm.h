@@ -22,9 +22,8 @@ struct ggm_cfg {
 
 struct ggm_state {
 	struct ggm_cfg cfg;
-	struct lut_osc sin0;
-	struct lut_osc sin1;
-	struct lut_osc sin2;
+	struct lut_osc sin;
+	struct lut_osc lfo;
 };
 
 //-----------------------------------------------------------------------------
