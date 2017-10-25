@@ -1,15 +1,17 @@
 //-----------------------------------------------------------------------------
 /*
 
+MB997C Board
+
 */
 //-----------------------------------------------------------------------------
 
-#define DEBUG
-
 #include "stm32f4_soc.h"
-#include "cs43l22.h"
-#include "logging.h"
+#include "audio.h"
 #include "synth.h"
+
+#define DEBUG
+#include "logging.h"
 
 //-----------------------------------------------------------------------------
 // IO configuration
@@ -23,15 +25,6 @@
 // push button
 #define PUSH_BUTTON     GPIO_NUM(PORTA, 0)	// 0 = open, 1 = pressed
 
-// audio
-#define AUDIO_I2C_SCL   GPIO_NUM(PORTB, 6)
-#define AUDIO_I2C_SDA   GPIO_NUM(PORTB, 9)
-#define AUDIO_RESET     GPIO_NUM(PORTD, 4)
-#define AUDIO_I2S_MCK   GPIO_NUM(PORTC, 7)
-#define AUDIO_I2S_SCK   GPIO_NUM(PORTC, 10)
-#define AUDIO_I2S_SD    GPIO_NUM(PORTC, 12)
-#define AUDIO_I2S_WS    GPIO_NUM(PORTA, 4)
-
 static const struct gpio_info gpios[] = {
 	// leds
 	{LED_RED, GPIO_MODER_OUT, GPIO_OTYPER_PP, GPIO_OSPEEDR_LO, GPIO_PUPD_NONE, GPIO_AF0, 0},
@@ -40,14 +33,6 @@ static const struct gpio_info gpios[] = {
 	{LED_AMBER, GPIO_MODER_OUT, GPIO_OTYPER_PP, GPIO_OSPEEDR_LO, GPIO_PUPD_NONE, GPIO_AF0, 0},
 	// push buttons
 	{PUSH_BUTTON, GPIO_MODER_IN, GPIO_OTYPER_PP, GPIO_OSPEEDR_LO, GPIO_PUPD_PU, GPIO_AF0, 0},
-	// audio codec
-	{AUDIO_RESET, GPIO_MODER_OUT, GPIO_OTYPER_PP, GPIO_OSPEEDR_LO, GPIO_PUPD_NONE, GPIO_AF0, 0},
-	{AUDIO_I2C_SCL, GPIO_MODER_IN, GPIO_OTYPER_PP, GPIO_OSPEEDR_LO, GPIO_PUPD_NONE, GPIO_AF0, 0},
-	{AUDIO_I2C_SDA, GPIO_MODER_IN, GPIO_OTYPER_PP, GPIO_OSPEEDR_LO, GPIO_PUPD_NONE, GPIO_AF0, 0},
-	{AUDIO_I2S_MCK, GPIO_MODER_AF, GPIO_OTYPER_PP, GPIO_OSPEEDR_FAST, GPIO_PUPD_NONE, GPIO_AF6, 0},
-	{AUDIO_I2S_SCK, GPIO_MODER_AF, GPIO_OTYPER_PP, GPIO_OSPEEDR_FAST, GPIO_PUPD_NONE, GPIO_AF6, 0},
-	{AUDIO_I2S_SD, GPIO_MODER_AF, GPIO_OTYPER_PP, GPIO_OSPEEDR_FAST, GPIO_PUPD_NONE, GPIO_AF6, 0},
-	{AUDIO_I2S_WS, GPIO_MODER_AF, GPIO_OTYPER_PP, GPIO_OSPEEDR_FAST, GPIO_PUPD_NONE, GPIO_AF6, 0},
 };
 
 //-----------------------------------------------------------------------------
@@ -132,120 +117,8 @@ static void SystemClock_Config(void) {
 }
 
 //-----------------------------------------------------------------------------
-// Audio Initialisation
 
-// Configuring for AUDIO_SAMPLE_RATE, 16 bits per sample, 2 channels.
-#define AUDIO_SAMPLE_RATE 35156U
-
-static int16_t audio_buffer[128];
-
-// I2S setup
-static struct i2s_cfg audio_i2s_cfg = {
-	.idx = 3,
-	.mode = I2S_MODE_MASTER_TX,
-	.standard = I2S_STANDARD_PHILIPS,
-	.data_format = I2S_DATAFORMAT_16B,
-	.mckoe = I2S_MCLKOUTPUT_ENABLE,
-	.cpol = I2S_CPOL_LOW,
-	.fs = AUDIO_SAMPLE_RATE,
-};
-
-static struct i2s_drv audio_i2s;
-
-// DMA setup
-static struct dma_cfg audio_dma_cfg = {
-	.controller = DMA1_BASE,
-	.stream = 7,
-	.chsel = DMA_CHSEL(0),
-	.pl = DMA_PL(2),
-	.dir = DMA_DIR_M2P,
-	.msize = DMA_MSIZE(16),
-	.psize = DMA_PSIZE(16),
-	.mburst = DMA_MBURST_INCR1,
-	.pburst = DMA_PBURST_INCR1,
-	.minc = DMA_MINC_ON,
-	.pinc = DMA_PINC_OFF,
-	.circ = DMA_CIRC_ON,
-	.pfctrl = DMA_PFCTRL_DMA,
-	.fifo = DMA_FIFO_ENABLE,
-	.fth = DMA_FTH(3),
-	.src = (uint32_t) audio_buffer,
-	.nitems = sizeof(audio_buffer) / sizeof(int16_t),
-};
-
-static struct dma_drv audio_dma;
-
-// I2C setup
-static struct i2c_cfg audio_i2c_cfg = {
-	.scl = AUDIO_I2C_SCL,
-	.sda = AUDIO_I2C_SDA,
-	.delay = 20,
-};
-
-static struct i2c_drv audio_i2c;
-
-// cs43l22 DAC setup
-static struct cs4x_cfg audio_dac_cfg = {
-	.i2c = &audio_i2c,
-	.adr = 0x94,
-	.rst = AUDIO_RESET,
-	.out = DAC_OUTPUT_AUTO,
-};
-
-static struct cs4x_drv audio_dac;
-
-static int audio_init(void) {
-	int rc = 0;
-
-	// Setup the i2s pll to generate i2s_clk
-	rc = set_i2sclk(AUDIO_SAMPLE_RATE);
-	if (rc != 0) {
-		DBG("i2sclk_init failed %d\r\n", rc);
-		goto exit;
-	}
-	DBG("i2sclk %d Hz\r\n", get_i2sclk());
-
-	// setup the i2s interface
-	rc = i2s_init(&audio_i2s, &audio_i2s_cfg);
-	if (rc != 0) {
-		DBG("i2s_init failed %d\r\n", rc);
-		goto exit;
-	}
-	// start the i2s clocking
-	i2s_enable(&audio_i2s);
-	DBG("fs %d Hz\r\n", i2s_get_fsclk(&audio_i2s));
-
-	// setup the dma to feed the i2s
-	audio_dma_cfg.dst = i2s_get_DR(&audio_i2s);
-	rc = dma_init(&audio_dma, &audio_dma_cfg);
-	if (rc != 0) {
-		DBG("dma_init failed %d\r\n", rc);
-		goto exit;
-	}
-	// setup the i2c bus used to control the dac
-	rc = i2c_init(&audio_i2c, &audio_i2c_cfg);
-	if (rc != 0) {
-		DBG("i2c_init failed %d\r\n", rc);
-		goto exit;
-	}
-	// setup the dac
-	rc = cs4x_init(&audio_dac, &audio_dac_cfg);
-	if (rc != 0) {
-		DBG("cs4x_init failed %d\r\n", rc);
-		goto exit;
-	}
-	// start the dac
-	rc = cs4x_play(&audio_dac);
-	if (rc != 0) {
-		DBG("cs4x_play failed %d\r\n", rc);
-		goto exit;
-	}
-
- exit:
-	return rc;
-}
-
-//-----------------------------------------------------------------------------
+static struct audio_drv audio;
 
 static struct osc_lut osc_sin0;
 static struct osc_lut osc_sin1;
@@ -264,10 +137,8 @@ static void synth(void) {
 		x += lut_sample(&osc_sin1);
 		x += lut_sample(&osc_sin2);
 		x *= 10000.0f;
-		i2s_wr(&audio_i2s, (int16_t) x);
-		i2s_wr(&audio_i2s, (int16_t) x);
+		audio_wr(&audio, x);
 	}
-
 }
 
 //-----------------------------------------------------------------------------
@@ -290,13 +161,19 @@ int main(void) {
 		goto exit;
 	}
 
-	rc = audio_init();
+	rc = audio_init(&audio);
 	if (rc != 0) {
 		DBG("audio_init failed %d\r\n", rc);
 		goto exit;
 	}
 
-	DBG("init good\r\n");
+	rc = audio_start(&audio);
+	if (rc != 0) {
+		DBG("audio_start failed %d\r\n", rc);
+		goto exit;
+	}
+
+	DBG("good\r\n");
 
 	synth();
 	while (1) ;

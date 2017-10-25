@@ -22,6 +22,7 @@ SRC += $(LIB_DIR)/gpio.c \
 # target sources
 TARGET_DIR = $(TOP)/target/mb997
 SRC += $(TARGET_DIR)/main.c \
+       $(TARGET_DIR)/audio.c \
        $(TARGET_DIR)/system_stm32f4xx.c \
        $(TARGET_DIR)/syscalls.c \
 

@@ -41,7 +41,7 @@ struct cs4x_drv {
 
 int cs4x_init(struct cs4x_drv *dac, struct cs4x_cfg *cfg);
 
-int cs4x_play(struct cs4x_drv *dac);
+int cs4x_start(struct cs4x_drv *dac);
 int cs4x_stop(struct cs4x_drv *dac);
 int cs4x_pause(struct cs4x_drv *dac);
 int cs4x_resume(struct cs4x_drv *dac);
@@ -50,8 +50,7 @@ int cs4x_output(struct cs4x_drv *dac, unsigned int out);
 int cs4x_master_volume(struct cs4x_drv *dac, uint8_t vol);
 int cs4x_headphone_volume(struct cs4x_drv *dac, uint8_t vol);
 int cs4x_speaker_volume(struct cs4x_drv *dac, uint8_t vol);
-int cs4x_pcm_volume(struct cs4x_drv *drv, uint8_t vol);
-int cs4x_beep(struct cs4x_drv *dac);
+int cs4x_pcm_volume(struct cs4x_drv *dac, uint8_t vol);
 
 //-----------------------------------------------------------------------------
 
