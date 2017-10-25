@@ -9,7 +9,7 @@ MIDI Functions
 #include <string.h>
 #include <math.h>
 
-#include "synth.h"
+#include "ggm_internal.h"
 
 //-----------------------------------------------------------------------------
 

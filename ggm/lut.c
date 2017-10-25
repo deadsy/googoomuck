@@ -1,17 +1,17 @@
 //-----------------------------------------------------------------------------
 /*
 
-Oscillators
+Lookup Table Based Oscillators
 
 */
 //-----------------------------------------------------------------------------
 
 #include <string.h>
 
-#define DEBUG
+#include "ggm_internal.h"
 
+#define DEBUG
 #include "logging.h"
-#include "synth.h"
 
 //-----------------------------------------------------------------------------
 
@@ -37,18 +37,18 @@ static const uint32_t cos_table[COS_TABLE_SIZE] = {
 
 //-----------------------------------------------------------------------------
 
-static void lut_set_table(struct osc_lut *osc, const uint32_t * table, uint32_t n) {
+static void lut_set_table(struct lut_osc *osc, const uint32_t * table, uint32_t n) {
 	osc->table = table;
 	osc->n = n;
 	osc->xrange = (float)n;
 }
 
-static void lut_set_step(struct osc_lut *osc, float f, uint32_t rate) {
+static void lut_set_step(struct lut_osc *osc, float f, uint32_t rate) {
 	osc->xstep = f * osc->xrange / (float)rate;
 }
 
 // return a sample from a lookup table based oscillator
-float lut_sample(struct osc_lut *osc) {
+float lut_sample(struct lut_osc *osc) {
 	uint32_t x0 = (uint32_t) osc->x;
 	float y0 = *(float *)&osc->table[x0];
 	float y, y1;
@@ -70,11 +70,10 @@ float lut_sample(struct osc_lut *osc) {
 //-----------------------------------------------------------------------------
 
 // initialise a sine wave oscillator
-int osc_sin_init(struct osc_lut *osc, float f, uint32_t rate) {
-	memset(osc, 0, sizeof(struct osc_lut));
+void osc_sin(struct lut_osc *osc, float f, uint32_t rate) {
+	memset(osc, 0, sizeof(struct lut_osc));
 	lut_set_table(osc, cos_table, COS_TABLE_SIZE);
 	lut_set_step(osc, f, rate);
-	return 0;
 }
 
 //-----------------------------------------------------------------------------

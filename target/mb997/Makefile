@@ -39,10 +39,11 @@ SRC += $(COMMON_DIR)/logging.c \
 DRIVERS_DIR = $(TOP)/drivers
 SRC += $(DRIVERS_DIR)/cs43l22.c \
 
-# synth
-SYNTH_DIR = $(TOP)/synth
-SRC += $(SYNTH_DIR)/osc.c \
-       $(SYNTH_DIR)/midi.c \
+# googoomuck
+GGM_DIR = $(TOP)/ggm
+SRC += $(GGM_DIR)/lut.c \
+       $(GGM_DIR)/midi.c \
+       $(GGM_DIR)/ggm.c \
 
 OBJ = $(patsubst %.c, %.o, $(SRC))
 OBJ += $(TARGET_DIR)/start.o
@@ -57,7 +58,7 @@ INCLUDE += -I$(DRIVERS_DIR)
 INCLUDE += -I$(TARGET_DIR)
 INCLUDE += -I$(RTT_DIR)
 INCLUDE += -I$(COMMON_DIR)
-INCLUDE += -I$(SYNTH_DIR)
+INCLUDE += -I$(GGM_DIR)
 
 # defines
 DEFINE = -DSTM32F407xx

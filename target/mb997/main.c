@@ -8,7 +8,7 @@ MB997C Board
 
 #include "stm32f4_soc.h"
 #include "audio.h"
-#include "synth.h"
+#include "ggm.h"
 
 #define DEBUG
 #include "logging.h"
@@ -34,6 +34,17 @@ static const struct gpio_info gpios[] = {
 	// push buttons
 	{PUSH_BUTTON, GPIO_MODER_IN, GPIO_OTYPER_PP, GPIO_OSPEEDR_LO, GPIO_PUPD_PU, GPIO_AF0, 0},
 };
+
+//-----------------------------------------------------------------------------
+
+static struct audio_drv audio;
+
+static struct ggm_cfg synth_cfg = {
+	.audio = &audio,
+	.fs = AUDIO_SAMPLE_RATE,
+};
+
+static struct ggm_state synth;
 
 //-----------------------------------------------------------------------------
 
@@ -118,31 +129,6 @@ static void SystemClock_Config(void) {
 
 //-----------------------------------------------------------------------------
 
-static struct audio_drv audio;
-
-static struct osc_lut osc_sin0;
-static struct osc_lut osc_sin1;
-static struct osc_lut osc_sin2;
-
-static void synth(void) {
-	uint8_t notes[3];
-	major_chord(notes, 60);
-
-	osc_sin_init(&osc_sin0, midi_to_frequency(notes[0]), AUDIO_SAMPLE_RATE);
-	osc_sin_init(&osc_sin1, midi_to_frequency(notes[1]), AUDIO_SAMPLE_RATE);
-	osc_sin_init(&osc_sin2, midi_to_frequency(notes[2]), AUDIO_SAMPLE_RATE);
-
-	while (1) {
-		float x = lut_sample(&osc_sin0);
-		x += lut_sample(&osc_sin1);
-		x += lut_sample(&osc_sin2);
-		x *= 10000.0f;
-		audio_wr(&audio, x);
-	}
-}
-
-//-----------------------------------------------------------------------------
-
 int main(void) {
 	int rc;
 
@@ -167,16 +153,25 @@ int main(void) {
 		goto exit;
 	}
 
+	rc = ggm_init(&synth, &synth_cfg);
+	if (rc != 0) {
+		DBG("ggm_init failed %d\r\n", rc);
+		goto exit;
+	}
+
 	rc = audio_start(&audio);
 	if (rc != 0) {
 		DBG("audio_start failed %d\r\n", rc);
 		goto exit;
 	}
 
-	DBG("good\r\n");
+	DBG("init good\r\n");
 
-	synth();
-	while (1) ;
+	rc = ggm_run(&synth);
+	if (rc != 0) {
+		DBG("ggm_run exited %d\r\n", rc);
+		goto exit;
+	}
 
  exit:
 	while (1) ;

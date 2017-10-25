@@ -1,13 +1,13 @@
 //-----------------------------------------------------------------------------
 /*
 
-Synthesizer
+GooGooMuck Synthesizer Internals
 
 */
 //-----------------------------------------------------------------------------
 
-#ifndef SYNTH_H
-#define SYNTH_H
+#ifndef GGM_INTERNAL_H
+#define GGM_INTERNAL_H
 
 //-----------------------------------------------------------------------------
 
@@ -15,8 +15,9 @@ Synthesizer
 #include <stddef.h>
 
 //-----------------------------------------------------------------------------
+// lut oscillators
 
-struct osc_lut {
+struct lut_osc {
 	const uint32_t *table;
 	uint32_t n;
 	float xstep;
@@ -24,7 +25,10 @@ struct osc_lut {
 	float x;
 };
 
+float lut_sample(struct lut_osc *lut);
+
 //-----------------------------------------------------------------------------
+// midi
 
 static inline void major_chord(uint8_t * notes, uint8_t root) {
 	notes[0] = root;
@@ -41,12 +45,12 @@ static inline void minor_chord(uint8_t * notes, uint8_t root) {
 float midi_to_frequency(uint8_t note);
 
 //-----------------------------------------------------------------------------
+// oscillators
 
-int osc_sin_init(struct osc_lut *osc, float f, uint32_t rate);
-float lut_sample(struct osc_lut *osc);
+void osc_sin(struct lut_osc *osc, float f, uint32_t rate);
 
 //-----------------------------------------------------------------------------
 
-#endif				// SYNTH_H
+#endif				// GGM_INTERNAL_H
 
 //-----------------------------------------------------------------------------
