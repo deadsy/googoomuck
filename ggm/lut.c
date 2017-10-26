@@ -6,6 +6,7 @@ Lookup Table Based Oscillators
 */
 //-----------------------------------------------------------------------------
 
+#include <math.h>
 #include <string.h>
 
 #include "ggm_internal.h"
@@ -37,16 +38,6 @@ static const uint32_t cos_table[COS_TABLE_SIZE] = {
 
 //-----------------------------------------------------------------------------
 
-static void lut_set_table(struct lut_osc *osc, const uint32_t * table, uint32_t n) {
-	osc->table = table;
-	osc->n = n;
-	osc->xrange = (float)n;
-}
-
-void lut_set_frequency(struct lut_osc *osc, float f, uint32_t rate) {
-	osc->xstep = f * osc->xrange / (float)rate;
-}
-
 // return a sample from a lookup table based oscillator
 float lut_sample(struct lut_osc *osc) {
 	uint32_t x0 = (uint32_t) osc->x;
@@ -64,16 +55,27 @@ float lut_sample(struct lut_osc *osc) {
 	if (osc->x >= osc->xrange) {
 		osc->x -= osc->xrange;
 	}
-	return y;
+	return osc->amp * y;
 }
 
 //-----------------------------------------------------------------------------
 
 // initialise a sine wave oscillator
-void osc_sin(struct lut_osc *osc, float f, uint32_t rate) {
+void osc_sin(struct lut_osc *osc, float amp, float freq, float phase) {
 	memset(osc, 0, sizeof(struct lut_osc));
-	lut_set_table(osc, cos_table, COS_TABLE_SIZE);
-	lut_set_frequency(osc, f, rate);
+	// setup the table
+	osc->table = cos_table;
+	osc->n = COS_TABLE_SIZE;
+	osc->xrange = (float)COS_TABLE_SIZE;
+	osc->fscale = osc->xrange * AUDIO_TS;
+
+	// amplitude
+	osc->amp = amp;
+	// phase
+	osc->x = osc->xrange * fmodf(phase, TAU);
+	// frequency
+	osc->freq = freq;
+	lut_mod_freq(osc, 0.0f);
 }
 
 //-----------------------------------------------------------------------------

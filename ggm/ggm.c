@@ -15,13 +15,12 @@ GooGooMuck Synthesizer
 
 int ggm_init(struct ggm_state *s, struct ggm_cfg *cfg) {
 	int rc = 0;
-	float f = midi_to_frequency(60);
 
 	memset(s, 0, sizeof(struct ggm_state));
 	s->cfg = *cfg;
 
-	osc_sin(&s->sin, f, s->cfg.fs);
-	osc_sin(&s->lfo, 4.0f, s->cfg.fs);
+	osc_sin(&s->sin, 1.0f, midi_to_frequency(69), 0.0f);
+	osc_sin(&s->lfo, 20.0f, 4.0f, 0.0f);
 
 	return rc;
 }
@@ -29,18 +28,15 @@ int ggm_init(struct ggm_state *s, struct ggm_cfg *cfg) {
 //-----------------------------------------------------------------------------
 
 int ggm_run(struct ggm_state *s) {
-	int rc = 0;
-	float f = midi_to_frequency(60);
 
 	while (1) {
 		float x = lut_sample(&s->sin);
-		float delta_f = 30.0f * lut_sample(&s->lfo);
-		lut_set_frequency(&s->sin, f + delta_f, s->cfg.fs);
-		x *= 20000.0f;
-		audio_wr(s->cfg.audio, x);
+		float df = lut_sample(&s->lfo);
+		lut_mod_freq(&s->sin, df);
+		audio_wr(s->cfg.audio, x, x);
 	}
 
-	return rc;
+	return 0;
 }
 
 //-----------------------------------------------------------------------------

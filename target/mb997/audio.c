@@ -156,9 +156,21 @@ int audio_start(struct audio_drv *audio) {
 
 //-----------------------------------------------------------------------------
 
-void audio_wr(struct audio_drv *audio, int16_t x) {
-	i2s_wr(&audio->i2s, x);
-	i2s_wr(&audio->i2s, x);
+// write l/r channel samples (32-bit float) to the audio output
+void audio_wr(struct audio_drv *audio, float ch_l, float ch_r) {
+	int16_t xl, xr;
+	// clip left channel
+	ch_l = (ch_l > 1.0f) ? 1.0f : ch_l;
+	ch_l = (ch_l < -1.0f) ? -1.0f : ch_l;
+	// clip right channel
+	ch_r = (ch_r > 1.0f) ? 1.0f : ch_r;
+	ch_r = (ch_r < -1.0f) ? -1.0f : ch_r;
+	// convert to a signed integer
+	xl = (int16_t) (ch_l * 32767.0f);
+	xr = (int16_t) (ch_r * 32767.0f);
+	// write the samples to the i2s
+	i2s_wr(&audio->i2s, xl);
+	i2s_wr(&audio->i2s, xr);
 }
 
 //-----------------------------------------------------------------------------

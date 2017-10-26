@@ -14,19 +14,38 @@ GooGooMuck Synthesizer Internals
 #include <inttypes.h>
 #include <stddef.h>
 
+#include "audio.h"
+
+//-----------------------------------------------------------------------------
+
+#define AUDIO_FS ((float)AUDIO_SAMPLE_RATE)
+#define AUDIO_TS (1.0f/AUDIO_FS)
+
+#define PI (3.14159265358979f)
+#define TAU (2.0f * PI)
+#define INV_TAU (1.0f/TAU)
+
 //-----------------------------------------------------------------------------
 // lut oscillators
 
 struct lut_osc {
-	const uint32_t *table;
-	uint32_t n;
-	float xstep;
-	float xrange;
-	float x;
+	const uint32_t *table;	// lookup table
+	size_t n;		// number of entries in LUT
+	float amp;		// amplitude
+	float freq;		// base frequency
+	float xrange;		// x-range for LUT
+	float fscale;		// frequency to x scaling (xrange * 1/fs)
+	float x;		// current x-value
+	float xstep;		// current x-step
 };
 
+// modulate the frequency of the oscillator
+static inline void lut_mod_freq(struct lut_osc *osc, float f) {
+	osc->xstep = (osc->freq + f) * osc->fscale;
+}
+
 float lut_sample(struct lut_osc *lut);
-void lut_set_frequency(struct lut_osc *osc, float f, uint32_t rate);
+void lut_mod_freq(struct lut_osc *osc, float f);
 
 //-----------------------------------------------------------------------------
 // midi
@@ -48,7 +67,7 @@ float midi_to_frequency(uint8_t note);
 //-----------------------------------------------------------------------------
 // oscillators
 
-void osc_sin(struct lut_osc *osc, float f, uint32_t rate);
+void osc_sin(struct lut_osc *osc, float amp, float freq, float phase);
 
 //-----------------------------------------------------------------------------
 
