@@ -14,6 +14,8 @@ MIDI Functions
 //-----------------------------------------------------------------------------
 
 #define NOTES_IN_OCTAVE 12
+#define MIDI_NOTE_A5 69
+#define FREQUENCY_A5 440.0f
 
 //-----------------------------------------------------------------------------
 // note to name conversion
@@ -48,7 +50,7 @@ int midi_to_octave(uint8_t note) {
 
 // return the frequency of the midi note
 float midi_to_frequency(uint8_t note) {
-	return 440.0f * powf(2.0f, (float)(note - 69) / 12.0f);
+	return FREQUENCY_A5 * powf(2.0f, (float)(note - MIDI_NOTE_A5) * (1.0f / NOTES_IN_OCTAVE));
 }
 
 //-----------------------------------------------------------------------------

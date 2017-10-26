@@ -40,7 +40,7 @@ static const uint32_t cos_table[COS_TABLE_SIZE] = {
 
 // return a sample from a lookup table based oscillator
 float lut_sample(struct lut_osc *osc) {
-	uint32_t x0 = (uint32_t) osc->x;
+	size_t x0 = (size_t) osc->x;
 	float y0 = *(float *)&osc->table[x0];
 	float y, y1;
 	if (x0 == osc->n - 1) {
@@ -68,7 +68,6 @@ void osc_sin(struct lut_osc *osc, float amp, float freq, float phase) {
 	osc->n = COS_TABLE_SIZE;
 	osc->xrange = (float)COS_TABLE_SIZE;
 	osc->fscale = osc->xrange * AUDIO_TS;
-
 	// amplitude
 	osc->amp = amp;
 	// phase
