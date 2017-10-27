@@ -40,6 +40,11 @@ int audio_init(struct audio_drv *audio);
 int audio_start(struct audio_drv *audio);
 void audio_wr(struct audio_drv *audio, float ch_l, float ch_r);
 
+// This is a callback from the dma interrupt handler to the synthesizer.
+// It requests the synth to generate and write samples to the upper or
+// lower half of the audio buffer.
+void audio_generate(int index);
+
 //-----------------------------------------------------------------------------
 
 #endif				// AUDIO_H

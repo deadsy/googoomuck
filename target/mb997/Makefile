@@ -45,6 +45,7 @@ GGM_DIR = $(TOP)/ggm
 SRC += $(GGM_DIR)/lut.c \
        $(GGM_DIR)/midi.c \
        $(GGM_DIR)/ggm.c \
+       $(GGM_DIR)/event.c \
 
 OBJ = $(patsubst %.c, %.o, $(SRC))
 OBJ += $(TARGET_DIR)/start.o

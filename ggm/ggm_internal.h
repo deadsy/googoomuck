@@ -46,6 +46,9 @@ static inline void lut_mod_freq(struct lut_osc *osc, float f) {
 float lut_sample(struct lut_osc *lut);
 void lut_mod_freq(struct lut_osc *osc, float f);
 
+// oscillators
+void osc_sin(struct lut_osc *osc, float amp, float freq, float phase);
+
 //-----------------------------------------------------------------------------
 // midi
 
@@ -64,9 +67,16 @@ static inline void minor_chord(uint8_t * notes, uint8_t root) {
 float midi_to_frequency(uint8_t note);
 
 //-----------------------------------------------------------------------------
-// oscillators
+// events
 
-void osc_sin(struct lut_osc *osc, float amp, float freq, float phase);
+struct event {
+	uint32_t type;		// the event type
+	void *ptr;		// pointer to event data (or the data itself)
+};
+
+int event_init(void);
+int event_rd(struct event *event);
+int event_wr(uint32_t type, void *ptr);
 
 //-----------------------------------------------------------------------------
 

@@ -11,6 +11,9 @@ GooGooMuck Synthesizer
 #include "audio.h"
 #include "ggm.h"
 
+#define DEBUG
+#include "logging.h"
+
 //-----------------------------------------------------------------------------
 
 int ggm_init(struct ggm_state *s, struct ggm_cfg *cfg) {
@@ -19,9 +22,16 @@ int ggm_init(struct ggm_state *s, struct ggm_cfg *cfg) {
 	memset(s, 0, sizeof(struct ggm_state));
 	s->cfg = *cfg;
 
+	rc = event_init();
+	if (rc != 0) {
+		DBG("event_init failed %d\r\n", rc);
+		goto exit;
+	}
+
 	osc_sin(&s->sin, 1.0f, midi_to_frequency(69), 0.0f);
 	osc_sin(&s->lfo, 20.0f, 4.0f, 0.0f);
 
+ exit:
 	return rc;
 }
 
