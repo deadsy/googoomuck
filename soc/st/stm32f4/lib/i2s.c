@@ -9,11 +9,11 @@ I2S Driver
 #include <string.h>
 #include <assert.h>
 
-#define DEBUG
-
 #include "stm32f4_soc.h"
-#include "logging.h"
 #include "utils.h"
+
+#define DEBUG
+#include "logging.h"
 
 //-----------------------------------------------------------------------------
 
@@ -136,19 +136,15 @@ int i2s_init(struct i2s_drv *i2s, struct i2s_cfg *cfg) {
 	// enable the spi module
 	spi_enable(i2s);
 
-	// clear I2SCFGR
+	// clear I2SCFGR (allow configuration)
 	i2s->regs->I2SCFGR &= ~I2SCFGR_MASK;
-
-	// set I2SPR to the reset value
-	reg_rmw(&i2s->regs->I2SPR, I2SPR_MASK, 2);
-
 	// setup I2SCFGR
 	val = (1 << 11 /*I2SMOD */ );
 	val |= (i2s->cfg.mode | i2s->cfg.standard | i2s->cfg.cpol | i2s->cfg.data_format);
 	reg_rmw(&i2s->regs->I2SCFGR, I2SCFGR_MASK, val);
-
 	// setup I2SPR
 	reg_rmw(&i2s->regs->I2SPR, I2SPR_MASK, (clk_cfg->odd << 8) | (clk_cfg->div << 0) | i2s->cfg.mckoe);
+
 	return 0;
 }
 

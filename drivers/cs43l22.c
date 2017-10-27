@@ -240,8 +240,6 @@ int cs4x_init(struct cs4x_drv *dac, struct cs4x_cfg *cfg) {
 	rc |= cs4x_clr(dac, 0x32, 1 << 7);
 	rc |= cs4x_wr(dac, 0, 0);
 
-	// TODO clock setup
-
 	// set the output to AUTO
 	rc |= cs4x_output(dac, DAC_OUTPUT_AUTO);
 	// Clock configuration: Auto detection

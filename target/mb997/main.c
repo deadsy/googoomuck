@@ -133,7 +133,7 @@ static void SystemClock_Config(void) {
 }
 
 //-----------------------------------------------------------------------------
-// key debouncing
+// key debouncing (called from the system tick isr)
 
 #define PUSH_BUTTON_BIT 0
 

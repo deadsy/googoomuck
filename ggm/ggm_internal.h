@@ -18,7 +18,6 @@ GooGooMuck Synthesizer Internals
 
 //-----------------------------------------------------------------------------
 
-#define AUDIO_FS ((float)AUDIO_SAMPLE_RATE)
 #define AUDIO_TS (1.0f/AUDIO_FS)
 
 #define PI (3.14159265358979f)

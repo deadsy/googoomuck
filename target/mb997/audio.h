@@ -17,11 +17,13 @@ Audio Control for the STM32F4 Discovery Board
 //-----------------------------------------------------------------------------
 
 // Total bits/sec = AUDIO_SAMPLE_RATE * N bits per channel * 2 channels
-// This is used to lookup the i2s clock configuration in a constant table.
-// This is turned into AUDIO_FS (frequency) and AUDIO_TS (period) floats
-// for various scaling operations in the synth routines.
-
+// This is used to lookup the i2s clock configuration in a table.
 #define AUDIO_SAMPLE_RATE 35156U	// Hz
+
+// The hardware is often not capable of the exact sample rate.
+// This is the sample rate we actually get per the clock divider settings.
+// See ./scripts/i2sclk.py for details.
+#define AUDIO_FS 35156.25f	// Hz
 
 //-----------------------------------------------------------------------------
 
