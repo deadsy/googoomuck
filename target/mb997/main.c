@@ -8,6 +8,7 @@ MB997C Board
 
 #include "stm32f4_soc.h"
 #include "audio.h"
+#include "debounce.h"
 #include "ggm.h"
 
 #define DEBUG
@@ -32,7 +33,7 @@ static const struct gpio_info gpios[] = {
 	{LED_GREEN, GPIO_MODER_OUT, GPIO_OTYPER_PP, GPIO_OSPEEDR_LO, GPIO_PUPD_NONE, GPIO_AF0, 0},
 	{LED_AMBER, GPIO_MODER_OUT, GPIO_OTYPER_PP, GPIO_OSPEEDR_LO, GPIO_PUPD_NONE, GPIO_AF0, 0},
 	// push buttons
-	{PUSH_BUTTON, GPIO_MODER_IN, GPIO_OTYPER_PP, GPIO_OSPEEDR_LO, GPIO_PUPD_PU, GPIO_AF0, 0},
+	{PUSH_BUTTON, GPIO_MODER_IN, GPIO_OTYPER_PP, GPIO_OSPEEDR_LO, GPIO_PUPD_NONE, GPIO_AF0, 0},
 };
 
 //-----------------------------------------------------------------------------
@@ -87,6 +88,10 @@ void SysTick_Handler(void) {
 	if ((ticks & 511) == 0) {
 		gpio_toggle(LED_GREEN);
 	}
+	// sample debounced inputs every 16 ms
+	if ((ticks & 15) == 0) {
+		debounce_isr();
+	}
 	HAL_IncTick();
 }
 
@@ -128,6 +133,30 @@ static void SystemClock_Config(void) {
 }
 
 //-----------------------------------------------------------------------------
+// key debouncing
+
+#define PUSH_BUTTON_BIT 0
+
+// handle a key down
+void debounce_on_handler(uint32_t bits) {
+	if (bits & (1 << PUSH_BUTTON_BIT)) {
+		gpio_set(LED_RED);
+	}
+}
+
+// handle a key up
+void debounce_off_handler(uint32_t bits) {
+	if (bits & (1 << PUSH_BUTTON_BIT)) {
+		gpio_clr(LED_RED);
+	}
+}
+
+// map the gpio inputs to be debounced into the 32 bit debounce state
+uint32_t debounce_input(void) {
+	return gpio_rd(PUSH_BUTTON) << PUSH_BUTTON_BIT;
+}
+
+//-----------------------------------------------------------------------------
 
 int main(void) {
 	int rc;
@@ -144,6 +173,12 @@ int main(void) {
 	rc = gpio_init(gpios, sizeof(gpios) / sizeof(struct gpio_info));
 	if (rc != 0) {
 		DBG("gpio_init failed %d\r\n", rc);
+		goto exit;
+	}
+
+	rc = debounce_init();
+	if (rc != 0) {
+		DBG("debounce_init failed %d\r\n", rc);
 		goto exit;
 	}
 

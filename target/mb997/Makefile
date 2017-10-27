@@ -34,6 +34,7 @@ SRC += $(RTT_DIR)/SEGGER_RTT.c \
 # common
 COMMON_DIR = $(TOP)/common
 SRC += $(COMMON_DIR)/logging.c \
+       $(COMMON_DIR)/debounce.c \
 
 # drivers
 DRIVERS_DIR = $(TOP)/drivers
