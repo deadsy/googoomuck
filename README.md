@@ -9,6 +9,10 @@ GGM is a software based sound synthesizer that runs on the STM32F4 Discovery Boa
 
 http://www.st.com/en/evaluation-tools/stm32f4discovery.html
 
+The synth and platfom code have been partitioned for ease of portability.
+The synth code is written using floating point, so a target CPU should
+have a 32 bit (single precision) FPU. E.g. ARM Cortex M4 or better.
+
 ## Specifications
  * 44100 samples/second (per channel)
  * 16 bits/sample 
