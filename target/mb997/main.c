@@ -140,14 +140,14 @@ static void SystemClock_Config(void) {
 // handle a key down
 void debounce_on_handler(uint32_t bits) {
 	if (bits & (1 << PUSH_BUTTON_BIT)) {
-		gpio_set(LED_RED);
+		event_wr(EVENT_TYPE_KEY_DN | 0U, NULL);
 	}
 }
 
 // handle a key up
 void debounce_off_handler(uint32_t bits) {
 	if (bits & (1 << PUSH_BUTTON_BIT)) {
-		gpio_clr(LED_RED);
+		event_wr(EVENT_TYPE_KEY_UP | 0U, NULL);
 	}
 }
 

@@ -17,6 +17,7 @@ STM32F4 SoC top-level include file
 #include "i2c.h"
 #include "i2s.h"
 #include "dma.h"
+#include "irq.h"
 
 //-----------------------------------------------------------------------------
 

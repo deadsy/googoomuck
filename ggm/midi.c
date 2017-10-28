@@ -8,7 +8,7 @@ MIDI Functions
 
 #include <string.h>
 
-#include "ggm_internal.h"
+#include "ggm.h"
 
 //-----------------------------------------------------------------------------
 

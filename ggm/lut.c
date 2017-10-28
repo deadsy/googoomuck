@@ -9,7 +9,7 @@ Lookup Table Based Oscillators
 #include <math.h>
 #include <string.h>
 
-#include "ggm_internal.h"
+#include "ggm.h"
 
 #define DEBUG
 #include "logging.h"
