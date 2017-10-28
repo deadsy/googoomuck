@@ -20,12 +20,12 @@ GooGooMuck Synthesizer
 
 #define AUDIO_TS (1.0f/AUDIO_FS)
 
-#define PI (3.14159265358979f)
+#define PI (3.1415927f)
 #define TAU (2.0f * PI)
 #define INV_TAU (1.0f/TAU)
 
 //-----------------------------------------------------------------------------
-// lut oscillators
+// LUT oscillators
 
 struct lut_osc {
 	const uint32_t *table;	// lookup table
@@ -48,6 +48,32 @@ void lut_mod_freq(struct lut_osc *osc, float f);
 
 // oscillators
 void osc_sin(struct lut_osc *osc, float amp, float freq, float phase);
+
+//-----------------------------------------------------------------------------
+// ADSR envelope
+
+struct adsr {
+	float s;		// sustain level
+	float ka;		// attack constant
+	float kd;		// decay constant
+	float kr;		// release constant
+	float d_trigger;	// attack->decay trigger level
+	float s_trigger;	// decay->sustain trigger level
+	float i_trigger;	// release->idle trigger level
+	int state;		// envelope state
+	float val;		// output value
+};
+
+float adsr_sample(struct adsr *e);
+
+// envelopes
+void adsr_init(struct adsr *e, float a, float d, float s, float r);
+void ad_init(struct adsr *e, float a, float d);
+
+// actions
+void adsr_attack(struct adsr *e);
+void adsr_release(struct adsr *e);
+void adsr_idle(struct adsr *e);
 
 //-----------------------------------------------------------------------------
 // midi
@@ -104,7 +130,7 @@ int event_wr(uint32_t type, void *ptr);
 struct ggm_state {
 	struct audio_drv *audio;
 	struct lut_osc sin;
-	struct lut_osc lfo;
+	struct adsr adsr;
 };
 
 //-----------------------------------------------------------------------------

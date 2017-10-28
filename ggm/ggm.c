@@ -17,21 +17,19 @@ GooGooMuck Synthesizer
 //-----------------------------------------------------------------------------
 // key events
 
-uint8_t vol = 0;
-
 // handle a key down event
 static void key_dn_handler(struct ggm_state *s, struct event *e) {
 	DBG("key down %d\r\n", EVENT_KEY(e->type));
-	event_wr(EVENT_TYPE_MIDI | MIDI_NOTE_ON(0, 60, 0x40), NULL);
+	adsr_attack(&s->adsr);
+	//event_wr(EVENT_TYPE_MIDI | MIDI_NOTE_ON(0, 60, 0x40), NULL);
 	led_on(LED_BLUE);
-	audio_master_volume(s->audio, vol);
-	vol += 1;
 }
 
 // handle a key up event
 static void key_up_handler(struct ggm_state *s, struct event *e) {
 	DBG("key up %d\r\n", EVENT_KEY(e->type));
-	event_wr(EVENT_TYPE_MIDI | MIDI_NOTE_OFF(0, 60, 0x40), NULL);
+	adsr_release(&s->adsr);
+	//event_wr(EVENT_TYPE_MIDI | MIDI_NOTE_OFF(0, 60, 0x40), NULL);
 	led_off(LED_BLUE);
 }
 
@@ -50,8 +48,8 @@ int ggm_run(struct ggm_state *s) {
 
 	while (1) {
 		struct event e;
-		float x = lut_sample(&s->sin);
-		float df = lut_sample(&s->lfo);
+		float a = adsr_sample(&s->adsr);
+		float x = a * lut_sample(&s->sin);
 
 		if (!event_rd(&e)) {
 			switch (EVENT_TYPE(e.type)) {
@@ -69,7 +67,6 @@ int ggm_run(struct ggm_state *s) {
 			}
 		}
 
-		lut_mod_freq(&s->sin, df);
 		audio_wr(s->audio, x, x);
 	}
 
@@ -92,7 +89,7 @@ int ggm_init(struct ggm_state *s, struct audio_drv *audio) {
 	}
 
 	osc_sin(&s->sin, 1.0f, midi_to_frequency(69), 0.0f);
-	osc_sin(&s->lfo, 20.0f, 2.0f, 0.0f);
+	adsr_init(&s->adsr, 0.05f, 0.2f, 0.5f, 0.5f);
 
  exit:
 	return rc;
