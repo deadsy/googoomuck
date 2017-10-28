@@ -174,3 +174,11 @@ void audio_wr(struct audio_drv *audio, float ch_l, float ch_r) {
 }
 
 //-----------------------------------------------------------------------------
+
+// set the master volume
+void audio_master_volume(struct audio_drv *audio, uint8_t vol) {
+	DBG("audio_master_volume %d\r\n", vol);
+	cs4x_master_volume(&audio->dac, vol);
+}
+
+//-----------------------------------------------------------------------------

@@ -38,7 +38,9 @@ struct audio_drv {
 
 int audio_init(struct audio_drv *audio);
 int audio_start(struct audio_drv *audio);
+
 void audio_wr(struct audio_drv *audio, float ch_l, float ch_r);
+void audio_master_volume(struct audio_drv *audio, uint8_t vol);
 
 // This is a callback from the dma interrupt handler to the synthesizer.
 // It requests the synth to generate and write samples to the upper or

@@ -101,20 +101,15 @@ int event_wr(uint32_t type, void *ptr);
 
 //-----------------------------------------------------------------------------
 
-struct ggm_cfg {
-	struct audio_drv *audio;
-	uint32_t fs;		// sample rate
-};
-
 struct ggm_state {
-	struct ggm_cfg cfg;
+	struct audio_drv *audio;
 	struct lut_osc sin;
 	struct lut_osc lfo;
 };
 
 //-----------------------------------------------------------------------------
 
-int ggm_init(struct ggm_state *s, struct ggm_cfg *cfg);
+int ggm_init(struct ggm_state *s, struct audio_drv *audio);
 int ggm_run(struct ggm_state *s);
 
 //-----------------------------------------------------------------------------

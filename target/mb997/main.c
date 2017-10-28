@@ -8,6 +8,7 @@ MB997C Board
 
 #include "stm32f4_soc.h"
 #include "audio.h"
+#include "led.h"
 #include "debounce.h"
 #include "ggm.h"
 
@@ -16,12 +17,6 @@ MB997C Board
 
 //-----------------------------------------------------------------------------
 // IO configuration
-
-// leds
-#define LED_GREEN       GPIO_NUM(PORTD, 12)
-#define LED_AMBER       GPIO_NUM(PORTD, 13)
-#define LED_RED         GPIO_NUM(PORTD, 14)
-#define LED_BLUE        GPIO_NUM(PORTD, 15)
 
 // push button
 #define PUSH_BUTTON     GPIO_NUM(PORTA, 0)	// 0 = open, 1 = pressed
@@ -39,12 +34,6 @@ static const struct gpio_info gpios[] = {
 //-----------------------------------------------------------------------------
 
 static struct audio_drv audio;
-
-static struct ggm_cfg synth_cfg = {
-	.audio = &audio,
-	.fs = AUDIO_SAMPLE_RATE,
-};
-
 static struct ggm_state synth;
 
 //-----------------------------------------------------------------------------
@@ -188,7 +177,7 @@ int main(void) {
 		goto exit;
 	}
 
-	rc = ggm_init(&synth, &synth_cfg);
+	rc = ggm_init(&synth, &audio);
 	if (rc != 0) {
 		DBG("ggm_init failed %d\r\n", rc);
 		goto exit;
