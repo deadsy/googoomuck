@@ -8,6 +8,15 @@ by the world. E.g a request to fill the audio buffer with samples, a midi event,
 a key down event, etc. The event loop branches to a function to handle the event.
 There is no priority, we just service events as they arrive.
 
+The event queue is a circular buffer. Producers (typically ISRs) write to it.
+Consumers (the main event loop) read from it. The event queue should never be
+full. If it is we have probably blundered.
+
+The events are a uint32_t and a pointer. Based on the event type the pointer
+may point to some other data structure/buffer. Or it might be some additional
+meta data, or it might be empty. This code doesn't care, that's all up to the
+user of the events.
+
 */
 //-----------------------------------------------------------------------------
 
