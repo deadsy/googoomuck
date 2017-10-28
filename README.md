@@ -18,6 +18,7 @@ http://www.st.com/en/evaluation-tools/stm32f4discovery.html
 ## Inspirations
 * https://www.quinapalus.com/goom.html
 * https://github.com/MrBlueXav/Dekrispator_v2
+* https://github.com/hotchk155/Voici-Le-Strum
 
 
 
