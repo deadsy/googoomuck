@@ -17,6 +17,15 @@ DMA Driver
 
 //-----------------------------------------------------------------------------
 
+// IRQ Status Flags
+#define DMA_IRQ_FEIF (1U << 0)	// FIFO overrun/underrun
+#define DMA_IRQ_DMEIF (1U << 2)	// Direct mode error
+#define DMA_IRQ_TEIF (1U << 3)	// Transfer error
+#define DMA_IRQ_HTIF (1U << 4)	// Half-transfer
+#define DMA_IRQ_TCIF (1U << 5)	// Transfer complete
+
+#define DMA_IRQ_ALL (DMA_IRQ_FEIF |DMA_IRQ_DMEIF |DMA_IRQ_TEIF |DMA_IRQ_HTIF |DMA_IRQ_TCIF)
+
 typedef struct {
 	volatile uint32_t ISR;	// DMA interrupt status register
 	volatile uint32_t reserved;
@@ -90,20 +99,17 @@ struct dma_drv {
 	DMA_Interrupt_TypeDef *iregs;	// interrupt registers
 	DMA_Stream_TypeDef *sregs;	// stream registers
 	int stream;		// stream number 0..7
+	void (*err_callback) (struct dma_drv * dma, uint32_t errors);	// errors callback
+	void (*ht_callback) (struct dma_drv * dma);	// half transfer callback
+	void (*tc_callback) (struct dma_drv * dma);	// transfer complete callback
 };
 
 //-----------------------------------------------------------------------------
 
-// enable a dma stream
-// Note: enable the dma stream *before* enabling the peripheral
-static inline void dma_enable(struct dma_drv *dma) {
-	dma->sregs->CR |= DMA_SxCR_EN;
-}
-
-//-----------------------------------------------------------------------------
-
 int dma_init(struct dma_drv *dma, struct dma_cfg *cfg);
+void dma_enable(struct dma_drv *dma);
 int dma_disable(struct dma_drv *dma);
+void dma_isr(struct dma_drv *dma);
 
 //-----------------------------------------------------------------------------
 

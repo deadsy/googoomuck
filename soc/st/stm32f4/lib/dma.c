@@ -43,9 +43,15 @@ static DMA_Interrupt_TypeDef *dma_interrupt_regs(uint32_t base, int stream) {
 //-----------------------------------------------------------------------------
 
 // clear dma interrupt flags
-static void dma_clr_interrupt_flags(struct dma_drv *dma) {
+static void dma_clr_irq_flags(struct dma_drv *dma, uint32_t flags) {
 	static const uint8_t shift[] = { 0, 6, 16, 22 };
-	dma->iregs->IFCR = 0x3d << shift[dma->stream & 3];
+	dma->iregs->IFCR = flags << shift[dma->stream & 3];
+}
+
+// get dma interrupt status
+static uint32_t dma_get_irq_status(struct dma_drv *dma) {
+	static const uint8_t shift[] = { 0, 6, 16, 22 };
+	return (dma->iregs->ISR >> shift[dma->stream & 3]) & 0x3d;
 }
 
 //-----------------------------------------------------------------------------
@@ -65,6 +71,79 @@ int dma_disable(struct dma_drv *dma) {
 		}
 	}
 	return 0;
+}
+
+// enable a dma stream
+// Note: enable the dma stream *before* enabling the peripheral
+void dma_enable(struct dma_drv *dma) {
+	dma->sregs->CR |= DMA_SxCR_EN;
+}
+
+//-----------------------------------------------------------------------------
+
+// Called from DMAX_StreamY_IRQHandler()
+void dma_isr(struct dma_drv *dma) {
+	uint32_t status = dma_get_irq_status(dma);
+	uint32_t errors = 0;
+
+	// Transfer error
+	if (status & DMA_IRQ_TEIF) {
+		if (dma->sregs->CR & DMA_SxCR_TEIE) {
+			// disable and clear the interrupt
+			dma->sregs->CR &= ~DMA_SxCR_TEIE;
+			dma_clr_irq_flags(dma, DMA_IRQ_TEIF);
+			// record the error
+			errors |= DMA_IRQ_TEIF;
+		}
+	}
+	// FIFO overrun/underrun
+	if (status & DMA_IRQ_FEIF) {
+		if (dma->sregs->FCR & DMA_SxFCR_FEIE) {
+			// clear the error flag
+			dma_clr_irq_flags(dma, DMA_IRQ_FEIF);
+			// record the error
+			errors |= DMA_IRQ_FEIF;
+		}
+	}
+	// Direct mode error
+	if (status & DMA_IRQ_DMEIF) {
+		if (dma->sregs->CR & DMA_SxCR_DMEIE) {
+			// clear the error flag
+			dma_clr_irq_flags(dma, DMA_IRQ_DMEIF);
+			// record the error
+			errors |= DMA_IRQ_DMEIF;
+		}
+	}
+	// Half-transfer
+	if (status & DMA_IRQ_HTIF) {
+		if (dma->sregs->CR & DMA_SxCR_HTIE) {
+			dma_clr_irq_flags(dma, DMA_IRQ_HTIF);
+			// TODO
+			if (dma->ht_callback) {
+				dma->ht_callback(dma);
+			}
+		}
+	}
+	// Transfer complete
+	if (status & DMA_IRQ_TCIF) {
+		if (dma->sregs->CR & DMA_SxCR_TCIE) {
+			dma_clr_irq_flags(dma, DMA_IRQ_TCIF);
+			// TODO
+			if (dma->tc_callback) {
+				dma->tc_callback(dma);
+			}
+		}
+	}
+	// error handling
+	if (errors) {
+		if (errors & DMA_IRQ_TEIF) {
+			// disable the stream
+			// TODO
+		}
+		if (dma->err_callback) {
+			dma->err_callback(dma, errors);
+		}
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -139,7 +218,7 @@ int dma_init(struct dma_drv *dma, struct dma_cfg *cfg) {
 	reg_rmw(&dma->sregs->FCR, DMA_SxFCR_MASK, val);
 
 	// clear interrupt flags
-	dma_clr_interrupt_flags(dma);
+	dma_clr_irq_flags(dma, DMA_IRQ_ALL);
 
  exit:
 	return rc;

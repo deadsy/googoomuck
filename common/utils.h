@@ -1,7 +1,7 @@
 //-----------------------------------------------------------------------------
 /*
 
-Common Utility Functions
+Common Utility Functions/Macros
 
 */
 //-----------------------------------------------------------------------------
@@ -11,15 +11,7 @@ Common Utility Functions
 
 //-----------------------------------------------------------------------------
 
-static inline float clamp(float x, float a, float b) {
-	if (x < a) {
-		return a;
-	}
-	if (x > b) {
-		return b;
-	}
-	return x;
-}
+#define ALIGN(x) __attribute__ ((aligned (x)))
 
 //-----------------------------------------------------------------------------
 

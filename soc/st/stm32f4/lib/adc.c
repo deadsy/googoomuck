@@ -28,6 +28,21 @@ static void adc_module_enable(uint32_t base) {
 
 //-----------------------------------------------------------------------------
 
+// define the non-reserved register bits
+#define ADC_CCR_MASK 0x00c3ef1fU
+#define ADC_SR_MASK 0x0000003fU
+#define ADC_CR1_MASK 0x07c0ffffU
+#define ADC_CR2_MASK 0x7f7f0f03U
+#define ADC_SMPR1_MASK 0x07ffffffU
+#define ADC_SMPR2_MASK 0x3fffffffU
+#define ADC_JOFRx_MASK 0x00000fffU
+#define ADC_HTR_MASK 0x00000fffU
+#define ADC_LTR_MASK 0x00000fffU
+#define ADC_SQR1_MASK 0x00ffffffU
+#define ADC_SQR2_MASK 0x3fffffffU
+#define ADC_SQR3_MASK 0x3fffffffU
+#define ADC_JSQR_MASK 0x003fffffU
+
 int adc_init(struct adc_drv *adc, struct adc_cfg *cfg) {
 	int rc = 0;
 
@@ -38,23 +53,23 @@ int adc_init(struct adc_drv *adc, struct adc_cfg *cfg) {
 	// enable the adc module
 	adc_module_enable(cfg->base);
 
-	adc->cregs->CCR = 0;
+	adc->cregs->CCR &= ~ADC_CCR_MASK;
 
-	adc->regs->SR = 0;
-	adc->regs->CR1 = 0;
-	adc->regs->CR2 = 0;
-	adc->regs->SMPR1 = 0;
-	adc->regs->SMPR2 = 0;
-	adc->regs->JOFR1 = 0;
-	adc->regs->JOFR2 = 0;
-	adc->regs->JOFR3 = 0;
-	adc->regs->JOFR4 = 0;
-	adc->regs->HTR = 0;
-	adc->regs->LTR = 0;
-	adc->regs->SQR1 = 0;
-	adc->regs->SQR2 = 0;
-	adc->regs->SQR3 = 0;
-	adc->regs->JSQR = 0;
+	adc->regs->SR &= ~ADC_SR_MASK;
+	adc->regs->CR1 &= ~ADC_CR1_MASK;
+	adc->regs->CR2 &= ~ADC_CR2_MASK;
+	adc->regs->SMPR1 &= ~ADC_SMPR1_MASK;
+	adc->regs->SMPR2 &= ~ADC_SMPR2_MASK;
+	adc->regs->JOFR1 &= ~ADC_JOFRx_MASK;
+	adc->regs->JOFR2 &= ~ADC_JOFRx_MASK;
+	adc->regs->JOFR3 &= ~ADC_JOFRx_MASK;
+	adc->regs->JOFR4 &= ~ADC_JOFRx_MASK;
+	adc->regs->HTR &= ~ADC_HTR_MASK;
+	adc->regs->LTR &= ~ADC_LTR_MASK;
+	adc->regs->SQR1 &= ~ADC_SQR1_MASK;
+	adc->regs->SQR2 &= ~ADC_SQR2_MASK;
+	adc->regs->SQR3 &= ~ADC_SQR3_MASK;
+	adc->regs->JSQR &= ~ADC_JSQR_MASK;
 
 //exit:
 	return rc;

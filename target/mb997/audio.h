@@ -13,6 +13,7 @@ Audio Control for the STM32F4 Discovery Board
 
 #include "stm32f4_soc.h"
 #include "cs43l22.h"
+#include "utils.h"
 
 //-----------------------------------------------------------------------------
 
@@ -25,6 +26,10 @@ Audio Control for the STM32F4 Discovery Board
 // See ./scripts/i2sclk.py for details.
 #define AUDIO_FS 35156.25f	// Hz
 
+// This is the size (in bytes) of the buffer that is DMAed
+// from memory to the I2S device.
+#define AUDIO_BUFFER_SIZE 256
+
 //-----------------------------------------------------------------------------
 
 struct audio_drv {
@@ -32,7 +37,10 @@ struct audio_drv {
 	struct i2s_drv i2s;
 	struct i2c_drv i2c;
 	struct cs4x_drv dac;
+	uint8_t buffer[AUDIO_BUFFER_SIZE] ALIGN(4);	// dma->i2s buffer
 };
+
+extern struct audio_drv ggm_audio;
 
 //-----------------------------------------------------------------------------
 

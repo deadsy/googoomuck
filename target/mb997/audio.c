@@ -13,7 +13,7 @@ Audio Control for the STM32F4 Discovery Board
 
 //-----------------------------------------------------------------------------
 
-static int16_t audio_buffer[128];
+struct audio_drv ggm_audio;
 
 //-----------------------------------------------------------------------------
 // IO configuration
@@ -55,10 +55,16 @@ static struct dma_cfg audio_dma_cfg = {
 	.pfctrl = DMA_PFCTRL_DMA,
 	.fifo = DMA_FIFO_ENABLE,
 	.fth = DMA_FTH(3),
-	.src = (uint32_t) audio_buffer,
+	.src = (uint32_t) ggm_audio.buffer,
 	.dst = (uint32_t) & SPI3->DR,
-	.nitems = sizeof(audio_buffer) / sizeof(int16_t),
+	.nitems = AUDIO_BUFFER_SIZE,
 };
+
+void DMA1_Stream7_IRQHandler(void) {
+	dma_isr(&ggm_audio.dma);
+}
+
+//-----------------------------------------------------------------------------
 
 // I2S setup
 static struct i2s_cfg audio_i2s_cfg = {
@@ -71,12 +77,16 @@ static struct i2s_cfg audio_i2s_cfg = {
 	.fs = AUDIO_SAMPLE_RATE,
 };
 
+//-----------------------------------------------------------------------------
+
 // I2C setup
 static struct i2c_cfg audio_i2c_cfg = {
 	.scl = AUDIO_I2C_SCL,
 	.sda = AUDIO_I2C_SDA,
 	.delay = 20,
 };
+
+//-----------------------------------------------------------------------------
 
 // cs43l22 DAC setup
 static struct cs4x_cfg audio_dac_cfg = {

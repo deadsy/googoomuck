@@ -33,7 +33,6 @@ static const struct gpio_info gpios[] = {
 
 //-----------------------------------------------------------------------------
 
-static struct audio_drv audio;
 static struct ggm_state synth;
 
 //-----------------------------------------------------------------------------
@@ -185,19 +184,19 @@ int main(void) {
 		goto exit;
 	}
 
-	rc = audio_init(&audio);
+	rc = audio_init(&ggm_audio);
 	if (rc != 0) {
 		DBG("audio_init failed %d\r\n", rc);
 		goto exit;
 	}
 
-	rc = ggm_init(&synth, &audio);
+	rc = ggm_init(&synth, &ggm_audio);
 	if (rc != 0) {
 		DBG("ggm_init failed %d\r\n", rc);
 		goto exit;
 	}
 
-	rc = audio_start(&audio);
+	rc = audio_start(&ggm_audio);
 	if (rc != 0) {
 		DBG("audio_start failed %d\r\n", rc);
 		goto exit;
