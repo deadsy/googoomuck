@@ -147,6 +147,14 @@ uint32_t debounce_input(void) {
 
 //-----------------------------------------------------------------------------
 
+static struct adc_cfg test_adc_cfg = {
+	.base = ADC1_BASE,
+};
+
+static struct adc_drv test_adc;
+
+//-----------------------------------------------------------------------------
+
 int main(void) {
 	int rc;
 
@@ -168,6 +176,12 @@ int main(void) {
 	rc = debounce_init();
 	if (rc != 0) {
 		DBG("debounce_init failed %d\r\n", rc);
+		goto exit;
+	}
+
+	rc = adc_init(&test_adc, &test_adc_cfg);
+	if (rc != 0) {
+		DBG("adc_init failed %d\r\n", rc);
 		goto exit;
 	}
 

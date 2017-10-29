@@ -9,10 +9,10 @@ DMA Driver
 #include <assert.h>
 #include <string.h>
 
-#define DEBUG
-
 #include "stm32f4_soc.h"
 #include "utils.h"
+
+#define DEBUG
 #include "logging.h"
 
 //-----------------------------------------------------------------------------

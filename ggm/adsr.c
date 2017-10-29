@@ -33,10 +33,10 @@ enum {
 
 // Return a k value to give the exponential rise/fall in the required time.
 static float get_k(float t) {
-	if (t <= 0.0f) {
-		return 1.0f;
+	if (t <= 0.f) {
+		return 1.f;
 	}
-	return 1.0f - expf(LN_LEVEL_EPSILON / (t * AUDIO_FS));
+	return 1.f - expf(LN_LEVEL_EPSILON / (t * AUDIO_FS));
 }
 
 //-----------------------------------------------------------------------------
@@ -49,9 +49,9 @@ void adsr_attack(struct adsr *e) {
 // Enter release state.
 void adsr_release(struct adsr *e) {
 	if (e->state != ADSR_STATE_IDLE) {
-		if (e->kr == 1.0f) {
+		if (e->kr == 1.f) {
 			// no release - goto idle
-			e->val = 0.0f;
+			e->val = 0.f;
 			e->state = ADSR_STATE_IDLE;
 		} else {
 			e->state = ADSR_STATE_RELEASE;
@@ -61,7 +61,7 @@ void adsr_release(struct adsr *e) {
 
 // Enter idle state.
 void adsr_idle(struct adsr *e) {
-	e->val = 0.0f;
+	e->val = 0.f;
 	e->state = ADSR_STATE_IDLE;
 }
 
@@ -76,10 +76,10 @@ float adsr_sample(struct adsr *e) {
 	case ADSR_STATE_ATTACK:
 		// attack until 1.0 level
 		if (e->val < e->d_trigger) {
-			e->val += e->ka * (1.0f - e->val);
+			e->val += e->ka * (1.f - e->val);
 		} else {
 			// goto decay state
-			e->val = 1.0f;
+			e->val = 1.f;
 			e->state = ADSR_STATE_DECAY;
 		}
 		break;
@@ -88,13 +88,13 @@ float adsr_sample(struct adsr *e) {
 		if (e->val > e->s_trigger) {
 			e->val += e->kd * (e->s - e->val);
 		} else {
-			if (e->s != 0.0f) {
+			if (e->s != 0.f) {
 				// goto sustain state
 				e->val = e->s;
 				e->state = ADSR_STATE_SUSTAIN;
 			} else {
 				// no sustain, goto idle state
-				e->val = 0.0f;
+				e->val = 0.f;
 				e->state = ADSR_STATE_IDLE;
 			}
 		}
@@ -105,10 +105,10 @@ float adsr_sample(struct adsr *e) {
 	case ADSR_STATE_RELEASE:
 		// release until idle level
 		if (e->val > e->i_trigger) {
-			e->val += e->kr * (0.0f - e->val);
+			e->val += e->kr * (0.f - e->val);
 		} else {
 			// goto idle state
-			e->val = 0.0f;
+			e->val = 0.f;
 			e->state = ADSR_STATE_IDLE;
 		}
 		break;
@@ -129,18 +129,18 @@ void adsr_init(struct adsr *e, float a, float d, float s, float r) {
 	e->ka = get_k(a);
 	e->kd = get_k(d);
 	e->kr = get_k(r);
-	e->d_trigger = 1.0f - LEVEL_EPSILON;
-	e->s_trigger = s + (1.0f - s) * LEVEL_EPSILON;
+	e->d_trigger = 1.f - LEVEL_EPSILON;
+	e->s_trigger = s + (1.f - s) * LEVEL_EPSILON;
 	e->i_trigger = s * LEVEL_EPSILON;
 	e->state = ADSR_STATE_IDLE;
-	e->val = 0.0f;
+	e->val = 0.f;
 }
 
 // AD envelope initialisation
 // a = attack time in seconds (>= 0)
 // d = decay time in seconds (>= 0)
 void ad_init(struct adsr *e, float a, float d) {
-	adsr_init(e, a, d, 0.0f, 0.0f);
+	adsr_init(e, a, d, 0.f, 0.f);
 }
 
 //-----------------------------------------------------------------------------

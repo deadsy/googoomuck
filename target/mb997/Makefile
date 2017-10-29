@@ -18,6 +18,7 @@ SRC += $(LIB_DIR)/gpio.c \
        $(LIB_DIR)/i2c.c \
        $(LIB_DIR)/i2s.c \
        $(LIB_DIR)/dma.c \
+       $(LIB_DIR)/adc.c \
 
 # target sources
 TARGET_DIR = $(TOP)/target/mb997
