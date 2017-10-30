@@ -56,19 +56,19 @@ static uint32_t dma_get_irq_status(struct dma_drv *dma) {
 
 //-----------------------------------------------------------------------------
 
-#define DMA_EN_TIMEOUT 5	// milliseconds
-
 // disable a dma stream
 // Note: disable the dma stream *before* disabling the peripheral
 int dma_disable(struct dma_drv *dma) {
-	uint32_t ticks = HAL_GetTick();
+	uint32_t timeout = SystemCoreClock / 9600U;
+	uint32_t count = 0;
 	// disable
 	dma->sregs->CR &= ~DMA_SxCR_EN;
 	// wait for the enable to read 0
 	while ((dma->sregs->CR & DMA_SxCR_EN) != 0) {
-		if ((HAL_GetTick() - ticks) > DMA_EN_TIMEOUT) {
+		if (count > timeout) {
 			return -1;
 		}
+		count += 1;
 	}
 	return 0;
 }
@@ -117,20 +117,48 @@ void dma_isr(struct dma_drv *dma) {
 	// Half-transfer
 	if (status & DMA_IRQ_HTIF) {
 		if (dma->sregs->CR & DMA_SxCR_HTIE) {
+			// clear the half transfer complete flag
 			dma_clr_irq_flags(dma, DMA_IRQ_HTIF);
-			// TODO
-			if (dma->ht_callback) {
-				dma->ht_callback(dma);
+			if (dma->sregs->CR & DMA_SxCR_DBM) {
+				// multi buffer mode, half transfer callback
+				if (dma->ht_callback) {
+					int idx = (dma->sregs->CR & DMA_SxCR_CT) ? 1 : 0;
+					dma->ht_callback(dma, idx);
+				}
+			} else {
+				// single buffer mode
+				// Disable the half transfer interrupt if the mode is not circular.
+				if ((dma->sregs->CR & DMA_SxCR_CIRC) == 0) {
+					dma->sregs->CR &= ~(1 << 3 /*HTIE*/);
+				}
+				// half transfer callback
+				if (dma->ht_callback) {
+					dma->ht_callback(dma, -1);
+				}
 			}
 		}
 	}
 	// Transfer complete
 	if (status & DMA_IRQ_TCIF) {
 		if (dma->sregs->CR & DMA_SxCR_TCIE) {
+			// clear the transfer complete flag
 			dma_clr_irq_flags(dma, DMA_IRQ_TCIF);
-			// TODO
-			if (dma->tc_callback) {
-				dma->tc_callback(dma);
+			if (dma->sregs->CR & DMA_SxCR_DBM) {
+				// double buffer mode, transfer complete callback
+				if (dma->tc_callback) {
+					int idx = (dma->sregs->CR & DMA_SxCR_CT) ? 1 : 0;
+					dma->tc_callback(dma, idx);
+				}
+			} else {
+				// single buffer mode
+				// Disable the transfer complete interrupt if the mode is not circular.
+				if ((dma->sregs->CR & DMA_SxCR_CIRC) == 0) {
+					dma->sregs->CR &= ~(1 << 4 /*TCIE*/);
+				}
+				// transfer complete callback
+				if (dma->tc_callback) {
+					dma->tc_callback(dma, -1);
+				}
 			}
 		}
 	}
@@ -138,7 +166,7 @@ void dma_isr(struct dma_drv *dma) {
 	if (errors) {
 		if (errors & DMA_IRQ_TEIF) {
 			// disable the stream
-			// TODO
+			dma_disable(dma);
 		}
 		if (dma->err_callback) {
 			dma->err_callback(dma, errors);

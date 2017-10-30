@@ -100,8 +100,8 @@ struct dma_drv {
 	DMA_Stream_TypeDef *sregs;	// stream registers
 	int stream;		// stream number 0..7
 	void (*err_callback) (struct dma_drv * dma, uint32_t errors);	// errors callback
-	void (*ht_callback) (struct dma_drv * dma);	// half transfer callback
-	void (*tc_callback) (struct dma_drv * dma);	// transfer complete callback
+	void (*ht_callback) (struct dma_drv * dma, int idx);	// half transfer callback
+	void (*tc_callback) (struct dma_drv * dma, int idx);	// transfer complete callback
 };
 
 //-----------------------------------------------------------------------------
