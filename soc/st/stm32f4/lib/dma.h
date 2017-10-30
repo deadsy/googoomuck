@@ -73,6 +73,15 @@ typedef struct {
 
 #define DMA_FTH(x) (((x) & 3) << 0)	// x = 0..3
 
+struct dma_drv {
+	DMA_Interrupt_TypeDef *iregs;	// interrupt registers
+	DMA_Stream_TypeDef *sregs;	// stream registers
+	int stream;		// stream number 0..7
+	void (*err_callback) (struct dma_drv * dma, uint32_t errors);	// errors callback
+	void (*ht_callback) (struct dma_drv * dma, int idx);	// half transfer callback
+	void (*tc_callback) (struct dma_drv * dma, int idx);	// transfer complete callback
+};
+
 struct dma_cfg {
 	uint32_t controller;	// controller base address
 	int stream;		// stream number 0..7
@@ -92,13 +101,7 @@ struct dma_cfg {
 	uint32_t fth;		// fifo threshold
 	uint32_t src;		// source address
 	uint32_t dst;		// destination address
-	uint32_t nitems;	// number of data items
-};
-
-struct dma_drv {
-	DMA_Interrupt_TypeDef *iregs;	// interrupt registers
-	DMA_Stream_TypeDef *sregs;	// stream registers
-	int stream;		// stream number 0..7
+	uint32_t nbytes;	// number of bytes to transfer
 	void (*err_callback) (struct dma_drv * dma, uint32_t errors);	// errors callback
 	void (*ht_callback) (struct dma_drv * dma, int idx);	// half transfer callback
 	void (*tc_callback) (struct dma_drv * dma, int idx);	// transfer complete callback

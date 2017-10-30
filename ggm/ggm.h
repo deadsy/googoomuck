@@ -110,15 +110,18 @@ float midi_to_frequency(uint8_t note);
 #define EVENT_TYPE_KEY_DN (1U << 24)
 #define EVENT_TYPE_KEY_UP (2U << 24)
 #define EVENT_TYPE_MIDI (3U << 24)
+#define EVENT_TYPE_AUDIO (4U << 24)
 
 // key number in the lower 8 bits
 #define EVENT_KEY(x) ((x) & 0xffU)
 // midi message in the lower 3 bytes
 #define EVENT_MIDI(x) ((x) & 0xffffffU)
+// audio block size in the lower 16 bits
+#define EVENT_BLOCK_SIZE(x) ((x) & 0xffffU)
 
 struct event {
 	uint32_t type;		// the event type
-	void *ptr;		// pointer to event data (or the data itself)
+	void *ptr;		// pointer to event data (or data itself)
 };
 
 int event_init(void);

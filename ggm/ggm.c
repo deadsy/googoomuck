@@ -42,14 +42,22 @@ static void midi_handler(struct ggm_state *s, struct event *e) {
 }
 
 //-----------------------------------------------------------------------------
+// audio request events
+
+// handle an audio request event
+static void audio_handler(struct ggm_state *s, struct event *e) {
+	DBG("audio %08x %08x\r\n", e->type, e->ptr);
+}
+
+//-----------------------------------------------------------------------------
 
 // the main ggm event loop
 int ggm_run(struct ggm_state *s) {
 
 	while (1) {
 		struct event e;
-		float a = adsr_sample(&s->adsr);
-		float x = a * lut_sample(&s->sin);
+		//float a = adsr_sample(&s->adsr);
+		//float x = a * lut_sample(&s->sin);
 
 		if (!event_rd(&e)) {
 			switch (EVENT_TYPE(e.type)) {
@@ -62,12 +70,15 @@ int ggm_run(struct ggm_state *s) {
 			case EVENT_TYPE_MIDI:
 				midi_handler(s, &e);
 				break;
+			case EVENT_TYPE_AUDIO:
+				audio_handler(s, &e);
+				break;
 			default:
+				DBG("unknown event %08x %08x\r\n", e.type, e.ptr);
 				break;
 			}
 		}
-
-		audio_wr(s->audio, x, x);
+		//audio_wr(s->audio, x, x);
 	}
 
 	return 0;

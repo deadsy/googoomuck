@@ -7,6 +7,7 @@ Audio Control for the STM32F4 Discovery Board
 //-----------------------------------------------------------------------------
 
 #include "audio.h"
+#include "ggm.h"
 
 #define DEBUG
 #include "logging.h"
@@ -37,8 +38,32 @@ static const struct gpio_info gpios[] = {
 };
 
 //-----------------------------------------------------------------------------
-
 // DMA setup
+
+// errors callback
+static void audio_err_callback(struct dma_drv *dma, uint32_t errors) {
+	DBG("dma error 0x%08x\r\n", errors);
+}
+
+// half transfer callback
+static void audio_ht_callback(struct dma_drv *dma, int idx) {
+	// dma is reading from the top half, so fill the bottom half
+	int rc = event_wr(EVENT_TYPE_AUDIO | AUDIO_BLOCK_SIZE, &ggm_audio.buffer[0]);
+	if (rc != 0) {
+		DBG("event_wr error for ht callback\r\n");
+	}
+}
+
+// transfer complete callback
+static void audio_tc_callback(struct dma_drv *dma, int idx) {
+	// dma is reading from the bottom half, so fill the top half
+	int rc = event_wr(EVENT_TYPE_AUDIO | AUDIO_BLOCK_SIZE, &ggm_audio.buffer[AUDIO_BLOCK_SIZE]);
+	if (rc != 0) {
+		DBG("event_wr error for tc callback\r\n");
+	}
+}
+
+// DMA configuration
 static struct dma_cfg audio_dma_cfg = {
 	.controller = DMA1_BASE,
 	.stream = 7,
@@ -57,7 +82,10 @@ static struct dma_cfg audio_dma_cfg = {
 	.fth = DMA_FTH(3),
 	.src = (uint32_t) ggm_audio.buffer,
 	.dst = (uint32_t) & SPI3->DR,
-	.nitems = AUDIO_BUFFER_SIZE,
+	.nbytes = AUDIO_BUFFER_SIZE * sizeof(int16_t),
+	.err_callback = audio_err_callback,
+	.ht_callback = audio_ht_callback,
+	.tc_callback = audio_tc_callback,
 };
 
 void DMA1_Stream7_IRQHandler(void) {
@@ -112,6 +140,9 @@ int audio_init(struct audio_drv *audio) {
 		DBG("dma_init failed %d\r\n", rc);
 		goto exit;
 	}
+	// Setup DMA1_Stream7 interrupt
+	HAL_NVIC_SetPriority(DMA1_Stream7_IRQn, 6, 0);
+
 	// Setup the i2s pll to generate i2s_clk
 	rc = set_i2sclk(AUDIO_SAMPLE_RATE);
 	if (rc != 0) {
@@ -148,6 +179,12 @@ int audio_init(struct audio_drv *audio) {
 
 int audio_start(struct audio_drv *audio) {
 	int rc = 0;
+
+	// Enable DMA1 Stream7 interrupt.
+	HAL_NVIC_EnableIRQ(DMA1_Stream7_IRQn);
+
+	// start the dma
+	dma_enable(&audio->dma);
 
 	// start the i2s clocking
 	i2s_enable(&audio->i2s);

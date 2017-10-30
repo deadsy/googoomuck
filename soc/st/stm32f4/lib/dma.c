@@ -237,13 +237,18 @@ int dma_init(struct dma_drv *dma, struct dma_cfg *cfg) {
 		goto exit;
 	}
 
-	dma->sregs->NDTR = cfg->nitems;
+	dma->sregs->NDTR = cfg->nbytes;
 
 	// SxFCR setup
 	val = (1 << 7 /*FEIE*/);	// FIFO error interrupt enable (enabled)
 	val |= cfg->fifo;	// fifo control (aka DMDIS, direct mode disable)
 	val |= cfg->fth;	// FIFO threshold selection
 	reg_rmw(&dma->sregs->FCR, DMA_SxFCR_MASK, val);
+
+	// setup the callbacks
+	dma->err_callback = cfg->err_callback;
+	dma->ht_callback = cfg->ht_callback;
+	dma->tc_callback = cfg->tc_callback;
 
 	// clear interrupt flags
 	dma_clr_irq_flags(dma, DMA_IRQ_ALL);
