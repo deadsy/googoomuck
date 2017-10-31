@@ -25,6 +25,31 @@ GooGooMuck Synthesizer
 #define INV_TAU (1.0f/TAU)
 
 //-----------------------------------------------------------------------------
+// DDS Oscillators
+
+// frequency to x scaling (xrange * 1/fs)
+#define DDS_FSCALE ((float)(2ULL << 32) * AUDIO_TS)
+
+struct dds {
+	const float *table;	// lookup table
+	uint32_t mask;		// mask for the table bits
+	uint32_t shift;		// shift for the table bits
+	uint32_t x;		// current x-value
+	uint32_t xstep;		// current x-step
+	float phase;		// base phase
+	float freq;		// base frequency
+	float amp;		// amplitude
+};
+
+// modulate the frequency of the oscillator
+static inline void dds_mod_freq(struct dds *osc, float f) {
+	osc->xstep = (uint32_t) ((osc->freq + f) * DDS_FSCALE);
+}
+
+// oscillators
+void osc2_sin(struct dds *osc, float amp, float freq, float phase);
+
+//-----------------------------------------------------------------------------
 // LUT oscillators
 
 struct lut_osc {
@@ -44,7 +69,6 @@ static inline void lut_mod_freq(struct lut_osc *osc, float f) {
 }
 
 float lut_sample(struct lut_osc *lut);
-void lut_mod_freq(struct lut_osc *osc, float f);
 
 // oscillators
 void osc_sin(struct lut_osc *osc, float amp, float freq, float phase);

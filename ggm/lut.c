@@ -16,7 +16,9 @@ Lookup Table Based Oscillators
 
 //-----------------------------------------------------------------------------
 
-#define COS_TABLE_SIZE 64U
+#define COS_TABLE_BITS 6U
+#define COS_TABLE_SIZE (1U << COS_TABLE_BITS)
+
 static const uint32_t cos_table[COS_TABLE_SIZE] = {
 	0x3f800000U, 0x3f7ec46dU, 0x3f7b14beU, 0x3f74fa0bU,
 	0x3f6c835eU, 0x3f61c598U, 0x3f54db31U, 0x3f45e403U,
@@ -35,6 +37,23 @@ static const uint32_t cos_table[COS_TABLE_SIZE] = {
 	0x3f3504f3U, 0x3f45e403U, 0x3f54db31U, 0x3f61c598U,
 	0x3f6c835eU, 0x3f74fa0bU, 0x3f7b14beU, 0x3f7ec46dU,
 };
+
+//-----------------------------------------------------------------------------
+
+void osc2_sin(struct dds *osc, float amp, float freq, float phase) {
+	memset(osc, 0, sizeof(struct dds));
+	// setup the table
+	osc->table = (float *)cos_table;
+	osc->shift = 32 - COS_TABLE_BITS;
+	osc->mask = ((1 << COS_TABLE_BITS) - 1) << osc->shift;
+	// frequency
+	osc->freq = freq;
+	dds_mod_freq(osc, 0.0f);
+	// phase
+	osc->phase = fmodf(phase, TAU);
+	// amplitude
+	osc->amp = amp;
+}
 
 //-----------------------------------------------------------------------------
 
