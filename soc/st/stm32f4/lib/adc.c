@@ -29,19 +29,19 @@ static void adc_module_enable(uint32_t base) {
 //-----------------------------------------------------------------------------
 
 // define the non-reserved register bits
-#define ADC_CCR_MASK 0x00c3ef1fU
-#define ADC_SR_MASK 0x0000003fU
-#define ADC_CR1_MASK 0x07c0ffffU
-#define ADC_CR2_MASK 0x7f7f0f03U
-#define ADC_SMPR1_MASK 0x07ffffffU
-#define ADC_SMPR2_MASK 0x3fffffffU
-#define ADC_JOFRx_MASK 0x00000fffU
-#define ADC_HTR_MASK 0x00000fffU
-#define ADC_LTR_MASK 0x00000fffU
-#define ADC_SQR1_MASK 0x00ffffffU
-#define ADC_SQR2_MASK 0x3fffffffU
-#define ADC_SQR3_MASK 0x3fffffffU
-#define ADC_JSQR_MASK 0x003fffffU
+#define ADC_CCR_MASK (0xc3ef1fU)
+#define ADC_SR_MASK (0x3fU)
+#define ADC_CR1_MASK (0x7c0ffffU)
+#define ADC_CR2_MASK (0x7f7f0f03U)
+#define ADC_SMPR1_MASK (0x7ffffffU)
+#define ADC_SMPR2_MASK (0x3fffffffU)
+#define ADC_JOFRx_MASK (0xfffU)
+#define ADC_HTR_MASK (0xfffU)
+#define ADC_LTR_MASK (0xfffU)
+#define ADC_SQR1_MASK (0xffffffU)
+#define ADC_SQR2_MASK (0x3fffffffU)
+#define ADC_SQR3_MASK (0x3fffffffU)
+#define ADC_JSQR_MASK (0x3fffffU)
 
 int adc_init(struct adc_drv *adc, struct adc_cfg *cfg) {
 	int rc = 0;

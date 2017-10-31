@@ -4,7 +4,7 @@ def mask(name, bits):
   val = 0
   for (n, s) in bits:
     val |= ((1 << n) - 1) << s
-  print('#define %s 0x%08xU' % (name, val))
+  print('#define %s (0x%xU)' % (name, val))
 
 mask('ADC_CCR_MASK', ((5,0),(4,8),(5,13),(2,22)))
 mask('ADC_SR_MASK', ((6,0),))
@@ -20,3 +20,8 @@ mask('ADC_SQR2_MASK', ((30,0),))
 mask('ADC_SQR3_MASK', ((30,0),))
 mask('ADC_JSQR_MASK', ((22,0),))
 
+
+
+mask('SPI_I2SCFGR_MASK', ((6,0),(5,7)))
+mask('SPI_I2SPR_MASK', ((10, 0),))
+mask('SPI_CR2_MASK', ((4,4),(3,0)))

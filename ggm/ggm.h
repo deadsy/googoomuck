@@ -27,8 +27,8 @@ GooGooMuck Synthesizer
 //-----------------------------------------------------------------------------
 // DDS Oscillators
 
-// frequency to x scaling (xrange * 1/fs)
-#define DDS_FSCALE ((float)(2ULL << 32) * AUDIO_TS)
+// frequency to x scaling (xrange/fs)
+#define DDS_FSCALE ((float)(1ULL << 32) / AUDIO_FS)
 
 struct dds {
 	const float *table;	// lookup table

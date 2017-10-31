@@ -44,6 +44,12 @@ I2S Driver
 #define I2S_MCLKOUTPUT_ENABLE (1U << 9)
 #define I2S_MCLKOUTPUT_DISABLE (0U << 9)
 
+// dma control
+#define I2S_DMA_OFF ((0U << 1) | (0U << 0))
+#define I2S_DMA_TX ((1U << 1) | (0U << 0))
+#define I2S_DMA_RX ((0U << 1) | (1U << 0))
+#define I2S_DMA_RXTX ((1U << 1) | (1U << 0))
+
 //-----------------------------------------------------------------------------
 
 struct i2s_cfg {
@@ -54,6 +60,7 @@ struct i2s_cfg {
 	uint32_t mckoe;		// is the master clock output enabled?
 	uint32_t cpol;		// clock polarity
 	uint32_t fs;		// audio sample rate
+	uint32_t dma;		// dma control
 };
 
 struct i2s_drv {

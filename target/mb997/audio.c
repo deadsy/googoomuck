@@ -103,6 +103,7 @@ static struct i2s_cfg audio_i2s_cfg = {
 	.mckoe = I2S_MCLKOUTPUT_ENABLE,
 	.cpol = I2S_CPOL_LOW,
 	.fs = AUDIO_SAMPLE_RATE,
+	.dma = I2S_DMA_TX,
 };
 
 //-----------------------------------------------------------------------------

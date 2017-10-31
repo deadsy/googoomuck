@@ -120,8 +120,10 @@ uint32_t i2s_get_fsclk(struct i2s_drv * i2s) {
 
 //-----------------------------------------------------------------------------
 
-#define I2SCFGR_MASK ((0x1f << 7) | 0x3f)
-#define I2SPR_MASK (0x3ff)
+// define the non-reserved register bits
+#define I2SCFGR_MASK (0xfbfU)
+#define I2SPR_MASK (0x3ffU)
+#define CR2_MASK (0xf7U)
 
 int i2s_init(struct i2s_drv *i2s, struct i2s_cfg *cfg) {
 	uint32_t val;
@@ -138,12 +140,23 @@ int i2s_init(struct i2s_drv *i2s, struct i2s_cfg *cfg) {
 
 	// clear I2SCFGR (allow configuration)
 	i2s->regs->I2SCFGR &= ~I2SCFGR_MASK;
+
 	// setup I2SCFGR
-	val = (1 << 11 /*I2SMOD */ );
-	val |= (i2s->cfg.mode | i2s->cfg.standard | i2s->cfg.cpol | i2s->cfg.data_format);
+	val = (1 << 11 /*I2SMOD */ );	// i2s (not spi)
+	val |= i2s->cfg.mode;	// operating mode
+	val |= i2s->cfg.standard;	// standard selection
+	val |= i2s->cfg.cpol;	// steady state clock polarity
+	val |= i2s->cfg.data_format;	// data and channel length
 	reg_rmw(&i2s->regs->I2SCFGR, I2SCFGR_MASK, val);
+
 	// setup I2SPR
-	reg_rmw(&i2s->regs->I2SPR, I2SPR_MASK, (clk_cfg->odd << 8) | (clk_cfg->div << 0) | i2s->cfg.mckoe);
+	val = (clk_cfg->odd << 8);	// odd factor for the prescaler
+	val |= (clk_cfg->div << 0);	// linear prescaler
+	val |= i2s->cfg.mckoe;	// master clock output enable
+	reg_rmw(&i2s->regs->I2SPR, I2SPR_MASK, val);
+
+	// setup dma
+	reg_rmw(&i2s->regs->CR2, CR2_MASK, i2s->cfg.dma);
 
 	return 0;
 }

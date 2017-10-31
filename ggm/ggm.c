@@ -90,6 +90,10 @@ int ggm_run(struct ggm_state *s) {
 int ggm_init(struct ggm_state *s, struct audio_drv *audio) {
 	int rc = 0;
 
+	float x = DDS_FSCALE;
+
+	DBG("DDS_FSCALE %08x\r\n", *(uint32_t *) & x);
+
 	memset(s, 0, sizeof(struct ggm_state));
 	s->audio = audio;
 
