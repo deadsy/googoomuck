@@ -57,7 +57,7 @@ static void audio_ht_callback(struct dma_drv *dma, int idx) {
 // transfer complete callback
 static void audio_tc_callback(struct dma_drv *dma, int idx) {
 	// dma is reading from the bottom half, so fill the top half
-	int rc = event_wr(EVENT_TYPE_AUDIO | AUDIO_BLOCK_SIZE, &ggm_audio.buffer[AUDIO_BLOCK_SIZE]);
+	int rc = event_wr(EVENT_TYPE_AUDIO | AUDIO_BLOCK_SIZE, &ggm_audio.buffer[AUDIO_BLOCK_SIZE << 1]);
 	if (rc != 0) {
 		DBG("event_wr error for tc callback\r\n");
 	}
@@ -82,7 +82,7 @@ static struct dma_cfg audio_dma_cfg = {
 	.fth = DMA_FTH(3),
 	.src = (uint32_t) ggm_audio.buffer,
 	.dst = (uint32_t) & SPI3->DR,
-	.nbytes = AUDIO_BUFFER_SIZE * sizeof(int16_t),
+	.nitems = AUDIO_BUFFER_SIZE,
 	.err_callback = audio_err_callback,
 	.ht_callback = audio_ht_callback,
 	.tc_callback = audio_tc_callback,
@@ -204,21 +204,20 @@ int audio_start(struct audio_drv *audio) {
 
 //-----------------------------------------------------------------------------
 
-// write l/r channel samples (32-bit float) to the audio output
-void audio_wr(struct audio_drv *audio, float ch_l, float ch_r) {
-	int16_t xl, xr;
-	// clip left channel
-	ch_l = (ch_l > 1.0f) ? 1.0f : ch_l;
-	ch_l = (ch_l < -1.0f) ? -1.0f : ch_l;
-	// clip right channel
-	ch_r = (ch_r > 1.0f) ? 1.0f : ch_r;
-	ch_r = (ch_r < -1.0f) ? -1.0f : ch_r;
-	// convert to a signed integer
-	xl = (int16_t) (ch_l * 32767.0f);
-	xr = (int16_t) (ch_r * 32767.0f);
-	// write the samples to the i2s
-	i2s_wr(&audio->i2s, xl);
-	i2s_wr(&audio->i2s, xr);
+// clip samples to the -1.0 to 1.0 range
+static float clip(float x) {
+	x = (x > 1.f) ? 1.f : x;
+	x = (x < -1.f) ? -1.f : x;
+	return x;
+}
+
+// write l/r channel samples to the audio output buffer
+void audio_wr(int16_t * dst, size_t n, float *ch_l, float *ch_r) {
+	unsigned int i;
+	for (i = 0; i < n; i++) {
+		*dst++ = (int16_t) (clip(ch_l[i]) * 32767.f);
+		*dst++ = (int16_t) (clip(ch_r[i]) * 32767.f);
+	}
 }
 
 //-----------------------------------------------------------------------------

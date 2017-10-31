@@ -46,19 +46,23 @@ static void midi_handler(struct ggm_state *s, struct event *e) {
 
 // handle an audio request event
 static void audio_handler(struct ggm_state *s, struct event *e) {
-	DBG("audio %08x %08x\r\n", e->type, e->ptr);
+	size_t n = EVENT_BLOCK_SIZE(e->type);
+	int16_t *dst = e->ptr;
+	unsigned int i;
+	float buf[n];
+	//DBG("audio %08x %08x\r\n", e->type, e->ptr);
+	for (i = 0; i < n; i++) {
+		buf[i] = adsr_sample(&s->adsr) * lut_sample(&s->sin);
+	}
+	audio_wr(dst, n, buf, buf);
 }
 
 //-----------------------------------------------------------------------------
 
 // the main ggm event loop
 int ggm_run(struct ggm_state *s) {
-
 	while (1) {
 		struct event e;
-		//float a = adsr_sample(&s->adsr);
-		//float x = a * lut_sample(&s->sin);
-
 		if (!event_rd(&e)) {
 			switch (EVENT_TYPE(e.type)) {
 			case EVENT_TYPE_KEY_DN:
@@ -78,9 +82,7 @@ int ggm_run(struct ggm_state *s) {
 				break;
 			}
 		}
-		//audio_wr(s->audio, x, x);
 	}
-
 	return 0;
 }
 
@@ -89,10 +91,6 @@ int ggm_run(struct ggm_state *s) {
 // initialise the ggm state
 int ggm_init(struct ggm_state *s, struct audio_drv *audio) {
 	int rc = 0;
-
-	float x = DDS_FSCALE;
-
-	DBG("DDS_FSCALE %08x\r\n", *(uint32_t *) & x);
 
 	memset(s, 0, sizeof(struct ggm_state));
 	s->audio = audio;

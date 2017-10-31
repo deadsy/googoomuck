@@ -237,7 +237,7 @@ int dma_init(struct dma_drv *dma, struct dma_cfg *cfg) {
 		goto exit;
 	}
 
-	dma->sregs->NDTR = cfg->nbytes;
+	dma->sregs->NDTR = cfg->nitems;
 
 	// SxFCR setup
 	val = (1 << 7 /*FEIE*/);	// FIFO error interrupt enable (enabled)

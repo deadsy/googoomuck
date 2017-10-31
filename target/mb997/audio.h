@@ -19,18 +19,18 @@ Audio Control for the STM32F4 Discovery Board
 
 // Total bits/sec = AUDIO_SAMPLE_RATE * N bits per channel * 2 channels
 // This is used to lookup the i2s clock configuration in a table.
-#define AUDIO_SAMPLE_RATE 35156U	// Hz
+#define AUDIO_SAMPLE_RATE 44100U	// Hz
 
 // The hardware is often not capable of the exact sample rate.
 // This is the sample rate we actually get per the clock divider settings.
 // See ./scripts/i2sclk.py for details.
-#define AUDIO_FS 35156.25f	// Hz
+#define AUDIO_FS 44099.507f	// Hz
 
 // The size (in audio samples) of the work buffer.
 #define AUDIO_BLOCK_SIZE 128
 
 // The size (in audio samples) of the buffer that is DMAed from memory to I2S.
-#define AUDIO_BUFFER_SIZE (2 * AUDIO_BLOCK_SIZE)
+#define AUDIO_BUFFER_SIZE (4 * AUDIO_BLOCK_SIZE)
 
 //-----------------------------------------------------------------------------
 
@@ -48,14 +48,8 @@ extern struct audio_drv ggm_audio;
 
 int audio_init(struct audio_drv *audio);
 int audio_start(struct audio_drv *audio);
-
-void audio_wr(struct audio_drv *audio, float ch_l, float ch_r);
+void audio_wr(int16_t * dst, size_t n, float *ch_l, float *ch_r);
 void audio_master_volume(struct audio_drv *audio, uint8_t vol);
-
-// This is a callback from the dma interrupt handler to the synthesizer.
-// It requests the synth to generate and write samples to the upper or
-// lower half of the audio buffer.
-void audio_generate(int index);
 
 //-----------------------------------------------------------------------------
 
