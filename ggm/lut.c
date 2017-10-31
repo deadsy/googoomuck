@@ -40,19 +40,59 @@ static const uint32_t cos_table[COS_TABLE_SIZE] = {
 
 //-----------------------------------------------------------------------------
 
-void osc2_sin(struct dds *osc, float amp, float freq, float phase) {
+static void block_mul(float *out, float *k, size_t n) {
+	unsigned int i;
+	for (i = 0; i < n; i++) {
+		out[i] *= k[i];
+	}
+}
+
+//-----------------------------------------------------------------------------
+
+static void dds_init(struct dds *osc, float amp, float freq, float phase) {
 	memset(osc, 0, sizeof(struct dds));
-	// setup the table
-	osc->table = (float *)cos_table;
-	osc->shift = 32 - COS_TABLE_BITS;
-	osc->mask = ((1 << COS_TABLE_BITS) - 1) << osc->shift;
-	// frequency
-	osc->freq = freq;
-	dds_mod_freq(osc, 0.0f);
-	// phase
-	osc->phase = fmodf(phase, TAU);
 	// amplitude
 	osc->amp = amp;
+	// frequency
+	osc->freq = freq;
+	osc->xstep = (uint32_t) (osc->freq * DDS_FSCALE);
+	// phase
+	osc->phase = fmodf(phase, TAU);
+}
+
+static void dds_table(struct dds *osc, float *table, int bits) {
+	// setup the table
+	osc->table = table;
+	osc->table_mask = (1U << bits) - 1U;
+	osc->frac_bits = 32U - bits;
+	osc->frac_mask = (1U << osc->frac_bits) - 1;
+	osc->frac_scale = (float)(1.f / (float)(1ULL << osc->frac_bits));
+}
+
+// simple dds generation (no modulation)
+void dds_gen(struct dds *osc, float *out, size_t n) {
+	unsigned int i;
+	for (i = 0; i < n; i++) {
+		int x0 = osc->x >> osc->frac_bits;
+		int x1 = (x0 + 1) & osc->table_mask;
+		float y0 = osc->table[x0];
+		float y1 = osc->table[x1];
+		// interpolate
+		out[i] = osc->amp * (y0 + (y1 - y0) * osc->frac_scale * (float)(osc->x & osc->frac_mask));
+		// step the x position
+		osc->x += osc->xstep;
+	}
+}
+
+// dds generation with amplitude modulation
+void dds_gen_am(struct dds *osc, float *out, float *am, size_t n) {
+	dds_gen(osc, out, n);
+	block_mul(out, am, n);
+}
+
+void osc2_sin(struct dds *osc, float amp, float freq, float phase) {
+	dds_init(osc, amp, freq, phase);
+	dds_table(osc, (float *)cos_table, COS_TABLE_BITS);
 }
 
 //-----------------------------------------------------------------------------

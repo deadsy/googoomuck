@@ -32,10 +32,12 @@ GooGooMuck Synthesizer
 
 struct dds {
 	const float *table;	// lookup table
-	uint32_t mask;		// mask for the table bits
-	uint32_t shift;		// shift for the table bits
+	uint32_t table_mask;	// mask for the table bits
+	uint32_t frac_bits;	// number of fraction bits
+	uint32_t frac_mask;	// mask for fraction bits
 	uint32_t x;		// current x-value
 	uint32_t xstep;		// current x-step
+	float frac_scale;	// scaling for the fractional portion
 	float phase;		// base phase
 	float freq;		// base frequency
 	float amp;		// amplitude

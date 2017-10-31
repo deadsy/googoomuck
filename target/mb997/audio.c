@@ -230,10 +230,10 @@ void audio_wr(int16_t * dst, size_t n, float *ch_l, float *ch_r) {
 
 //-----------------------------------------------------------------------------
 
-// record some metrics for realtime audio performance
+// report some metrics for realtime audio performance
 void audio_stats(struct audio_drv *audio, int16_t * buf) {
 	struct audio_stats *stats = &audio->stats;
-	// where are we at in the DMA buffer?
+	// where are we in the DMA buffer?
 	int ndtr = (int)dma_ndtr(&audio->dma);
 	int margin;
 
@@ -283,7 +283,7 @@ void audio_stats(struct audio_drv *audio, int16_t * buf) {
 			ave += stats->margins[i];
 		}
 		ave /= N_MARGINS;
-		DBG("stats: min %d max %d ave %d underrun %d\r\n", stats->min, stats->max, ave, stats->underrun);
+		DBG("margin min %d max %d ave %d underruns %d\r\n", stats->min, stats->max, ave, stats->underrun);
 	}
 }
 
