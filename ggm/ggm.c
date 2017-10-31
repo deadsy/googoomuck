@@ -54,7 +54,10 @@ static void audio_handler(struct ggm_state *s, struct event *e) {
 	for (i = 0; i < n; i++) {
 		buf[i] = adsr_sample(&s->adsr) * lut_sample(&s->sin);
 	}
+	// write the samples to the dma buffer
 	audio_wr(dst, n, buf, buf);
+	// record some realtime stats
+	audio_stats(s->audio, dst);
 }
 
 //-----------------------------------------------------------------------------

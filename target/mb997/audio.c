@@ -6,6 +6,8 @@ Audio Control for the STM32F4 Discovery Board
 */
 //-----------------------------------------------------------------------------
 
+#include <string.h>
+
 #include "audio.h"
 #include "ggm.h"
 
@@ -57,7 +59,7 @@ static void audio_ht_callback(struct dma_drv *dma, int idx) {
 // transfer complete callback
 static void audio_tc_callback(struct dma_drv *dma, int idx) {
 	// dma is reading from the bottom half, so fill the top half
-	int rc = event_wr(EVENT_TYPE_AUDIO | AUDIO_BLOCK_SIZE, &ggm_audio.buffer[AUDIO_BLOCK_SIZE << 1]);
+	int rc = event_wr(EVENT_TYPE_AUDIO | AUDIO_BLOCK_SIZE, &ggm_audio.buffer[HALF_AUDIO_BUFFER_SIZE]);
 	if (rc != 0) {
 		DBG("event_wr error for tc callback\r\n");
 	}
@@ -171,6 +173,12 @@ int audio_init(struct audio_drv *audio) {
 		DBG("cs4x_init failed %d\r\n", rc);
 		goto exit;
 	}
+	// setup the stats
+	memset(&audio->stats, 0, sizeof(struct audio_stats));
+	audio->stats.min = AUDIO_BUFFER_SIZE;
+
+	// setup the buffer
+	memset(audio->buffer, 0, sizeof(int16_t) * AUDIO_BUFFER_SIZE);
 
  exit:
 	return rc;
@@ -217,6 +225,65 @@ void audio_wr(int16_t * dst, size_t n, float *ch_l, float *ch_r) {
 	for (i = 0; i < n; i++) {
 		*dst++ = (int16_t) (clip(ch_l[i]) * 32767.f);
 		*dst++ = (int16_t) (clip(ch_r[i]) * 32767.f);
+	}
+}
+
+//-----------------------------------------------------------------------------
+
+// record some metrics for realtime audio performance
+void audio_stats(struct audio_drv *audio, int16_t * buf) {
+	struct audio_stats *stats = &audio->stats;
+	// where are we at in the DMA buffer?
+	int ndtr = (int)dma_ndtr(&audio->dma);
+	int margin;
+
+	stats->buffers += 1;
+
+	// We call this just after we have created a new buffer of samples and copied it to to the audio buffer.
+	// We have to work faster than the DMA is reading the other buffer half.
+	// Let's see how close the DMA is to finishing.
+	// That gives us a margin for how much we beat the deadline.
+
+	if (buf == audio->buffer) {
+		// we just wrote to the lower buffer
+		if (ndtr > HALF_AUDIO_BUFFER_SIZE) {
+			// dma is reading in the lower half- oops!
+			stats->underrun += 1;
+			margin = ndtr - (int)AUDIO_BUFFER_SIZE;
+		} else {
+			// dma is still reading in the top half
+			margin = ndtr;
+		}
+	} else {
+		// we just wrote to the upper buffer
+		if (ndtr < HALF_AUDIO_BUFFER_SIZE) {
+			// dma is reading in the top half- oops!
+			stats->underrun += 1;
+		}
+		margin = ndtr - (int)HALF_AUDIO_BUFFER_SIZE;
+	}
+
+	// record the last N_MARGINS for an average
+	stats->margins[stats->idx] = margin;
+	stats->idx = (stats->idx + 1) & (N_MARGINS - 1);
+
+	// record max and min margin
+	if (margin < stats->min) {
+		stats->min = margin;
+	}
+	if (margin > stats->max) {
+		stats->max = margin;
+	}
+	// print a periodic stats message
+	if ((stats->buffers & ((1 << 10) - 1)) == 0) {
+		// work out the average
+		unsigned int i;
+		int ave = 0;
+		for (i = 0; i < N_MARGINS; i++) {
+			ave += stats->margins[i];
+		}
+		ave /= N_MARGINS;
+		DBG("stats: min %d max %d ave %d underrun %d\r\n", stats->min, stats->max, ave, stats->underrun);
 	}
 }
 

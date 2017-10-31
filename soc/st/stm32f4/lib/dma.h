@@ -109,8 +109,18 @@ struct dma_cfg {
 
 //-----------------------------------------------------------------------------
 
+// return the current number of data transfer items
+static inline uint32_t dma_ndtr(struct dma_drv *dma) {
+	return dma->sregs->NDTR;
+}
+
+// enable a dma stream
+// Note: enable the dma stream *before* enabling the peripheral
+static inline void dma_enable(struct dma_drv *dma) {
+	dma->sregs->CR |= DMA_SxCR_EN;
+}
+
 int dma_init(struct dma_drv *dma, struct dma_cfg *cfg);
-void dma_enable(struct dma_drv *dma);
 int dma_disable(struct dma_drv *dma);
 void dma_isr(struct dma_drv *dma);
 

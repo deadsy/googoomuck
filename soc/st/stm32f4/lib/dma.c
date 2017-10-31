@@ -73,12 +73,6 @@ int dma_disable(struct dma_drv *dma) {
 	return 0;
 }
 
-// enable a dma stream
-// Note: enable the dma stream *before* enabling the peripheral
-void dma_enable(struct dma_drv *dma) {
-	dma->sregs->CR |= DMA_SxCR_EN;
-}
-
 //-----------------------------------------------------------------------------
 
 // Called from DMAX_StreamY_IRQHandler()
