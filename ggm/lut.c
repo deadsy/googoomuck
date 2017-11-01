@@ -1,7 +1,7 @@
 //-----------------------------------------------------------------------------
 /*
 
-Lookup Table Based Oscillators
+DDS Lookup Table Based Oscillators
 
 */
 //-----------------------------------------------------------------------------
@@ -84,56 +84,38 @@ void dds_gen(struct dds *osc, float *out, size_t n) {
 	}
 }
 
+// dds generation with frequency modulation
+void dds_gen_fm(struct dds *osc, float *out, float *fm, size_t n) {
+	unsigned int i;
+	for (i = 0; i < n; i++) {
+		int x0 = osc->x >> osc->frac_bits;
+		int x1 = (x0 + 1) & osc->table_mask;
+		float y0 = osc->table[x0];
+		float y1 = osc->table[x1];
+		// interpolate
+		out[i] = osc->amp * (y0 + (y1 - y0) * osc->frac_scale * (float)(osc->x & osc->frac_mask));
+		// step the x position
+		osc->x += (uint32_t) ((osc->freq + fm[i]) * DDS_FSCALE);
+	}
+}
+
 // dds generation with amplitude modulation
 void dds_gen_am(struct dds *osc, float *out, float *am, size_t n) {
 	dds_gen(osc, out, n);
 	block_mul(out, am, n);
 }
 
-void osc2_sin(struct dds *osc, float amp, float freq, float phase) {
+// dds generation with fm followed by am
+void dds_gen_fm_am(struct dds *osc, float *out, float *fm, float *am, size_t n) {
+	dds_gen_fm(osc, out, fm, n);
+	block_mul(out, am, n);
+}
+
+//-----------------------------------------------------------------------------
+
+void dds_sin_init(struct dds *osc, float amp, float freq, float phase) {
 	dds_init(osc, amp, freq, phase);
 	dds_table(osc, (float *)cos_table, COS_TABLE_BITS);
-}
-
-//-----------------------------------------------------------------------------
-
-// return a sample from a lookup table based oscillator
-float lut_sample(struct lut_osc *osc) {
-	size_t x0 = (size_t) osc->x;
-	float y0 = *(float *)&osc->table[x0];
-	float y, y1;
-	if (x0 == osc->n - 1) {
-		y1 = *(float *)&osc->table[0];
-	} else {
-		y1 = *(float *)&osc->table[x0 + 1];
-	}
-	// interpolate
-	y = y0 + ((osc->x - (float)x0) * (y1 - y0));
-	// step the x position
-	osc->x += osc->xstep;
-	if (osc->x >= osc->xrange) {
-		osc->x -= osc->xrange;
-	}
-	return osc->amp * y;
-}
-
-//-----------------------------------------------------------------------------
-
-// initialise a sine wave oscillator
-void osc_sin(struct lut_osc *osc, float amp, float freq, float phase) {
-	memset(osc, 0, sizeof(struct lut_osc));
-	// setup the table
-	osc->table = cos_table;
-	osc->n = COS_TABLE_SIZE;
-	osc->xrange = (float)COS_TABLE_SIZE;
-	osc->fscale = osc->xrange * AUDIO_TS;
-	// amplitude
-	osc->amp = amp;
-	// phase
-	osc->x = osc->xrange * fmodf(phase, TAU);
-	// frequency
-	osc->freq = freq;
-	lut_mod_freq(osc, 0.0f);
 }
 
 //-----------------------------------------------------------------------------

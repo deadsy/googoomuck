@@ -48,14 +48,21 @@ static void midi_handler(struct ggm_state *s, struct event *e) {
 static void audio_handler(struct ggm_state *s, struct event *e) {
 	size_t n = EVENT_BLOCK_SIZE(e->type);
 	int16_t *dst = e->ptr;
-	unsigned int i;
-	float buf[n];
+	float out[n];
+
 	//DBG("audio %08x %08x\r\n", e->type, e->ptr);
-	for (i = 0; i < n; i++) {
-		buf[i] = adsr_sample(&s->adsr) * lut_sample(&s->sin);
+	if (adsr_is_active(&s->adsr)) {
+		float fm[n];
+		float am[n];
+		dds_gen(&s->lfo, fm, n);
+		adsr_gen(&s->adsr, am, n);
+		dds_gen_fm_am(&s->sin, out, fm, am, n);
+	} else {
+		memset(out, 0, n * sizeof(float));
 	}
+
 	// write the samples to the dma buffer
-	audio_wr(dst, n, buf, buf);
+	audio_wr(dst, n, out, out);
 	// record some realtime stats
 	audio_stats(s->audio, dst);
 }
@@ -104,7 +111,8 @@ int ggm_init(struct ggm_state *s, struct audio_drv *audio) {
 		goto exit;
 	}
 
-	osc_sin(&s->sin, 1.0f, midi_to_frequency(69), 0.0f);
+	dds_sin_init(&s->lfo, 10.f, 15.f, 0.f);
+	dds_sin_init(&s->sin, 1.f, midi_to_frequency(69), 0.f);
 	adsr_init(&s->adsr, 0.05f, 0.2f, 0.5f, 0.5f);
 
  exit:

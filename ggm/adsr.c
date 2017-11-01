@@ -65,10 +65,15 @@ void adsr_idle(struct adsr *e) {
 	e->state = ADSR_STATE_IDLE;
 }
 
+// Return non-zero if the adsr is active (!=0).
+int adsr_is_active(struct adsr *e) {
+	return e->state != ADSR_STATE_IDLE;
+}
+
 //-----------------------------------------------------------------------------
 
 // Return a sample value for the ADSR envelope.
-float adsr_sample(struct adsr *e) {
+static float adsr_sample(struct adsr *e) {
 	switch (e->state) {
 	case ADSR_STATE_IDLE:
 		// idle - do nothing
@@ -114,6 +119,13 @@ float adsr_sample(struct adsr *e) {
 		break;
 	}
 	return e->val;
+}
+
+void adsr_gen(struct adsr *e, float *out, size_t n) {
+	unsigned int i;
+	for (i = 0; i < n; i++) {
+		out[i] = adsr_sample(e);
+	}
 }
 
 //-----------------------------------------------------------------------------

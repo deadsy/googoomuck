@@ -43,37 +43,14 @@ struct dds {
 	float amp;		// amplitude
 };
 
-// modulate the frequency of the oscillator
-static inline void dds_mod_freq(struct dds *osc, float f) {
-	osc->xstep = (uint32_t) ((osc->freq + f) * DDS_FSCALE);
-}
-
 // oscillators
-void osc2_sin(struct dds *osc, float amp, float freq, float phase);
+void dds_sin_init(struct dds *osc, float amp, float freq, float phase);
 
-//-----------------------------------------------------------------------------
-// LUT oscillators
-
-struct lut_osc {
-	const uint32_t *table;	// lookup table
-	size_t n;		// number of entries in LUT
-	float amp;		// amplitude
-	float freq;		// base frequency
-	float xrange;		// x-range for LUT
-	float fscale;		// frequency to x scaling (xrange * 1/fs)
-	float x;		// current x-value
-	float xstep;		// current x-step
-};
-
-// modulate the frequency of the oscillator
-static inline void lut_mod_freq(struct lut_osc *osc, float f) {
-	osc->xstep = (osc->freq + f) * osc->fscale;
-}
-
-float lut_sample(struct lut_osc *lut);
-
-// oscillators
-void osc_sin(struct lut_osc *osc, float amp, float freq, float phase);
+// generators
+void dds_gen(struct dds *osc, float *out, size_t n);
+void dds_gen_am(struct dds *osc, float *out, float *am, size_t n);
+void dds_gen_fm(struct dds *osc, float *out, float *fm, size_t n);
+void dds_gen_fm_am(struct dds *osc, float *out, float *fm, float *am, size_t n);
 
 //-----------------------------------------------------------------------------
 // ADSR envelope
@@ -90,7 +67,8 @@ struct adsr {
 	float val;		// output value
 };
 
-float adsr_sample(struct adsr *e);
+// generators
+void adsr_gen(struct adsr *e, float *out, size_t n);
 
 // envelopes
 void adsr_init(struct adsr *e, float a, float d, float s, float r);
@@ -100,6 +78,9 @@ void ad_init(struct adsr *e, float a, float d);
 void adsr_attack(struct adsr *e);
 void adsr_release(struct adsr *e);
 void adsr_idle(struct adsr *e);
+
+// state
+int adsr_is_active(struct adsr *e);
 
 //-----------------------------------------------------------------------------
 // midi
@@ -158,7 +139,8 @@ int event_wr(uint32_t type, void *ptr);
 
 struct ggm_state {
 	struct audio_drv *audio;
-	struct lut_osc sin;
+	struct dds lfo;
+	struct dds sin;
 	struct adsr adsr;
 };
 

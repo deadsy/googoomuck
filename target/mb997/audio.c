@@ -235,7 +235,7 @@ void audio_stats(struct audio_drv *audio, int16_t * buf) {
 	struct audio_stats *stats = &audio->stats;
 	// where are we in the DMA buffer?
 	int ndtr = (int)dma_ndtr(&audio->dma);
-	int margin;
+	int margin = -1;
 
 	stats->buffers += 1;
 
@@ -249,7 +249,6 @@ void audio_stats(struct audio_drv *audio, int16_t * buf) {
 		if (ndtr > HALF_AUDIO_BUFFER_SIZE) {
 			// dma is reading in the lower half- oops!
 			stats->underrun += 1;
-			margin = ndtr - (int)AUDIO_BUFFER_SIZE;
 		} else {
 			// dma is still reading in the top half
 			margin = ndtr;
@@ -259,20 +258,22 @@ void audio_stats(struct audio_drv *audio, int16_t * buf) {
 		if (ndtr < HALF_AUDIO_BUFFER_SIZE) {
 			// dma is reading in the top half- oops!
 			stats->underrun += 1;
+		} else {
+			margin = ndtr - (int)HALF_AUDIO_BUFFER_SIZE;
 		}
-		margin = ndtr - (int)HALF_AUDIO_BUFFER_SIZE;
 	}
 
-	// record the last N_MARGINS for an average
-	stats->margins[stats->idx] = margin;
-	stats->idx = (stats->idx + 1) & (N_MARGINS - 1);
-
-	// record max and min margin
-	if (margin < stats->min) {
-		stats->min = margin;
-	}
-	if (margin > stats->max) {
-		stats->max = margin;
+	if (margin >= 0) {
+		// record the last N_MARGINS for an average
+		stats->margins[stats->idx] = margin;
+		stats->idx = (stats->idx + 1) & (N_MARGINS - 1);
+		// record max and min margin
+		if (margin < stats->min) {
+			stats->min = margin;
+		}
+		if (margin > stats->max) {
+			stats->max = margin;
+		}
 	}
 	// print a periodic stats message
 	if ((stats->buffers & ((1 << 10) - 1)) == 0) {
