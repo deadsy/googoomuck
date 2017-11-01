@@ -15,6 +15,15 @@ Common Utility Functions/Macros
 
 //-----------------------------------------------------------------------------
 
+// clamp x between a and b
+static inline float clamp(float x, float a, float b) {
+	x = (x < a) ? a : x;
+	x = (x > b) ? b : x;
+	return x;
+}
+
+//-----------------------------------------------------------------------------
+
 static inline void reg_rmw(volatile uint32_t * reg, uint32_t mask, uint32_t val) {
 	uint32_t x = *reg;
 	x &= ~mask;

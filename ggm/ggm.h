@@ -53,6 +53,19 @@ void dds_gen_fm(struct dds *osc, float *out, float *fm, size_t n);
 void dds_gen_fm_am(struct dds *osc, float *out, float *fm, float *am, size_t n);
 
 //-----------------------------------------------------------------------------
+// Goom Waves
+
+struct gwave {
+	uint32_t s0;
+	uint32_t f0;
+	uint32_t s1;
+	uint32_t f1;
+};
+
+void gwave_init(struct gwave *osc, float duty, float slope);
+void gwave_gen(struct dds *osc, float *out, size_t n);
+
+//-----------------------------------------------------------------------------
 // ADSR envelope
 
 struct adsr {
