@@ -43,7 +43,7 @@ SRC += $(DRIVERS_DIR)/cs43l22.c \
 
 # googoomuck
 GGM_DIR = $(TOP)/ggm
-SRC += $(GGM_DIR)/lut.c \
+SRC += $(GGM_DIR)/dds.c \
        $(GGM_DIR)/midi.c \
        $(GGM_DIR)/ggm.c \
        $(GGM_DIR)/event.c \
