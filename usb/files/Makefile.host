@@ -1,31 +1,38 @@
 TOP = ../..
 include $(TOP)/mk/common.mk
 
-LIB_SRC = tinyusb/osal/osal_none.c \
-	tinyusb/host/hcd.c \
-	tinyusb/host/hub.c \
-	tinyusb/host/usbh.c \
-	tinyusb/host/ehci/ehci.c \
-	tinyusb/host/ohci/ohci.c \
-	tinyusb/tusb.c \
-	tinyusb/class/custom_class_host.c \
-	tinyusb/class/cdc_rndis_host.c \
-	tinyusb/class/hid_host.c \
-	tinyusb/class/msc_host.c \
-	tinyusb/class/cdc_host.c \
-	tinyusb/common/fifo.c \
-	tinyusb/common/tusb_errors.c \
+OUTPUT = usb_host_demo
 
-DEMO_SRC = demos/host/src/cdc_serial_host_app.c \
-	demos/host/src/msc_host_app.c \
-	demos/host/src/main.c \
-	demos/host/src/mouse_host_app.c \
-	demos/host/src/rndis_host_app.c \
-	demos/host/src/keyboard_host_app.c \
-	demos/host/src/msc_cli.c \
+TUSB_DIR = tinyusb
+LIB_SRC = $(TUSB_DIR)/osal/osal_none.c \
+	$(TUSB_DIR)/host/hcd.c \
+	$(TUSB_DIR)/host/hub.c \
+	$(TUSB_DIR)/host/usbh.c \
+	$(TUSB_DIR)/host/ehci/ehci.c \
+	$(TUSB_DIR)/host/ohci/ohci.c \
+	$(TUSB_DIR)/tusb.c \
+	$(TUSB_DIR)/class/custom_class_host.c \
+	$(TUSB_DIR)/class/cdc_rndis_host.c \
+	$(TUSB_DIR)/class/hid_host.c \
+	$(TUSB_DIR)/class/msc_host.c \
+	$(TUSB_DIR)/class/cdc_host.c \
+	$(TUSB_DIR)/common/fifo.c \
+	$(TUSB_DIR)/common/tusb_errors.c \
+
+DEMO_DIR = demos/host/src
+SRC = $(DEMO_DIR)/cdc_serial_host_app.c \
+	$(DEMO_DIR)/msc_host_app.c \
+	$(DEMO_DIR)/main.c \
+	$(DEMO_DIR)/mouse_host_app.c \
+	$(DEMO_DIR)/rndis_host_app.c \
+	$(DEMO_DIR)/keyboard_host_app.c \
+	$(DEMO_DIR)/msc_cli.c \
+
+BOARD_DIR = boards/st/mb997
 
 LIB_OBJ = $(LIB_SRC:.c=.o)
-DEMO_OBJ = $(DEMO_SRC:.c=.o)
+OBJ = $(SRC:.c=.o)
+OBJ += $(BOARD_DIR)/start.o
 
 # include paths
 INCLUDE += -I$(TOP)/usb/tinyusb-master/tinyusb
@@ -37,13 +44,21 @@ INCLUDE += -I$(TOP)/usb/tinyusb-master/vendor/fatfs
 # defines
 DEFINE = -DBOARD=BOARD_MB997
 
+# linker flags
+LDSCRIPT = $(BOARD_DIR)/stm32f407vg_flash.ld
+X_LDFLAGS = -T$(LDSCRIPT) -Wl,-Map,$(OUTPUT).map -Wl,--gc-sections
+X_LDFLAGS += -L.
+
+.S.o:
+	$(X_GCC) $(INCLUDE) $(DEFINE) $(X_CFLAGS) -c $< -o $@
 .c.o:
 	$(X_GCC) $(INCLUDE) $(DEFINE) $(X_CFLAGS) -c $< -o $@
 
 libusbhost.a: $(LIB_OBJ)
 	$(X_AR) rcs $@ $(LIB_OBJ)
 
-demo: $(DEMO_OBJ)
+demo: libusbhost.a $(OBJ)
+	$(X_GCC) $(X_CFLAGS) $(X_LDFLAGS) $(OBJ) -lusbhost -o $(OUTPUT)
 
 clean:
 	rm -f *.o *.a

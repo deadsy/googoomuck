@@ -14,7 +14,7 @@
  #elif BOARD == BOARD_LPCLINK2
   #include "lpcxpresso/board_lpclink2.h"
 +#elif BOARD == BOARD_MB997
-+ #include "st/board_mb997.h"
++ #include "st/mb997/board_mb997.h"
  #else
    #error BOARD is not defined or supported yet
  #endif
