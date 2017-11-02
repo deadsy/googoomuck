@@ -8,8 +8,6 @@ LIB_SRC = $(TUSB_DIR)/osal/osal_none.c \
 	$(TUSB_DIR)/host/hcd.c \
 	$(TUSB_DIR)/host/hub.c \
 	$(TUSB_DIR)/host/usbh.c \
-	$(TUSB_DIR)/host/ehci/ehci.c \
-	$(TUSB_DIR)/host/ohci/ohci.c \
 	$(TUSB_DIR)/tusb.c \
 	$(TUSB_DIR)/class/custom_class_host.c \
 	$(TUSB_DIR)/class/cdc_rndis_host.c \
@@ -18,6 +16,7 @@ LIB_SRC = $(TUSB_DIR)/osal/osal_none.c \
 	$(TUSB_DIR)/class/cdc_host.c \
 	$(TUSB_DIR)/common/fifo.c \
 	$(TUSB_DIR)/common/tusb_errors.c \
+	$(TUSB_DIR)/hal/hal_stm32f407.c \
 
 DEMO_DIR = demos/host/src
 SRC = $(DEMO_DIR)/cdc_serial_host_app.c \
@@ -28,11 +27,23 @@ SRC = $(DEMO_DIR)/cdc_serial_host_app.c \
 	$(DEMO_DIR)/keyboard_host_app.c \
 	$(DEMO_DIR)/msc_cli.c \
 
-BOARD_DIR = boards/st/mb997
+FATFS_DIR = vendor/fatfs
+SRC += $(FATFS_DIR)/ccsbcs.c \
+	$(FATFS_DIR)/diskio.c \
+	$(FATFS_DIR)/ff.c \
+
+BOARD_DIR = boards
+SRC += $(BOARD_DIR)/st/common/syscalls.c \
+	$(BOARD_DIR)/st/common/rtt/SEGGER_RTT.c \
+	$(BOARD_DIR)/st/common/rtt/SEGGER_RTT_printf.c \
+	$(BOARD_DIR)/st/common/logging.c \
+	$(BOARD_DIR)/st/mb997/board_mb997.c \
+	$(BOARD_DIR)/board.c \
+	$(BOARD_DIR)/st/stm32f4/system_stm32f4xx.c \
 
 LIB_OBJ = $(LIB_SRC:.c=.o)
 OBJ = $(SRC:.c=.o)
-OBJ += $(BOARD_DIR)/start.o
+OBJ += $(BOARD_DIR)/st/mb997/start.o
 
 # include paths
 INCLUDE += -I$(TOP)/usb/tinyusb-master/tinyusb
@@ -40,14 +51,20 @@ INCLUDE += -I$(TOP)/usb/tinyusb-master/boards
 INCLUDE += -I$(TOP)/soc/st/stm32f4/cmsis
 INCLUDE += -I$(TOP)/usb/tinyusb-master/demos/host/src
 INCLUDE += -I$(TOP)/usb/tinyusb-master/vendor/fatfs
+INCLUDE += -I$(BOARD_DIR)/st/common/rtt
 
 # defines
-DEFINE = -DBOARD=BOARD_MB997
+DEFINE += -DBOARD=BOARD_MB997
+DEFINE += -DSTM32F407xx
 
 # linker flags
-LDSCRIPT = $(BOARD_DIR)/stm32f407vg_flash.ld
+LDSCRIPT = $(BOARD_DIR)/st/mb997/stm32f407vg_flash.ld
 X_LDFLAGS = -T$(LDSCRIPT) -Wl,-Map,$(OUTPUT).map -Wl,--gc-sections
 X_LDFLAGS += -L.
+
+# turn off some warnings
+X_CFLAGS += -Wno-unused-parameter
+#X_CFLAGS += -Wno-strict-prototypes
 
 .S.o:
 	$(X_GCC) $(INCLUDE) $(DEFINE) $(X_CFLAGS) -c $< -o $@
