@@ -1,0 +1,13 @@
+--- ./tinyusb/common/assertion.h	2017-11-02 05:40:20.617433433 -0700
++++ ./tinyusb/common/assertion.h	2017-11-02 05:39:51.309282331 -0700
+@@ -140,8 +140,8 @@
+ // Integer Assert
+ //--------------------------------------------------------------------+
+ #define ASSERT_INT(...)        ASSERT_INT_EQUAL(__VA_ARGS__)
+-#define ASSERT_INT_EQUAL(...)  ASSERT_XXX_EQUAL("%d", __VA_ARGS__)
+-#define ASSERT_INT_WITHIN(...) ASSERT_XXX_WITHIN("%d", __VA_ARGS__)
++#define ASSERT_INT_EQUAL(...)  ASSERT_XXX_EQUAL("%ld", __VA_ARGS__)
++#define ASSERT_INT_WITHIN(...) ASSERT_XXX_WITHIN("%ld", __VA_ARGS__)
+ 
+ //--------------------------------------------------------------------+
+ // Hex Assert

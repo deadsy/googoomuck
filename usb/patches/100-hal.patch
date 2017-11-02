@@ -1,0 +1,11 @@
+--- ./tinyusb/hal/hal.h	2017-11-01 23:31:50.207285162 -0700
++++ ./tinyusb/hal/hal.h	2017-11-01 23:33:37.683856766 -0700
+@@ -94,6 +94,8 @@
+   #include "hal_lpc43xx.h"
+ #elif TUSB_CFG_MCU == MCU_LPC175X_6X
+   #include "hal_lpc175x_6x.h"
++#elif TUSB_CFG_MCU == MCU_STM32F407
++  #include "hal_stm32f407.h"
+ #else
+   #error MCU is not defined or supported yet
+ #endif
