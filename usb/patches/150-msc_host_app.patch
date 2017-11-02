@@ -1,0 +1,13 @@
+--- ./demos/host/src/msc_host_app.c	2017-08-03 07:45:16.000000000 -0700
++++ ./demos/host/src/msc_host_app.c	2017-11-02 07:45:12.160057264 -0700
+@@ -79,8 +79,8 @@
+ 
+   uint32_t last_lba, block_size;
+   tuh_msc_get_capacity(dev_addr, &last_lba, &block_size);
+-  printf("Disk Size: %d MB\n", (last_lba+1)/ ((1024*1024)/block_size) );
+-  printf("LBA 0-0x%X  Block Size: %d\n", last_lba, block_size);
++  printf("Disk Size: %ld MB\n", (last_lba+1)/ ((1024*1024)/block_size) );
++  printf("LBA 0-0x%lX  Block Size: %ld\n", last_lba, block_size);
+ 
+   //------------- file system (only 1 LUN support) -------------//
+   uint8_t phy_disk = dev_addr-1;

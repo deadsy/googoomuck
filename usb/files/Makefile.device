@@ -25,14 +25,20 @@ DEMO_OBJ = $(DEMO_SRC:.c=.o)
 
 # include paths
 INCLUDE += -I$(TOP)/usb/tinyusb-master/tinyusb
-INCLUDE += -I$(TOP)/usb/tinyusb-master/demos/device/src
+INCLUDE += -I$(TOP)/usb/tinyusb-master/boards
 INCLUDE += -I$(TOP)/soc/st/stm32f4/cmsis
+INCLUDE += -I$(TOP)/usb/tinyusb-master/demos/device/src
+
+# defines
+DEFINE = -DBOARD=BOARD_MB997
 
 .c.o:
 	$(X_GCC) $(INCLUDE) $(DEFINE) $(X_CFLAGS) -c $< -o $@
 
 libusbdev.a: $(LIB_OBJ)
 	$(X_AR) rcs $@ $(LIB_OBJ)
+
+demo: $(DEMO_OBJ)
 
 clean:
 	rm -f *.o *.a

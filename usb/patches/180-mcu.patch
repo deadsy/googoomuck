@@ -1,0 +1,10 @@
+--- ./tinyusb/tusb_option.h	2017-11-02 08:27:05.133013289 -0700
++++ ./tinyusb/tusb_option.h	2017-11-02 08:27:51.137250474 -0700
+@@ -55,6 +55,7 @@
+ #define MCU_LPC177X_8X     5 ///< NXP LPC177x, LPC178x family (not supported yet)
+ #define MCU_LPC18XX        6 ///< NXP LPC18xx family (not supported yet)
+ #define MCU_LPC43XX        7 ///< NXP LPC43xx family
++#define MCU_STM32F407      8 ///< ST STM32F4 family
+ /** @} */
+ 
+ #include "mcu_capacity.h"

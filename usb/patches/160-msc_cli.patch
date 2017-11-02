@@ -1,0 +1,40 @@
+--- ./demos/host/src/msc_cli.c	2017-08-03 07:45:16.000000000 -0700
++++ ./demos/host/src/msc_cli.c	2017-11-02 07:49:56.049520899 -0700
+@@ -291,7 +291,7 @@
+           printf("/%s", p_name);
+         }else
+         {
+-          printf("%-40s%d KB", p_name, dir_entry.fsize / 1000);
++          printf("%-40s%ld KB", p_name, dir_entry.fsize / 1000);
+         }
+         putchar('\n');
+       }
+@@ -344,7 +344,7 @@
+   {
+     case FR_OK:
+     {
+-      uint32_t bytes_read = 0;
++      unsigned int bytes_read = 0;
+ 
+       if ( (FR_OK == f_read(&file, fileread_buffer, CLI_FILE_READ_BUFFER, &bytes_read)) && (bytes_read > 0) )
+       {
+@@ -352,7 +352,7 @@
+         {
+           putchar('\n');
+           do {
+-            for(uint32_t i=0; i<bytes_read; i++) putchar( fileread_buffer[i] );
++            for(unsigned int i=0; i<bytes_read; i++) putchar( fileread_buffer[i] );
+           }while( (FR_OK == f_read(&file, fileread_buffer, CLI_FILE_READ_BUFFER, &bytes_read)) && (bytes_read > 0) );
+         }else
+         { // not display file contents if first character is not printable (high chance of binary file)
+@@ -423,8 +423,8 @@
+     case FR_OK:
+       while(1) // copying
+       {
+-        uint32_t bytes_read = 0;
+-        uint32_t bytes_write = 0;
++        unsigned int bytes_read = 0;
++        unsigned int bytes_write = 0;
+         FRESULT res;
+ 
+         res = f_read(&src_file, fileread_buffer, CLI_FILE_READ_BUFFER, &bytes_read);     /* Read a chunk of src file */

@@ -1,0 +1,150 @@
+--- ./demos/device/src/cdc_device_app.c	2017-08-03 07:45:16.000000000 -0700
++++ ./demos/device/src/cdc_device_app.c	2017-11-02 08:03:42.301780771 -0700
+@@ -76,11 +76,12 @@
+ 
+ void tusbd_cdc_unmounted_cb(uint8_t coreid)
+ {
+-
++  (void)coreid;
+ }
+ 
+ void tusbd_cdc_xfer_cb(uint8_t coreid, tusb_event_t event, cdc_pipeid_t pipe_id, uint32_t xferred_bytes)
+ {
++  (void)coreid;
+   switch ( pipe_id )
+   {
+     case CDC_PIPE_DATA_OUT:
+@@ -124,6 +125,7 @@
+ 
+ OSAL_TASK_FUNCTION( cdcd_serial_app_task , p_task_para)
+ {
++  (void)p_task_para;
+   OSAL_TASK_LOOP_BEGIN
+ 
+   tusb_error_t error;
+--- ./demos/device/src/keyboard_device_app.c	2017-08-03 07:45:16.000000000 -0700
++++ ./demos/device/src/keyboard_device_app.c	2017-11-02 08:13:08.840701653 -0700
+@@ -60,16 +60,18 @@
+ //--------------------------------------------------------------------+
+ void tusbd_hid_keyboard_mounted_cb(uint8_t coreid)
+ {
+-
++  (void)coreid;
+ }
+ 
+ void tusbd_hid_keyboard_unmounted_cb(uint8_t coreid)
+ {
+-
++  (void)coreid;
+ }
+ 
+ void tusbd_hid_keyboard_cb(uint8_t coreid, tusb_event_t event, uint32_t xferred_bytes)
+ {
++  (void)coreid;
++  (void)xferred_bytes;
+   switch(event)
+   {
+     case TUSB_EVENT_XFER_COMPLETE:
+@@ -81,6 +83,7 @@
+ 
+ uint16_t tusbd_hid_keyboard_get_report_cb(uint8_t coreid, hid_request_report_type_t report_type, void** pp_report, uint16_t requested_length)
+ {
++  (void)coreid;
+   // get other than input report is not supported by this keyboard demo
+   if ( report_type != HID_REQUEST_REPORT_INPUT ) return 0;
+ 
+@@ -90,6 +93,8 @@
+ 
+ void tusbd_hid_keyboard_set_report_cb(uint8_t coreid, hid_request_report_type_t report_type, uint8_t p_report_data[], uint16_t length)
+ {
++  (void)coreid;
++  (void)length;
+   // set other than output report is not supported by this keyboard demo
+   if ( report_type != HID_REQUEST_REPORT_OUTPUT ) return;
+ 
+@@ -113,6 +118,7 @@
+ 
+ OSAL_TASK_FUNCTION( keyboard_device_app_task , p_task_para)
+ {
++  (void)p_task_para;
+   OSAL_TASK_LOOP_BEGIN
+ 
+   osal_task_delay(50);
+--- ./demos/device/src/msc_device_app.c	2017-08-03 07:45:16.000000000 -0700
++++ ./demos/device/src/msc_device_app.c	2017-11-02 08:07:37.290992295 -0700
+@@ -91,16 +91,18 @@
+ //--------------------------------------------------------------------+
+ void tusbd_msc_mounted_cb(uint8_t coreid)
+ {
+-
++  (void)coreid;
+ }
+ 
+ void tusbd_msc_unmounted_cb(uint8_t coreid)
+ {
+-
++  (void)coreid;
+ }
+ 
+ msc_csw_status_t tusbd_msc_scsi_cb (uint8_t coreid, uint8_t lun, uint8_t scsi_cmd[16], void const ** pp_buffer, uint16_t* p_length)
+ {
++  (void)coreid;
++  (void)lun;
+   // read10 & write10 has their own callback and MUST not be handled here
+   switch (scsi_cmd[0])
+   {
+@@ -158,6 +160,7 @@
+ //--------------------------------------------------------------------+
+ OSAL_TASK_FUNCTION( msc_device_app_task , p_task_para)
+ { // no need to implement the task yet
++  (void)p_task_para;
+   OSAL_TASK_LOOP_BEGIN
+ 
+   OSAL_TASK_LOOP_END
+--- ./demos/device/src/msc_device_ramdisk.c	2017-08-03 07:45:16.000000000 -0700
++++ ./demos/device/src/msc_device_ramdisk.c	2017-11-02 08:01:19.565044869 -0700
+@@ -93,12 +93,16 @@
+ //--------------------------------------------------------------------+
+ uint16_t tusbd_msc_read10_cb (uint8_t coreid, uint8_t lun, void** pp_buffer, uint32_t lba, uint16_t block_count)
+ {
++  (void)coreid;
++  (void)lun;
+   (*pp_buffer) = msc_device_ramdisk[lba];
+ 
+   return min16_of(block_count, DISK_BLOCK_NUM);
+ }
+ uint16_t tusbd_msc_write10_cb(uint8_t coreid, uint8_t lun, void** pp_buffer, uint32_t lba, uint16_t block_count)
+ {
++  (void)coreid;
++  (void)lun;
+   (*pp_buffer) = msc_device_ramdisk[lba];
+ 
+   return min16_of(block_count, DISK_BLOCK_NUM);
+--- ./tinyusb/device/usbd.c	2017-11-02 07:14:29.862559010 -0700
++++ ./tinyusb/device/usbd.c	2017-11-02 07:16:07.963064778 -0700
+@@ -308,6 +308,7 @@
+ // may need to open interface before set configured
+ static tusb_error_t usbd_set_configure_received(uint8_t coreid, uint8_t config_number)
+ {
++  (void)config_number;
+   dcd_controller_set_configuration(coreid);
+   usbd_devices[coreid].state = TUSB_DEVICE_STATE_CONFIGURED;
+ 
+@@ -349,6 +350,7 @@
+ 
+ static tusb_error_t get_descriptor(uint8_t coreid, tusb_control_request_t const * const p_request, uint8_t const ** pp_buffer, uint16_t * p_length)
+ {
++  (void)coreid;
+   tusb_std_descriptor_type_t const desc_type = (tusb_std_descriptor_type_t) u16_high_u8(p_request->wValue);
+   uint8_t const desc_index = u16_low_u8( p_request->wValue );
+ 
+--- ./tinyusb/class/hid_device.c	2017-11-02 07:11:50.869739295 -0700
++++ ./tinyusb/class/hid_device.c	2017-11-02 07:12:34.341963422 -0700
+@@ -115,6 +115,7 @@
+ 
+ bool tusbd_hid_keyboard_is_busy(uint8_t coreid)
+ {
++  (void)coreid;
+   return dcd_pipe_is_busy(keyboardd_data.ept_handle);
+ }
+ 
