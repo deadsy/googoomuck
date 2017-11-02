@@ -10,11 +10,16 @@ PATCH_CMD = \
             patch -s -d $(WORK_DIR) -p1 -b -z .original < $$f; \
         done
 
-all:
+extract:
 	unzip -q $(ZIPFILE)
 	$(PATCH_CMD)
 	cd files; tar -c -f - * | (cd ../$(WORK_DIR) ; tar xfp -)
-	make -C $(WORK_DIR) libusb.a
+
+host: extract
+	make -C $(WORK_DIR) -f Makefile.host
+
+device: extract
+	make -C $(WORK_DIR) -f Makefile.device
 
 clean:
 	-rm -rf $(WORK_DIR)

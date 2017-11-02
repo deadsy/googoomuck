@@ -1,0 +1,42 @@
+TOP = ../..
+include $(TOP)/mk/common.mk
+
+LIB_SRC = tinyusb/osal/osal_none.c \
+	tinyusb/host/hcd.c \
+	tinyusb/host/hub.c \
+	tinyusb/host/usbh.c \
+	tinyusb/host/ehci/ehci.c \
+	tinyusb/host/ohci/ohci.c \
+	tinyusb/tusb.c \
+	tinyusb/class/custom_class_host.c \
+	tinyusb/class/cdc_rndis_host.c \
+	tinyusb/class/hid_host.c \
+	tinyusb/class/msc_host.c \
+	tinyusb/class/cdc_host.c \
+	tinyusb/common/fifo.c \
+	tinyusb/common/tusb_errors.c \
+
+DEMO_SRC = demos/host/src/cdc_serial_host_app.c \
+	demos/host/src/msc_host_app.c \
+	demos/host/src/main.c \
+	demos/host/src/mouse_host_app.c \
+	demos/host/src/rndis_host_app.c \
+	demos/host/src/keyboard_host_app.c \
+	demos/host/src/msc_cli.c \
+
+LIB_OBJ = $(LIB_SRC:.c=.o)
+DEMO_OBJ = $(DEMO_SRC:.c=.o)
+
+# include paths
+INCLUDE += -I$(TOP)/usb/tinyusb-master/tinyusb
+INCLUDE += -I$(TOP)/usb/tinyusb-master/demos/host/src
+INCLUDE += -I$(TOP)/soc/st/stm32f4/cmsis
+
+.c.o:
+	$(X_GCC) $(INCLUDE) $(DEFINE) $(X_CFLAGS) -c $< -o $@
+
+libusbhost.a: $(LIB_OBJ)
+	$(X_AR) rcs $@ $(LIB_OBJ)
+
+clean:
+	rm -f *.o *.a

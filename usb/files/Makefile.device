@@ -1,0 +1,38 @@
+TOP = ../..
+include $(TOP)/mk/common.mk
+
+LIB_SRC = tinyusb/tusb.c \
+	tinyusb/osal/osal_none.c \
+	tinyusb/class/hid_device.c \
+	tinyusb/class/cdc_device.c \
+	tinyusb/class/msc_device.c \
+	tinyusb/common/fifo.c \
+	tinyusb/common/tusb_errors.c \
+	tinyusb/device/dcd.c \
+	tinyusb/device/usbd.c \
+
+DEMO_SRC = demos/device/src/main.c \
+	demos/device/src/msc_device_ramdisk.c \
+	demos/device/src/mouse_device_app.c \
+	demos/device/src/msc_device_romdisk.c \
+	demos/device/src/cdc_device_app.c \
+	demos/device/src/msc_device_app.c \
+	demos/device/src/keyboard_device_app.c \
+	demos/device/src/tusb_descriptors.c \
+
+LIB_OBJ = $(LIB_SRC:.c=.o)
+DEMO_OBJ = $(DEMO_SRC:.c=.o)
+
+# include paths
+INCLUDE += -I$(TOP)/usb/tinyusb-master/tinyusb
+INCLUDE += -I$(TOP)/usb/tinyusb-master/demos/device/src
+INCLUDE += -I$(TOP)/soc/st/stm32f4/cmsis
+
+.c.o:
+	$(X_GCC) $(INCLUDE) $(DEFINE) $(X_CFLAGS) -c $< -o $@
+
+libusbdev.a: $(LIB_OBJ)
+	$(X_AR) rcs $@ $(LIB_OBJ)
+
+clean:
+	rm -f *.o *.a

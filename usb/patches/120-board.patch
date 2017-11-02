@@ -1,0 +1,20 @@
+--- ./boards/board.h	2017-11-02 06:21:00.914014767 -0700
++++ ./boards/board.h	2017-11-02 06:24:42.443156895 -0700
+@@ -71,6 +71,8 @@
+ #define BOARD_LPC4357USB            4304 ///< microbuilder.eu
+ 
+ #define BOARD_LPCLINK2              4370 ///< LPClink2 uses as LPC4370 development board
++
++#define BOARD_MB997                 9970 ///< aka STM32F4DISCOVERY, uses STM32F407xx SoC
+ /** @} */
+ 
+ //--------------------------------------------------------------------+
+@@ -110,6 +112,8 @@
+   #include "microbuilder/board_lpc4357usb.h"
+ #elif BOARD == BOARD_LPCLINK2
+  #include "lpcxpresso/board_lpclink2.h"
++#elif BOARD == BOARD_MB997
++ #include "st/board_mb997.h"
+ #else
+   #error BOARD is not defined or supported yet
+ #endif
