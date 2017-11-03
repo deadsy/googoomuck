@@ -1,44 +1,72 @@
 TOP = ../..
 include $(TOP)/mk/common.mk
 
-LIB_SRC = tinyusb/tusb.c \
-	tinyusb/osal/osal_none.c \
-	tinyusb/class/hid_device.c \
-	tinyusb/class/cdc_device.c \
-	tinyusb/class/msc_device.c \
-	tinyusb/common/fifo.c \
-	tinyusb/common/tusb_errors.c \
-	tinyusb/device/dcd.c \
-	tinyusb/device/usbd.c \
+OUTPUT = usb_device_demo
 
-DEMO_SRC = demos/device/src/main.c \
-	demos/device/src/msc_device_ramdisk.c \
-	demos/device/src/mouse_device_app.c \
-	demos/device/src/msc_device_romdisk.c \
-	demos/device/src/cdc_device_app.c \
-	demos/device/src/msc_device_app.c \
-	demos/device/src/keyboard_device_app.c \
-	demos/device/src/tusb_descriptors.c \
+TUSB_DIR = tinyusb
+LIB_SRC = $(TUSB_DIR)/tusb.c \
+	$(TUSB_DIR)/osal/osal_none.c \
+	$(TUSB_DIR)/class/hid_device.c \
+	$(TUSB_DIR)/class/cdc_device.c \
+	$(TUSB_DIR)/class/msc_device.c \
+	$(TUSB_DIR)/common/fifo.c \
+	$(TUSB_DIR)/common/tusb_errors.c \
+	$(TUSB_DIR)/device/dcd.c \
+	$(TUSB_DIR)/device/usbd.c \
+	$(TUSB_DIR)/device/dcd_stm32f4xx.c \
+
+DEMO_DIR = demos/device/src
+SRC = $(DEMO_DIR)/main.c \
+	$(DEMO_DIR)/msc_device_ramdisk.c \
+	$(DEMO_DIR)/mouse_device_app.c \
+	$(DEMO_DIR)/msc_device_romdisk.c \
+	$(DEMO_DIR)/cdc_device_app.c \
+	$(DEMO_DIR)/msc_device_app.c \
+	$(DEMO_DIR)/keyboard_device_app.c \
+	$(DEMO_DIR)/tusb_descriptors.c \
+
+BOARD_DIR = boards
+SRC += $(BOARD_DIR)/st/common/syscalls.c \
+	$(BOARD_DIR)/st/common/rtt/SEGGER_RTT.c \
+	$(BOARD_DIR)/st/common/rtt/SEGGER_RTT_printf.c \
+	$(BOARD_DIR)/st/common/logging.c \
+	$(BOARD_DIR)/st/mb997/board_mb997.c \
+	$(BOARD_DIR)/board.c \
+	$(BOARD_DIR)/st/stm32f4/system_stm32f4xx.c \
 
 LIB_OBJ = $(LIB_SRC:.c=.o)
-DEMO_OBJ = $(DEMO_SRC:.c=.o)
+OBJ = $(SRC:.c=.o)
+OBJ += $(BOARD_DIR)/st/mb997/start.o
 
 # include paths
 INCLUDE += -I$(TOP)/usb/tinyusb-master/tinyusb
 INCLUDE += -I$(TOP)/usb/tinyusb-master/boards
 INCLUDE += -I$(TOP)/soc/st/stm32f4/cmsis
 INCLUDE += -I$(TOP)/usb/tinyusb-master/demos/device/src
+INCLUDE += -I$(BOARD_DIR)/st/common/rtt
 
 # defines
 DEFINE = -DBOARD=BOARD_MB997
+DEFINE += -DSTM32F407xx
 
+# linker flags
+LDSCRIPT = $(BOARD_DIR)/st/mb997/stm32f407vg_flash.ld
+X_LDFLAGS = -T$(LDSCRIPT) -Wl,-Map,$(OUTPUT).map -Wl,--gc-sections
+X_LDFLAGS += -L.
+
+# turn off some warnings
+X_CFLAGS += -Wno-unused-parameter
+
+.S.o:
+	$(X_GCC) $(INCLUDE) $(DEFINE) $(X_CFLAGS) -c $< -o $@
 .c.o:
 	$(X_GCC) $(INCLUDE) $(DEFINE) $(X_CFLAGS) -c $< -o $@
 
 libusbdev.a: $(LIB_OBJ)
 	$(X_AR) rcs $@ $(LIB_OBJ)
 
-demo: $(DEMO_OBJ)
+demo: libusbdev.a $(OBJ)
+	$(X_GCC) $(X_CFLAGS) $(X_LDFLAGS) $(OBJ) -lusbdev -o $(OUTPUT)
 
 clean:
-	rm -f *.o *.a
+	-rm -f *.o *.a

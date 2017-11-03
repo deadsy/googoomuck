@@ -11,11 +11,11 @@ MB997 Board (STM32F4Discovery) based on the STM32F407xx SoC
 //-----------------------------------------------------------------------------
 
 void board_init(void) {
-  // TODO
+	// TODO
 }
 
 void board_leds(uint32_t on_mask, uint32_t off_mask) {
-  // TODO
+	// TODO
 }
 
 //-----------------------------------------------------------------------------

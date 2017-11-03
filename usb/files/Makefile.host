@@ -16,7 +16,8 @@ LIB_SRC = $(TUSB_DIR)/osal/osal_none.c \
 	$(TUSB_DIR)/class/cdc_host.c \
 	$(TUSB_DIR)/common/fifo.c \
 	$(TUSB_DIR)/common/tusb_errors.c \
-	$(TUSB_DIR)/hal/hal_stm32f407.c \
+	$(TUSB_DIR)/hal/hal_stm32f4xx.c \
+	$(TUSB_DIR)/host/hcd_stm32f4xx.c \
 
 DEMO_DIR = demos/host/src
 SRC = $(DEMO_DIR)/cdc_serial_host_app.c \
@@ -64,7 +65,6 @@ X_LDFLAGS += -L.
 
 # turn off some warnings
 X_CFLAGS += -Wno-unused-parameter
-#X_CFLAGS += -Wno-strict-prototypes
 
 .S.o:
 	$(X_GCC) $(INCLUDE) $(DEFINE) $(X_CFLAGS) -c $< -o $@
@@ -78,4 +78,4 @@ demo: libusbhost.a $(OBJ)
 	$(X_GCC) $(X_CFLAGS) $(X_LDFLAGS) $(OBJ) -lusbhost -o $(OUTPUT)
 
 clean:
-	rm -f *.o *.a
+	-rm -f *.o *.a

@@ -11,6 +11,11 @@ src_dirs = (
   'common',
   'drivers',
   'ggm',
+  'usb/files/tinyusb/host',
+  'usb/files/tinyusb/hal',
+  'usb/files/tinyusb/device',
+  'usb/files/boards/st/common',
+  'usb/files/boards/st/mb997',
 )
 
 src_filter_out = (

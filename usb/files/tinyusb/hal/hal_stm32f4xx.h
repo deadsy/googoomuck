@@ -42,29 +42,24 @@
 #include "stm32f407xx.h"
 
 #ifdef __cplusplus
- extern "C" {
+extern "C" {
 #endif
 
 //--------------------------------------------------------------------+
 //
 //--------------------------------------------------------------------+
-static inline void hal_interrupt_enable(uint8_t coreid)
-{
-  // TODO
-  (void) coreid; // discard compiler's warning
-  //NVIC_EnableIRQ(USB_IRQn);
-}
-
-static inline void hal_interrupt_disable(uint8_t coreid)
-{
-  // TODO
-  (void) coreid; // discard compiler's warning
-  //NVIC_DisableIRQ(USB_IRQn);
-}
+	static inline void hal_interrupt_enable(uint8_t coreid) {
+		// TODO
+		(void)coreid;	// discard compiler's warning
+		//NVIC_EnableIRQ(USB_IRQn);
+	} static inline void hal_interrupt_disable(uint8_t coreid) {
+		// TODO
+		(void)coreid;	// discard compiler's warning
+		//NVIC_DisableIRQ(USB_IRQn);
+	}
 
 #ifdef __cplusplus
- }
+}
 #endif
 
-#endif /* _TUSB_HAL_STM32F407_H_ */
-
+#endif				/* _TUSB_HAL_STM32F407_H_ */
