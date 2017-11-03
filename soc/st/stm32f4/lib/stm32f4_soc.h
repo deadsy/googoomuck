@@ -19,6 +19,7 @@ STM32F4 SoC top-level include file
 #include "dma.h"
 #include "irq.h"
 #include "adc.h"
+#include "usart.h"
 
 //-----------------------------------------------------------------------------
 

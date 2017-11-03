@@ -20,8 +20,13 @@ mask('ADC_SQR2_MASK', ((30,0),))
 mask('ADC_SQR3_MASK', ((30,0),))
 mask('ADC_JSQR_MASK', ((22,0),))
 
-
-
 mask('SPI_I2SCFGR_MASK', ((6,0),(5,7)))
 mask('SPI_I2SPR_MASK', ((10, 0),))
 mask('SPI_CR2_MASK', ((4,4),(3,0)))
+
+
+mask('USART_SR_MASK', ((10,0),))
+mask('USART_CR1_MASK', ((14,0),(1,15),))
+mask('USART_CR2_MASK', ((4,0),(2,5), (7,8),))
+mask('USART_CR3_MASK', ((12,0),))
+mask('USART_GTPR_MASK', ((16,0),))
