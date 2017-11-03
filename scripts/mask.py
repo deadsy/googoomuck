@@ -30,3 +30,7 @@ mask('USART_CR1_MASK', ((14,0),(1,15),))
 mask('USART_CR2_MASK', ((4,0),(2,5), (7,8),))
 mask('USART_CR3_MASK', ((12,0),))
 mask('USART_GTPR_MASK', ((16,0),))
+
+mask('RNG_CR_MASK', ((2,2),))
+mask('RNG_SR_MASK', ((3,0),(2,5),))
+
