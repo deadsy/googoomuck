@@ -1,0 +1,26 @@
+--- ./demos/host/src/tusb_config.h	2017-11-03 09:40:02.618033875 -0700
++++ ./demos/host/src/tusb_config.h	2017-11-03 09:41:22.318502892 -0700
+@@ -101,6 +101,10 @@
+     #define TUSB_CFG_ATTR_USBRAM _Pragma("location=\".ahb_sram1\"")
+   #endif
+ 
++#elif defined __GNUC__ // compiled with GCC
++
++  #define TUSB_CFG_ATTR_USBRAM
++
+ #else
+ 
+   #error compiler not specified
+--- ./demos/device/src/tusb_config.h	2017-11-03 09:47:13.652559026 -0700
++++ ./demos/device/src/tusb_config.h	2017-11-03 09:47:55.252801585 -0700
+@@ -104,6 +104,10 @@
+     #define TUSB_CFG_ATTR_USBRAM _Pragma("location=\".ahb_sram1\"")
+   #endif
+ 
++#elif defined __GNUC__ // compiled with GCC
++
++  #define TUSB_CFG_ATTR_USBRAM
++
+ #else
+ 
+   #error compiler not specified

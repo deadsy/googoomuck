@@ -18,4 +18,8 @@ void board_leds(uint32_t on_mask, uint32_t off_mask) {
 	// TODO
 }
 
+uint32_t board_buttons(void) {
+	return 0;
+}
+
 //-----------------------------------------------------------------------------

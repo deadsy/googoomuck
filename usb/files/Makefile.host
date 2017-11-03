@@ -55,6 +55,8 @@ INCLUDE += -I$(TOP)/usb/tinyusb-master/vendor/fatfs
 INCLUDE += -I$(BOARD_DIR)/st/common/rtt
 
 # defines
+DEFINE += -DTUSB_CFG_OS=TUSB_OS_NONE
+DEFINE += -DTUSB_CFG_MCU=MCU_STM32F407
 DEFINE += -DBOARD=BOARD_MB997
 DEFINE += -DSTM32F407xx
 
@@ -76,6 +78,7 @@ libusbhost.a: $(LIB_OBJ)
 
 demo: libusbhost.a $(OBJ)
 	$(X_GCC) $(X_CFLAGS) $(X_LDFLAGS) $(OBJ) -lusbhost -o $(OUTPUT)
+	$(X_OBJCOPY) -O binary $(OUTPUT) $(OUTPUT).bin
 
 clean:
 	-rm -f *.o *.a

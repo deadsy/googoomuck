@@ -1,7 +1,6 @@
 //-----------------------------------------------------------------------------
 /*
 
-
 */
 //-----------------------------------------------------------------------------
 
@@ -18,6 +17,7 @@ void hcd_isr(uint8_t hostid) {
 }
 
 //-----------------------------------------------------------------------------
+// PIPE API
 
 tusb_error_t hcd_pipe_control_open(uint8_t dev_addr, uint8_t max_packet_size) {
 	return TUSB_ERROR_NONE;
@@ -65,7 +65,9 @@ tusb_error_t hcd_pipe_clear_stall(pipe_handle_t pipe_hdl) {
 }
 
 #if 0
-bool hcd_pipe_is_error(pipe_handle_t pipe_hdl) ATTR_PURE;
+bool hcd_pipe_is_error(pipe_handle_t pipe_hdl) {
+	return 0;
+}
 #endif
 
 //-----------------------------------------------------------------------------
