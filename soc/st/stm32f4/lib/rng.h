@@ -17,20 +17,32 @@ Random Number Generator Driver
 
 //-----------------------------------------------------------------------------
 
+#define RNG_MODE_POLLED (0U << 3/*IE*/)
+#define RNG_MODE_INTERRUPT (1U << 3/*IE*/)
+
 struct rng_drv {
 	RNG_TypeDef *regs;
-	void (*err_callback) (struct rng_drv * rng);	// errors callback
+	void (*err_callback) (struct rng_drv * rng, uint32_t errors);	// errors callback
 	void (*data_callback) (struct rng_drv * rng, uint32_t data);	// data callback
 };
 
 struct rng_cfg {
-	void (*err_callback) (struct rng_drv * rng);	// errors callback
+	uint32_t mode;
+	void (*err_callback) (struct rng_drv * rng, uint32_t errors);	// errors callback
 	void (*data_callback) (struct rng_drv * rng, uint32_t data);	// data callback
 };
 
-void rng_enable(struct rng_drv *rng);
-void rng_disable(struct rng_drv *rng);
+static inline void rng_enable(struct rng_drv *rng) {
+	rng->regs->CR |= RNG_CR_RNGEN;
+}
+
+static inline void rng_disable(struct rng_drv *rng) {
+	rng->regs->CR &= ~RNG_CR_RNGEN;
+}
+
 int rng_init(struct rng_drv *drv, struct rng_cfg *cfg);
+int rng_rd(struct rng_drv *rng, int block, uint32_t * data);
+void rng_isr(struct rng_drv *rng);
 
 //-----------------------------------------------------------------------------
 

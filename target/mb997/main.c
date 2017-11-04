@@ -153,6 +153,32 @@ static struct adc_cfg test_adc_cfg = {
 static struct adc_drv test_adc;
 
 //-----------------------------------------------------------------------------
+// random number generator
+
+#if 0
+// errors callback
+static void rng_err_callback(struct rng_drv *rng, uint32_t errors) {
+	DBG("rng error 0x%08x\r\n", errors);
+}
+
+// data callback
+static void rng_data_callback(struct rng_drv *rng, uint32_t data) {
+	// do something with the data
+}
+void HASH_RNG_IRQHandler(void) {
+	rng_isr(&ggm_rng);
+}
+#endif
+
+static struct rng_cfg ggm_rng_cfg = {
+	.mode = RNG_MODE_POLLED,
+	//.err_callback = rng_err_callback,
+	//.data_callback = rng_data_callback,
+};
+
+struct rng_drv ggm_rng;
+
+//-----------------------------------------------------------------------------
 
 int main(void) {
 	int rc;
@@ -177,6 +203,18 @@ int main(void) {
 		DBG("debounce_init failed %d\r\n", rc);
 		goto exit;
 	}
+
+	rc = rng_init(&ggm_rng, &ggm_rng_cfg);
+	if (rc != 0) {
+		DBG("rng_init failed %d\r\n", rc);
+		goto exit;
+	}
+#if 0
+	// Setup HASH_RNG interrupt
+	HAL_NVIC_SetPriority(HASH_RNG_IRQn, 10, 0);
+	HAL_NVIC_EnableIRQ(HASH_RNG_IRQn);
+#endif
+	rng_enable(&ggm_rng);
 
 	rc = adc_init(&test_adc, &test_adc_cfg);
 	if (rc != 0) {
