@@ -1,5 +1,15 @@
---- ./boards/board.h	2017-11-02 06:21:00.914014767 -0700
-+++ ./boards/board.h	2017-11-02 06:24:42.443156895 -0700
+--- ./boards/board.c	2017-11-05 07:46:22.717458774 -0800
++++ ./boards/board.c	2017-11-05 07:46:48.537610044 -0800
+@@ -45,6 +45,7 @@
+ 
+ void SysTick_Handler (void)
+ {
++  board_systick();
+   system_ticks++;
+ }
+ 
+--- ./boards/board.h	2017-08-03 07:45:16.000000000 -0700
++++ ./boards/board.h	2017-11-05 07:48:55.070351352 -0800
 @@ -71,6 +71,8 @@
  #define BOARD_LPC4357USB            4304 ///< microbuilder.eu
  
@@ -18,3 +28,14 @@
  #else
    #error BOARD is not defined or supported yet
  #endif
+@@ -142,6 +146,10 @@
+  */
+ uint32_t board_buttons(void);
+ 
++/** \brief Board specific systick handling
++ */
++void board_systick(void);
++
+ /** \brief Get a character input from UART
+  * \return ASCII code of the input character or zero if none.
+  */

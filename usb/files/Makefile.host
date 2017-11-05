@@ -45,12 +45,15 @@ SRC += $(HAL_DIR)/stm32f4xx_hal.c \
 	$(HAL_DIR)/stm32f4xx_hal_gpio.c \
 	$(HAL_DIR)/stm32f4xx_hal_hcd.c \
 	$(HAL_DIR)/stm32f4xx_ll_usb.c \
-
-SRC += $(TOP)/common/syscalls.c \
-	$(TOP)/common/rtt/SEGGER_RTT.c \
-	$(TOP)/common/rtt/SEGGER_RTT_printf.c \
-	$(TOP)/common/logging.c \
 	$(TOP)/soc/st/stm32f4/system_stm32f4xx.c \
+	$(TOP)/soc/st/stm32f4/lib/gpio.c \
+
+COMMON_DIR = $(TOP)/common
+SRC += $(COMMON_DIR)/syscalls.c \
+	$(COMMON_DIR)/rtt/SEGGER_RTT.c \
+	$(COMMON_DIR)/rtt/SEGGER_RTT_printf.c \
+	$(COMMON_DIR)//logging.c \
+	$(COMMON_DIR)/debounce.c \
 
 LIB_OBJ = $(LIB_SRC:.c=.o)
 OBJ = $(SRC:.c=.o)
@@ -62,9 +65,9 @@ INCLUDE += -I$(TOP)/usb/tinyusb-master/boards
 INCLUDE += -I$(TOP)/usb/tinyusb-master/boards/st/mb997
 INCLUDE += -I$(TOP)/usb/tinyusb-master/demos/host/src
 INCLUDE += -I$(TOP)/usb/tinyusb-master/vendor/fatfs
-
 INCLUDE += -I$(TOP)/soc/st/stm32f4/cmsis
 INCLUDE += -I$(TOP)/soc/st/stm32f4/hal/inc
+INCLUDE += -I$(TOP)/soc/st/stm32f4/lib
 INCLUDE += -I$(TOP)/common
 INCLUDE += -I$(TOP)/common/rtt
 
@@ -95,4 +98,5 @@ demo: libusbhost.a $(OBJ)
 	$(X_OBJCOPY) -O binary $(OUTPUT) $(OUTPUT).bin
 
 clean:
-	-rm -f *.o *.a
+	-rm -f $(OBJ)
+	-rm -f *.a

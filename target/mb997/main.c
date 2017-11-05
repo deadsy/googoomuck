@@ -21,7 +21,7 @@ MB997C Board
 // IO configuration
 
 // push button
-#define PUSH_BUTTON     GPIO_NUM(PORTA, 0)	// 0 = open, 1 = pressed
+#define PUSH_BUTTON GPIO_NUM(PORTA, 0)	// 0 = open, 1 = pressed
 
 static const struct gpio_info gpios[] = {
 	// leds

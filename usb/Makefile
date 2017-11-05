@@ -20,8 +20,12 @@ host: extract
 	make -C $(WORK_DIR) -f Makefile.host demo
 
 device: extract
-	make -C $(WORK_DIR) -f Makefile.device
+	make -C $(WORK_DIR) -f Makefile.device libusbdev.a
 	make -C $(WORK_DIR) -f Makefile.device demo
 
+program: 
+	st-flash write $(WORK_DIR)/*.bin 0x08000000
+
 clean:
+	make -C $(WORK_DIR) -f Makefile.host clean
 	-rm -rf $(WORK_DIR)
