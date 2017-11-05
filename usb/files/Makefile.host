@@ -34,13 +34,23 @@ SRC += $(FATFS_DIR)/ccsbcs.c \
 	$(FATFS_DIR)/ff.c \
 
 BOARD_DIR = boards
-SRC += $(BOARD_DIR)/st/common/syscalls.c \
-	$(BOARD_DIR)/st/common/rtt/SEGGER_RTT.c \
-	$(BOARD_DIR)/st/common/rtt/SEGGER_RTT_printf.c \
-	$(BOARD_DIR)/st/common/logging.c \
-	$(BOARD_DIR)/st/mb997/board_mb997.c \
+SRC+= $(BOARD_DIR)/st/mb997/board_mb997.c \
 	$(BOARD_DIR)/board.c \
-	$(BOARD_DIR)/st/stm32f4/system_stm32f4xx.c \
+
+HAL_DIR = $(TOP)/soc/st/stm32f4/hal/src
+SRC += $(HAL_DIR)/stm32f4xx_hal.c \
+	$(HAL_DIR)/stm32f4xx_hal_rcc.c \
+	$(HAL_DIR)/stm32f4xx_hal_rcc_ex.c \
+	$(HAL_DIR)/stm32f4xx_hal_cortex.c \
+	$(HAL_DIR)/stm32f4xx_hal_gpio.c \
+	$(HAL_DIR)/stm32f4xx_hal_hcd.c \
+	$(HAL_DIR)/stm32f4xx_ll_usb.c \
+
+SRC += $(TOP)/common/syscalls.c \
+	$(TOP)/common/rtt/SEGGER_RTT.c \
+	$(TOP)/common/rtt/SEGGER_RTT_printf.c \
+	$(TOP)/common/logging.c \
+	$(TOP)/soc/st/stm32f4/system_stm32f4xx.c \
 
 LIB_OBJ = $(LIB_SRC:.c=.o)
 OBJ = $(SRC:.c=.o)
@@ -49,10 +59,14 @@ OBJ += $(BOARD_DIR)/st/mb997/start.o
 # include paths
 INCLUDE += -I$(TOP)/usb/tinyusb-master/tinyusb
 INCLUDE += -I$(TOP)/usb/tinyusb-master/boards
-INCLUDE += -I$(TOP)/soc/st/stm32f4/cmsis
+INCLUDE += -I$(TOP)/usb/tinyusb-master/boards/st/mb997
 INCLUDE += -I$(TOP)/usb/tinyusb-master/demos/host/src
 INCLUDE += -I$(TOP)/usb/tinyusb-master/vendor/fatfs
-INCLUDE += -I$(BOARD_DIR)/st/common/rtt
+
+INCLUDE += -I$(TOP)/soc/st/stm32f4/cmsis
+INCLUDE += -I$(TOP)/soc/st/stm32f4/hal/inc
+INCLUDE += -I$(TOP)/common
+INCLUDE += -I$(TOP)/common/rtt
 
 # defines
 DEFINE += -DTUSB_CFG_OS=TUSB_OS_NONE
