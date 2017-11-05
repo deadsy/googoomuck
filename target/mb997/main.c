@@ -6,6 +6,8 @@ MB997C Board
 */
 //-----------------------------------------------------------------------------
 
+#include <stdlib.h>
+
 #include "stm32f4_soc.h"
 #include "audio.h"
 #include "led.h"
@@ -181,6 +183,7 @@ struct rng_drv ggm_rng;
 //-----------------------------------------------------------------------------
 
 int main(void) {
+	uint32_t val;
 	int rc;
 
 	HAL_Init();
@@ -188,7 +191,6 @@ int main(void) {
 
 	rc = log_init();
 	if (rc != 0) {
-		DBG("log_init failed %d\r\n", rc);
 		goto exit;
 	}
 
@@ -237,6 +239,14 @@ int main(void) {
 	rc = audio_start(&ggm_audio);
 	if (rc != 0) {
 		DBG("audio_start failed %d\r\n", rc);
+		goto exit;
+	}
+	// seed the PRNG
+	rc = rng_rd(&ggm_rng, 1, &val);
+	if (rc == 0) {
+		srand(val);
+	} else {
+		DBG("rng_rd failed %d\r\n", rc);
 		goto exit;
 	}
 

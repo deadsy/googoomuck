@@ -212,19 +212,22 @@ int audio_start(struct audio_drv *audio) {
 
 //-----------------------------------------------------------------------------
 
-// clip samples to the -1.0 to 1.0 range
-static float clip(float x) {
-	x = (x > 1.f) ? 1.f : x;
-	x = (x < -1.f) ? -1.f : x;
-	return x;
+// clip and convert samples to the -32767..32767 range.
+static int16_t clip_convert(float x) {
+	if (x >= 1.f) {
+		return 32767;
+	} else if (x <= -1.f) {
+		return -32767;
+	}
+	return (int16_t) (x * 32767.f);
 }
 
 // write l/r channel samples to the audio output buffer
 void audio_wr(int16_t * dst, size_t n, float *ch_l, float *ch_r) {
 	unsigned int i;
 	for (i = 0; i < n; i++) {
-		*dst++ = (int16_t) (clip(ch_l[i]) * 32767.f);
-		*dst++ = (int16_t) (clip(ch_r[i]) * 32767.f);
+		*dst++ = clip_convert(ch_l[i]);
+		*dst++ = clip_convert(ch_r[i]);
 	}
 }
 
@@ -239,9 +242,9 @@ void audio_stats(struct audio_drv *audio, int16_t * buf) {
 
 	stats->buffers += 1;
 
-	// We call this just after we have created a new buffer of samples and copied it to to the audio buffer.
+	// We call this just after we have created a new buffer of samples and copied them to the audio buffer.
 	// We have to work faster than the DMA is reading the other buffer half.
-	// Let's see how close the DMA is to finishing.
+	// Let's see how close the DMA is to finishing:
 	// That gives us a margin for how much we beat the deadline.
 
 	if (buf == audio->buffer) {
