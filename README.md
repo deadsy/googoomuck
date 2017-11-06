@@ -19,13 +19,19 @@ have a 32 bit (single precision) FPU. E.g. ARM Cortex M4 or better.
  * stereo output
  * 32-bit floats for internal operations
 
+## Source Layout
+ * common - common souces (target/SoC independent)
+ * drivers - device drivers (non SoC)
+ * ggm - GooGooMuck synthesizer (target/SoC independent)
+ * mk - make scripts
+ * scripts - python scripts 
+ * soc - SoC drivers and definitions
+ * target - target specific code
+ * usb - tinyusb stack (ported to the STM32F4)
+
 ## Inspirations
 * https://www.quinapalus.com/goom.html
 * https://github.com/MrBlueXav/Dekrispator_v2
 * https://github.com/hotchk155/Voici-Le-Strum
-
-
-
-
 
 

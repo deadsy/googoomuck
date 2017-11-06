@@ -15,18 +15,18 @@ SRC += $(HAL_DIR)/stm32f4xx_hal.c \
 # soc library sources
 LIB_DIR = $(TOP)/soc/st/stm32f4/lib
 SRC += $(LIB_DIR)/gpio.c \
-       $(LIB_DIR)/delay.c \
-       $(LIB_DIR)/i2c.c \
-       $(LIB_DIR)/i2s.c \
-       $(LIB_DIR)/dma.c \
-       $(LIB_DIR)/adc.c \
-       $(LIB_DIR)/usart.c \
-       $(LIB_DIR)/rng.c \
+	$(LIB_DIR)/delay.c \
+	$(LIB_DIR)/i2c.c \
+	$(LIB_DIR)/i2s.c \
+	$(LIB_DIR)/dma.c \
+	$(LIB_DIR)/adc.c \
+	$(LIB_DIR)/usart.c \
+	$(LIB_DIR)/rng.c \
 
 # target sources
 TARGET_DIR = $(TOP)/target/mb997
 SRC += $(TARGET_DIR)/main.c \
-       $(TARGET_DIR)/audio.c \
+	$(TARGET_DIR)/audio.c \
 
 # common
 COMMON_DIR = $(TOP)/common
@@ -43,11 +43,11 @@ SRC += $(DRIVERS_DIR)/cs43l22.c \
 # googoomuck
 GGM_DIR = $(TOP)/ggm
 SRC += $(GGM_DIR)/dds.c \
-       $(GGM_DIR)/midi.c \
-       $(GGM_DIR)/ggm.c \
-       $(GGM_DIR)/event.c \
-       $(GGM_DIR)/adsr.c \
-       $(GGM_DIR)/gwave.c \
+	$(GGM_DIR)/midi.c \
+	$(GGM_DIR)/ggm.c \
+	$(GGM_DIR)/event.c \
+	$(GGM_DIR)/adsr.c \
+	$(GGM_DIR)/gwave.c \
 
 OBJ = $(patsubst %.c, %.o, $(SRC))
 OBJ += $(TARGET_DIR)/start.o
