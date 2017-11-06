@@ -22,13 +22,13 @@ See http://www.eistec.se/docs/contiki/a01137_source.html
 #include "logging.h"
 
 //-----------------------------------------------------------------------------
-// read/write functions for the serial port
+// low level read/write functions
 
-#if 0
+#if defined(STDIO_UART)		// stdio to the serial port
 
 #include "usart.h"
 
-static _ssize_t usart_read_r(struct _reent *ptr, int fd, void *buf, size_t cnt) {
+static _ssize_t io_read_r(struct _reent *ptr, int fd, void *buf, size_t cnt) {
 	static int prev_char = -1;
 	char *cbuf = buf;
 	unsigned int i;
@@ -94,7 +94,7 @@ static _ssize_t usart_read_r(struct _reent *ptr, int fd, void *buf, size_t cnt) 
 	return i;
 }
 
-static _ssize_t usart_write_r(struct _reent *ptr, int fd, const void *buf, size_t cnt) {
+static _ssize_t io_write_r(struct _reent *ptr, int fd, const void *buf, size_t cnt) {
 	unsigned i;
 	const char *cbuf = buf;
 	DBG("%s: %s() line %d cnt %d", __FILE__, __func__, __LINE__, cnt);
@@ -109,15 +109,15 @@ static _ssize_t usart_write_r(struct _reent *ptr, int fd, const void *buf, size_
 	return cnt;
 }
 
-#else
-
-static _ssize_t usart_read_r(struct _reent *ptr, int fd, void *buf, size_t cnt) {
-	return 0;
-}
+#elif defined(STDIO_RTT)	// stdio to a Segger style RTT
 
 static const char crlf[] = "\r\n";
 
-static _ssize_t usart_write_r(struct _reent *ptr, int fd, const void *buf, size_t cnt) {
+static _ssize_t io_read_r(struct _reent *ptr, int fd, void *buf, size_t cnt) {
+	return 0;
+}
+
+static _ssize_t io_write_r(struct _reent *ptr, int fd, const void *buf, size_t cnt) {
 	unsigned int i;
 	const char *cbuf = buf;
 	for (i = 0; i < cnt; i++) {
@@ -130,6 +130,8 @@ static _ssize_t usart_write_r(struct _reent *ptr, int fd, const void *buf, size_
 	return cnt;
 }
 
+#else
+#error "define STDIO_x for this platform"
 #endif
 
 //-----------------------------------------------------------------------------
@@ -162,7 +164,7 @@ _ssize_t _read_r(struct _reent * ptr, int fd, void *buf, size_t cnt) {
 	case 0:
 	case 1:
 	case 2:
-		return usart_read_r(ptr, fd, buf, cnt);
+		return io_read_r(ptr, fd, buf, cnt);
 	default:
 		break;
 	}
@@ -176,7 +178,7 @@ _ssize_t _write_r(struct _reent * ptr, int fd, const void *buf, size_t cnt) {
 	case 0:
 	case 1:
 	case 2:
-		return usart_write_r(ptr, fd, buf, cnt);
+		return io_write_r(ptr, fd, buf, cnt);
 	default:
 		break;
 	}

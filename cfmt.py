@@ -14,13 +14,13 @@ src_dirs = (
   'usb/files/tinyusb/host',
   'usb/files/tinyusb/hal',
   'usb/files/tinyusb/device',
-  'usb/files/boards/st/common',
   'usb/files/boards/st/mb997',
 )
 
 src_filter_out = (
   'target/mb997/stm32f4xx_hal_conf.h',
   'target/mb997/system_stm32f4xx.c',
+  'usb/files/boards/st/mb997/stm32f4xx_hal_conf.h',
 )
 
 indent_exec = '/usr/bin/indent'

@@ -27,13 +27,26 @@ SRC = $(DEMO_DIR)/main.c \
 	$(DEMO_DIR)/tusb_descriptors.c \
 
 BOARD_DIR = boards
-SRC += $(BOARD_DIR)/st/common/syscalls.c \
-	$(BOARD_DIR)/st/common/rtt/SEGGER_RTT.c \
-	$(BOARD_DIR)/st/common/rtt/SEGGER_RTT_printf.c \
-	$(BOARD_DIR)/st/common/logging.c \
-	$(BOARD_DIR)/st/mb997/board_mb997.c \
+SRC+= $(BOARD_DIR)/st/mb997/board_mb997.c \
 	$(BOARD_DIR)/board.c \
-	$(BOARD_DIR)/st/stm32f4/system_stm32f4xx.c \
+
+HAL_DIR = $(TOP)/soc/st/stm32f4/hal/src
+SRC += $(HAL_DIR)/stm32f4xx_hal.c \
+	$(HAL_DIR)/stm32f4xx_hal_rcc.c \
+	$(HAL_DIR)/stm32f4xx_hal_rcc_ex.c \
+	$(HAL_DIR)/stm32f4xx_hal_cortex.c \
+	$(HAL_DIR)/stm32f4xx_hal_gpio.c \
+	$(HAL_DIR)/stm32f4xx_hal_pcd.c \
+	$(HAL_DIR)/stm32f4xx_ll_usb.c \
+	$(TOP)/soc/st/stm32f4/system_stm32f4xx.c \
+	$(TOP)/soc/st/stm32f4/lib/gpio.c \
+
+COMMON_DIR = $(TOP)/common
+SRC += $(COMMON_DIR)/syscalls.c \
+	$(COMMON_DIR)/rtt/SEGGER_RTT.c \
+	$(COMMON_DIR)/rtt/SEGGER_RTT_printf.c \
+	$(COMMON_DIR)//logging.c \
+	$(COMMON_DIR)/debounce.c \
 
 LIB_OBJ = $(LIB_SRC:.c=.o)
 OBJ = $(SRC:.c=.o)
@@ -42,15 +55,20 @@ OBJ += $(BOARD_DIR)/st/mb997/start.o
 # include paths
 INCLUDE += -I$(TOP)/usb/tinyusb-master/tinyusb
 INCLUDE += -I$(TOP)/usb/tinyusb-master/boards
-INCLUDE += -I$(TOP)/soc/st/stm32f4/cmsis
+INCLUDE += -I$(TOP)/usb/tinyusb-master/boards/st/mb997
 INCLUDE += -I$(TOP)/usb/tinyusb-master/demos/device/src
-INCLUDE += -I$(BOARD_DIR)/st/common/rtt
+INCLUDE += -I$(TOP)/soc/st/stm32f4/cmsis
+INCLUDE += -I$(TOP)/soc/st/stm32f4/hal/inc
+INCLUDE += -I$(TOP)/soc/st/stm32f4/lib
+INCLUDE += -I$(TOP)/common
+INCLUDE += -I$(TOP)/common/rtt
 
 # defines
 DEFINE += -DTUSB_CFG_OS=TUSB_OS_NONE
 DEFINE += -DTUSB_CFG_MCU=MCU_STM32F407
 DEFINE += -DBOARD=BOARD_MB997
 DEFINE += -DSTM32F407xx
+DEFINE += -DSTDIO_RTT
 
 # linker flags
 LDSCRIPT = $(BOARD_DIR)/st/mb997/stm32f407vg_flash.ld
@@ -73,4 +91,5 @@ demo: libusbdev.a $(OBJ)
 	$(X_OBJCOPY) -O binary $(OUTPUT) $(OUTPUT).bin
 
 clean:
-	-rm -f *.o *.a
+	-rm -f $(OBJ)
+	-rm -f *.a

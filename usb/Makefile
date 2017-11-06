@@ -28,4 +28,5 @@ program:
 
 clean:
 	make -C $(WORK_DIR) -f Makefile.host clean
+	make -C $(WORK_DIR) -f Makefile.device clean
 	-rm -rf $(WORK_DIR)
