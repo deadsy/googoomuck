@@ -36,6 +36,8 @@ static const struct gpio_info gpios[] = {
 //-----------------------------------------------------------------------------
 
 void Error_Handler(void) {
+	DBG("Error_Handler\r\n");
+	led_on(LED_RED);
 	while (1) ;
 }
 

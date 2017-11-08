@@ -22,7 +22,15 @@ static HCD_HandleTypeDef hhcd;
 
 //-----------------------------------------------------------------------------
 
-// This is a callback from the HAL_HCD_Init() call to allow us to do target specific setup.
+// Hook up the OTG full speed interrupt.
+// Call back to the HAL with the driver state.
+void OTG_FS_IRQHandler(void) {
+	HAL_HCD_IRQHandler(&hhcd);
+}
+
+//-----------------------------------------------------------------------------
+
+// This is a callback from the HAL_HCD_Init() call to do target specific setup.
 void HAL_HCD_MspInit(HCD_HandleTypeDef * hhcd) {
 	GPIO_InitTypeDef GPIO_InitStruct;
 
@@ -31,7 +39,7 @@ void HAL_HCD_MspInit(HCD_HandleTypeDef * hhcd) {
 	// PA10 OTG_FS_ID
 	// PA11 OTG_FS_DM
 	// PA12 OTG_FS_DP
-	// PC0 OTG_FS_PowerSwitchOn
+	// PC0 OTG_FS_PowerSwitchOn (0=on,1=off)
 
 	// Configure USB FS GPIOs
 	__HAL_RCC_GPIOA_CLK_ENABLE();
@@ -66,6 +74,28 @@ void HAL_HCD_MspInit(HCD_HandleTypeDef * hhcd) {
 
 	// Enable USBFS Interrupt
 	HAL_NVIC_EnableIRQ(OTG_FS_IRQn);
+}
+
+//-----------------------------------------------------------------------------
+// Callbacks from the HAL host USB isr.
+
+void HAL_HCD_SOF_Callback(HCD_HandleTypeDef * hhcd) {
+	DBG("%s: %s() line %d\r\n", __FILE__, __func__, __LINE__);
+	//USBH_LL_IncTimer (hhcd->pData);
+}
+
+void HAL_HCD_Connect_Callback(HCD_HandleTypeDef * hhcd) {
+	DBG("%s: %s() line %d\r\n", __FILE__, __func__, __LINE__);
+	//USBH_LL_Connect(hhcd->pData);
+}
+
+void HAL_HCD_Disconnect_Callback(HCD_HandleTypeDef * hhcd) {
+	DBG("%s: %s() line %d\r\n", __FILE__, __func__, __LINE__);
+	//USBH_LL_Disconnect(hhcd->pData);
+}
+
+void HAL_HCD_HC_NotifyURBChange_Callback(HCD_HandleTypeDef * hhcd, uint8_t chnum, HCD_URBStateTypeDef urb_state) {
+	DBG("%s: %s() line %d\r\n", __FILE__, __func__, __LINE__);
 }
 
 //-----------------------------------------------------------------------------
