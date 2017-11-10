@@ -56,14 +56,16 @@ void dds_gen_fm_am(struct dds *osc, float *out, float *fm, float *am, size_t n);
 // Goom Waves
 
 struct gwave {
-	uint32_t s0;
-	uint32_t f0;
-	uint32_t s1;
-	uint32_t f1;
+	const float *table;	// lookup table
+	float phase;		// phase position 0..1
+	float phase_step;	// phase step per sample
+	float tp;		// s0f0 to s1f1 transition point
+	float k0;		// scaling factor for slope 0
+	float k1;		// scaling factor for slope 1
 };
 
 void gwave_init(struct gwave *osc, float duty, float slope);
-void gwave_gen(struct dds *osc, float *out, size_t n);
+void gwave_gen(struct gwave *osc, float *out, size_t n);
 
 //-----------------------------------------------------------------------------
 // ADSR envelope
