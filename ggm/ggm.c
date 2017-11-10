@@ -51,12 +51,14 @@ static void audio_handler(struct ggm_state *s, struct event *e) {
 	float out[n];
 
 	//DBG("audio %08x %08x\r\n", e->type, e->ptr);
+
 	if (adsr_is_active(&s->adsr)) {
-		float fm[n];
+		//float fm[n];
 		float am[n];
-		dds_gen(&s->lfo, fm, n);
+		//dds_gen(&s->lfo, fm, n);
 		adsr_gen(&s->adsr, am, n);
-		dds_gen_fm_am(&s->sin, out, fm, am, n);
+		gwave_gen_am(&s->gw, out, am, n);
+
 	} else {
 		memset(out, 0, n * sizeof(float));
 	}
@@ -114,6 +116,7 @@ int ggm_init(struct ggm_state *s, struct audio_drv *audio) {
 	dds_sin_init(&s->lfo, 10.f, 15.f, 0.f);
 	dds_sin_init(&s->sin, 1.f, midi_to_frequency(69), 0.f);
 	adsr_init(&s->adsr, 0.05f, 0.2f, 0.5f, 0.5f);
+	gwave_init(&s->gw, 0.0f, 0.0f, 1.f, midi_to_frequency(69), 0.f);
 
  exit:
 	return rc;

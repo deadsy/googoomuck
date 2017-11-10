@@ -25,10 +25,16 @@ GooGooMuck Synthesizer
 #define INV_TAU (1.0f/TAU)
 
 //-----------------------------------------------------------------------------
-// DDS Oscillators
 
-// frequency to x scaling (xrange/fs)
-#define DDS_FSCALE ((float)(1ULL << 32) / AUDIO_FS)
+static inline void block_mul(float *out, float *k, size_t n) {
+	unsigned int i;
+	for (i = 0; i < n; i++) {
+		out[i] *= k[i];
+	}
+}
+
+//-----------------------------------------------------------------------------
+// DDS Oscillators
 
 struct dds {
 	const float *table;	// lookup table
@@ -57,15 +63,19 @@ void dds_gen_fm_am(struct dds *osc, float *out, float *fm, float *am, size_t n);
 
 struct gwave {
 	const float *table;	// lookup table
-	float phase;		// phase position 0..1
-	float phase_step;	// phase step per sample
-	float tp;		// s0f0 to s1f1 transition point
-	float k0;		// scaling factor for slope 0
-	float k1;		// scaling factor for slope 1
+	uint32_t x;		// phase position
+	uint32_t xstep;		// phase step per sample
+	uint32_t tp;		// s0f0 to s1f1 transition point
+	uint32_t k0;		// scaling factor for slope 0
+	uint32_t k1;		// scaling factor for slope 1
+	float phase;		// base phase
+	float freq;		// base frequency
+	float amp;		// amplitude
 };
 
-void gwave_init(struct gwave *osc, float duty, float slope);
+void gwave_init(struct gwave *osc, float duty, float slope, float amp, float freq, float phase);
 void gwave_gen(struct gwave *osc, float *out, size_t n);
+void gwave_gen_am(struct gwave *osc, float *out, float *am, size_t n);
 
 //-----------------------------------------------------------------------------
 // ADSR envelope
@@ -157,6 +167,7 @@ struct ggm_state {
 	struct dds lfo;
 	struct dds sin;
 	struct adsr adsr;
+	struct gwave gw;
 };
 
 //-----------------------------------------------------------------------------

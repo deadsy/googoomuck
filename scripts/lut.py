@@ -31,8 +31,14 @@ def gen_table(name, bits, func):
     sys.stdout.write('0x%sU, ' % float2hex(func(i)))
   sys.stdout.write('\r\n};\r\n')
 
+def goom_func(i, n):
+  k = float((1 << n) - 1)
+  b = -math.pi
+  m =  math.pi/k
+  return math.cos(m * float(i) + b)
+
 def main():
-  gen_table('GOOM_TABLE', 6, lambda i: math.cos(float(i) * math.pi / float(1 << 6)))
+  gen_table('GOOM_TABLE', 6, lambda i: goom_func(i, 6))
   gen_table('COS_TABLE', 6, lambda i: math.cos(float(i) * 2.0 * math.pi / float(1 << 6)))
 
 main()

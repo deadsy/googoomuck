@@ -18,6 +18,7 @@ slope = split s0f0 and s1f1 beween slope and flat.
 //-----------------------------------------------------------------------------
 
 #include <string.h>
+#include <math.h>
 
 #include "ggm.h"
 
@@ -26,11 +27,21 @@ slope = split s0f0 and s1f1 beween slope and flat.
 
 //-----------------------------------------------------------------------------
 
-// The wave duty cycle goes from MID_MIN to 1.f - MID_MIN
-#define TP_MIN 0.1f
+// N bits to represent the phase
+#define PHASE_BITS (24U)
+#define PHASE_MAX (1U << PHASE_BITS)
+
+// This limits how close the duty cyle can get to 0/100%.
+// The transition point is between TP_MIN and PHASE_MAX - TP_MIN
+#define TP_MIN (PHASE_MAX >> 6)
 
 // Put a limit on how fast the slope can rise.
 #define S_MIN 0.1f
+
+#define DIV_BITS (20U)
+
+// frequency to x scaling (xrange/fs)
+#define GWAVE_FSCALE ((float)PHASE_MAX / AUDIO_FS)
 
 //-----------------------------------------------------------------------------
 
@@ -38,45 +49,53 @@ slope = split s0f0 and s1f1 beween slope and flat.
 #define GOOM_TABLE_BITS (6U)
 #define GOOM_TABLE_SIZE (1U << 6)
 static const uint32_t GOOM_TABLE_data[GOOM_TABLE_SIZE] = {
-	0x3f800000U, 0x3f7fb10fU, 0x3f7ec46dU, 0x3f7d3aacU,
-	0x3f7b14beU, 0x3f7853f8U, 0x3f74fa0bU, 0x3f710908U,
-	0x3f6c835eU, 0x3f676bd8U, 0x3f61c598U, 0x3f5b941aU,
-	0x3f54db31U, 0x3f4d9f02U, 0x3f45e403U, 0x3f3daef9U,
-	0x3f3504f3U, 0x3f2beb4aU, 0x3f226799U, 0x3f187fc0U,
-	0x3f0e39daU, 0x3f039c3dU, 0x3ef15aeaU, 0x3edae880U,
-	0x3ec3ef15U, 0x3eac7cd4U, 0x3e94a031U, 0x3e78cfccU,
-	0x3e47c5c2U, 0x3e164083U, 0x3dc8bd36U, 0x3d48fb30U,
-	0x248d3132U, 0xbd48fb30U, 0xbdc8bd36U, 0xbe164083U,
-	0xbe47c5c2U, 0xbe78cfccU, 0xbe94a031U, 0xbeac7cd4U,
-	0xbec3ef15U, 0xbedae880U, 0xbef15aeaU, 0xbf039c3dU,
-	0xbf0e39daU, 0xbf187fc0U, 0xbf226799U, 0xbf2beb4aU,
-	0xbf3504f3U, 0xbf3daef9U, 0xbf45e403U, 0xbf4d9f02U,
-	0xbf54db31U, 0xbf5b941aU, 0xbf61c598U, 0xbf676bd8U,
-	0xbf6c835eU, 0xbf710908U, 0xbf74fa0bU, 0xbf7853f8U,
-	0xbf7b14beU, 0xbf7d3aacU, 0xbf7ec46dU, 0xbf7fb10fU,
+	0xbf800000U, 0xbf7fae89U, 0xbf7eba56U, 0xbf7d2404U,
+	0xbf7aec96U, 0xbf781573U, 0xbf74a06bU, 0xbf708fb2U,
+	0xbf6be5ddU, 0xbf66a5e5U, 0xbf60d321U, 0xbf5a7145U,
+	0xbf538462U, 0xbf4c10e0U, 0xbf441b7dU, 0xbf3ba94aU,
+	0xbf32bfa6U, 0xbf29643eU, 0xbf1f9d07U, 0xbf15703aU,
+	0xbf0ae450U, 0xbf000000U, 0xbee99471U, 0xbed29439U,
+	0xbebb0dfbU, 0xbea310afU, 0xbe8aab9aU, 0xbe63dc87U,
+	0xbe31d0d4U, 0xbdfea7eaU, 0xbd990c17U, 0xbccc3b73U,
+	0x3ccc3b73U, 0x3d990c17U, 0x3dfea7eaU, 0x3e31d0d4U,
+	0x3e63dc87U, 0x3e8aab9aU, 0x3ea310afU, 0x3ebb0dfbU,
+	0x3ed29439U, 0x3ee99471U, 0x3f000000U, 0x3f0ae450U,
+	0x3f15703aU, 0x3f1f9d07U, 0x3f29643eU, 0x3f32bfa6U,
+	0x3f3ba94aU, 0x3f441b7dU, 0x3f4c10e0U, 0x3f538462U,
+	0x3f5a7145U, 0x3f60d321U, 0x3f66a5e5U, 0x3f6be5ddU,
+	0x3f708fb2U, 0x3f74a06bU, 0x3f781573U, 0x3f7aec96U,
+	0x3f7d2404U, 0x3f7eba56U, 0x3f7fae89U, 0x3f800000U,
 };
 
 //-----------------------------------------------------------------------------
 
 void gwave_gen(struct gwave *osc, float *out, size_t n) {
 	unsigned int i;
+	uint32_t idx;
+	float y;
+
 	for (i = 0; i < n; i++) {
-		// which portion of the goom wave are we in?
-		if (osc->phase < osc->tp) {
+		// what portion of the goom wave are we in?
+		if (osc->x < osc->tp) {
 			// we are in the s0/f0 portion
-			uint32_t idx = __USAT((uint32_t) (osc->phase * osc->k0), GOOM_TABLE_BITS);
-			out[i] = osc->table[idx];
+			idx = __USAT(osc->x * osc->k0 >> DIV_BITS, GOOM_TABLE_BITS);
+			y = osc->table[idx];
 		} else {
 			// we are in the s1/f1 portion
-			uint32_t idx = __USAT((uint32_t) ((osc->phase - osc->tp) * osc->k1), GOOM_TABLE_BITS);
-			out[i] = -osc->table[idx];
+			idx = __USAT((osc->x - osc->tp) * osc->k1 >> DIV_BITS, GOOM_TABLE_BITS);
+			y = -osc->table[idx];
 		}
+		out[i] = osc->amp * y;
 		// step the phase
-		osc->phase += osc->phase_step;
-		if (osc->phase > 1.f) {
-			osc->phase -= 1.f;
-		}
+		osc->x += osc->xstep;
+		osc->x &= (PHASE_MAX - 1);
 	}
+}
+
+// gwave generation with amplitude modulation
+void gwave_gen_am(struct gwave *osc, float *out, float *am, size_t n) {
+	gwave_gen(osc, out, n);
+	block_mul(out, am, n);
 }
 
 //-----------------------------------------------------------------------------
@@ -84,28 +103,39 @@ void gwave_gen(struct gwave *osc, float *out, size_t n) {
 // Initialise a Goom wave.
 // duty = duty cycle [0..1]
 // slope = slope [0..1]
-void gwave_init(struct gwave *osc, float duty, float slope) {
+void gwave_init(struct gwave *osc, float duty, float slope, float amp, float freq, float phase) {
 	float s;
 
 	memset(osc, 0, sizeof(struct gwave));
+
+	// amplitude
+	osc->amp = amp;
+
+	// frequency
+	osc->freq = freq;
+	osc->xstep = (uint32_t) (osc->freq * GWAVE_FSCALE);
+
+	// phase
+	osc->phase = fmodf(phase, TAU);
 
 	// setup the table
 	osc->table = (float *)GOOM_TABLE_data;
 
 	// This is where we transition from s0f0 to s1f1.
 	duty = clamp(duty, 0.f, 1.f);
-	osc->tp = TP_MIN + (1.f - 2.f * TP_MIN) * duty;
+	osc->tp = TP_MIN + (uint32_t) ((float)(PHASE_MAX - (TP_MIN << 1)) * duty);
 
 	// Work out the portion of s0f0/s1f1 that is sloped.
 	slope = clamp(slope, 0.f, 1.f);
 	s = S_MIN + (1.f - S_MIN) * slope;
 
 	// scaling constant for s0, map the slope to the LUT.
-	osc->k0 = (float)GOOM_TABLE_SIZE / (osc->tp * s);
+	osc->k0 = (GOOM_TABLE_SIZE << DIV_BITS) / (uint32_t) ((float)osc->tp * s);
 
 	// scaling constant for s1, map the slope to the LUT.
-	osc->k1 = (float)GOOM_TABLE_SIZE / ((1.f - osc->tp) * s);
+	osc->k1 = (GOOM_TABLE_SIZE << DIV_BITS) / (uint32_t) ((float)(PHASE_MAX - osc->tp) * s);
 
+	DBG("tp %08x k0 %08x k1 %08x\r\n", osc->tp, osc->k0, osc->k1);
 }
 
 //-----------------------------------------------------------------------------
