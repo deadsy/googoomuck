@@ -110,29 +110,14 @@ int adsr_is_active(struct adsr *e);
 //-----------------------------------------------------------------------------
 // midi
 
-static inline void major_chord(uint8_t * notes, uint8_t root) {
-	notes[0] = root;
-	notes[1] = root + 4;
-	notes[2] = root + 7;
-}
-
-static inline void minor_chord(uint8_t * notes, uint8_t root) {
-	notes[0] = root;
-	notes[1] = root + 3;
-	notes[2] = root + 7;
-}
-
 float midi_to_frequency(uint8_t note);
 
-#define MIDI_MSG(t, c, x, y) \
-  (((t) & 15) << 20 /*type*/) | \
-  (((c) & 15) << 16 /*channel*/) | \
-  (((x) & 127) << 8 /*x-parameter*/) | \
-  ((y) & 127 /*y-parameter*/)
-
-// channel, note, velocity
-#define MIDI_NOTE_ON(c, n, v) MIDI_MSG(9 /*note on*/, c, n, v)
-#define MIDI_NOTE_OFF(c, n, v) MIDI_MSG(8 /*note off*/, c, n, v)
+struct midi_drv {
+	int state;
+	uint8_t ch;		// channel
+	uint8_t cmd;		// command
+	uint8_t note;		// note
+};
 
 //-----------------------------------------------------------------------------
 // events
@@ -162,6 +147,20 @@ int event_wr(uint32_t type, void *ptr);
 
 //-----------------------------------------------------------------------------
 
+static inline void major_chord(uint8_t * notes, uint8_t root) {
+	notes[0] = root;
+	notes[1] = root + 4;
+	notes[2] = root + 7;
+}
+
+static inline void minor_chord(uint8_t * notes, uint8_t root) {
+	notes[0] = root;
+	notes[1] = root + 3;
+	notes[2] = root + 7;
+}
+
+//-----------------------------------------------------------------------------
+
 struct ggm_state {
 	struct audio_drv *audio;
 	struct dds lfo;
@@ -169,8 +168,6 @@ struct ggm_state {
 	struct adsr adsr;
 	struct gwave gw;
 };
-
-//-----------------------------------------------------------------------------
 
 int ggm_init(struct ggm_state *s, struct audio_drv *audio);
 int ggm_run(struct ggm_state *s);

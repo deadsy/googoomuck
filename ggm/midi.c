@@ -6,13 +6,19 @@ MIDI Functions
 */
 //-----------------------------------------------------------------------------
 
-#include <string.h>
-
 #include "ggm.h"
 
 //-----------------------------------------------------------------------------
 
-#define NOTES_IN_OCTAVE 12
+#define MIDI_NOTE_ON 9
+#define MIDI_NOTE_OFF 8
+
+// encode a midi message in event type bits 0..24
+#define MIDI_MSG(t, c, x, y) \
+  (((t) & 15) << 20 /*type*/) | \
+  (((c) & 15) << 16 /*channel*/) | \
+  (((x) & 127) << 8 /*x-parameter*/) | \
+  ((y) & 127 /*y-parameter*/)
 
 //-----------------------------------------------------------------------------
 
@@ -57,49 +63,64 @@ float midi_to_frequency(uint8_t note) {
 	return *(float *)&m2f_table[note & 0x7f];
 }
 
-#if 0
+//-----------------------------------------------------------------------------
 
-#include <math.h>
-
-#define MIDI_NOTE_A5 69
-#define FREQUENCY_A5 440.0f
-
-// return the frequency of the midi note
-float midi_to_frequency(uint8_t note) {
-	return FREQUENCY_A5 * powf(2.0f, (float)(note - MIDI_NOTE_A5) * (1.0f / NOTES_IN_OCTAVE));
+// generate a note on event for a midi channel
+void midi_note_on(struct midi_drv *midi, uint8_t note, uint8_t velocity) {
+	event_wr(EVENT_TYPE_MIDI | MIDI_MSG(MIDI_NOTE_ON, midi->ch, note, velocity), NULL);
 }
 
-#endif
+// generate a note off event for a midi channel
+void midi_note_off(struct midi_drv *midi, uint8_t note, uint8_t velocity) {
+	event_wr(EVENT_TYPE_MIDI | MIDI_MSG(MIDI_NOTE_OFF, midi->ch, note, velocity), NULL);
+}
 
 //-----------------------------------------------------------------------------
-// note to name conversion
 
-static const char *sharps[NOTES_IN_OCTAVE] = { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
-static const char *flats[NOTES_IN_OCTAVE] = { "C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B" };
+enum {
+	MIDI_STATE_COMMAND,
+	MIDI_STATE_NOTE,
+	MIDI_STATE_VELOCITY,
+};
 
-// convert a midi note to a name
-const char *midi_note_name(uint8_t note, char mode) {
-	note %= NOTES_IN_OCTAVE;
-	return (mode == '#') ? sharps[note] : flats[note];
-}
-
-// return a note name with sharp and flat forms
-char *midi_full_note_name(char *str, uint8_t note) {
-	const char *s_name = midi_note_name(note, '#');
-	const char *f_name = midi_note_name(note, 'b');
-	strcpy(str, s_name);
-	if (strcmp(s_name, f_name)) {
-		strcat(str, "/");
-		strcat(str, f_name);
+static void midi_rx(struct midi_drv *midi, uint8_t c) {
+	switch (midi->state) {
+	case MIDI_STATE_COMMAND:{
+			uint8_t cmd = c & 0xf0;
+			if (cmd == MIDI_NOTE_ON || cmd == MIDI_NOTE_OFF) {
+				midi->cmd = cmd;
+				midi->state = MIDI_STATE_NOTE;
+			}
+			break;
+		}
+	case MIDI_STATE_NOTE:{
+			if ((c & 0x80) == 0) {
+				midi->note = c;
+				midi->state = MIDI_STATE_VELOCITY;
+			} else {
+				// not a valid note
+				midi->state = MIDI_STATE_COMMAND;
+			}
+			break;
+		}
+	case MIDI_STATE_VELOCITY:{
+			if ((c & 0x80) == 0) {
+				event_wr(EVENT_TYPE_MIDI | MIDI_MSG(midi->cmd, midi->ch, midi->note, c), NULL);
+			}
+			midi->state = MIDI_STATE_COMMAND;
+			break;
+		}
+	default:{
+			// ?
+			midi->state = MIDI_STATE_COMMAND;
+			break;
+		}
 	}
-	return str;
 }
 
-//-----------------------------------------------------------------------------
-
-// return an octave number
-int midi_to_octave(uint8_t note) {
-	return (note / NOTES_IN_OCTAVE);
+// serial isr rx callback for midi
+void midi_rx_isr(struct usart_drv *usart, uint8_t c) {
+	midi_rx((struct midi_drv *)usart->priv, c);
 }
 
 //-----------------------------------------------------------------------------

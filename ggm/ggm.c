@@ -58,7 +58,6 @@ static void audio_handler(struct ggm_state *s, struct event *e) {
 		//dds_gen(&s->lfo, fm, n);
 		adsr_gen(&s->adsr, am, n);
 		gwave_gen_am(&s->gw, out, am, n);
-
 	} else {
 		memset(out, 0, n * sizeof(float));
 	}

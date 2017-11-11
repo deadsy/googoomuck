@@ -5,14 +5,16 @@ Goom Waves
 
 A Goom Wave is a wave shape with the following segments:
 
-1) A rising cos -pi to 0 curve (s0)
-2) A flat piece at the top (f0)
-3) A falling cos 0 to pi curve (s1)
-4) A flat piece at the bottom (f1)
+1) s0: A rising (-1 to 1) sine curve
+2) f0: A flat piece at the top
+3) s1: A falling (1 to -1) sine curve
+4) f1: A flat piece at the bottom
 
 Shape is controller by two parameters:
 duty = split the total period between s0,f0 and s1,f1
 slope = split s0f0 and s1f1 beween slope and flat.
+
+The idea for goom waves comes from: https://www.quinapalus.com/goom.html
 
 */
 //-----------------------------------------------------------------------------

@@ -17,13 +17,21 @@ USART Driver
 
 //-----------------------------------------------------------------------------
 
+struct usart_drv {
+	USART_TypeDef *regs;
+	void *priv;		// users private data
+	void (*err_callback) (struct usart_drv * usart, uint32_t errors);	// errors callback
+	void (*rx_callback) (struct usart_drv * usart, uint8_t c);	// rx callback
+	int (*tx_callback) (struct usart_drv * usart, uint8_t * c);	// tx callback
+};
+
 struct usart_cfg {
 	uint32_t base;
 	int baud;
-};
-
-struct usart_drv {
-	USART_TypeDef *regs;
+	void *priv;
+	void (*err_callback) (struct usart_drv * usart, uint32_t errors);	// errors callback
+	void (*rx_callback) (struct usart_drv * usart, uint8_t c);	// rx callback
+	int (*tx_callback) (struct usart_drv * usart, uint8_t * c);	// tx callback
 };
 
 //-----------------------------------------------------------------------------

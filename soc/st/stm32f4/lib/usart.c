@@ -65,6 +65,37 @@ static void usart_set_baud(struct usart_drv *usart, int baud) {
 
 //-----------------------------------------------------------------------------
 
+void usart_isr(struct usart_drv *usart) {
+	uint32_t status = usart->regs->SR;
+	// check for rx errors
+	if (status & (USART_SR_ORE | USART_SR_PE | USART_SR_FE | USART_SR_NE)) {
+		if (usart->err_callback) {
+			usart->err_callback(usart, status);
+		}
+	}
+	// receive
+	if (status & USART_SR_RXNE) {
+		uint8_t c = usart->regs->DR;
+		if (usart->rx_callback) {
+			usart->rx_callback(usart, c);
+		}
+	}
+	if (status & USART_SR_TXE) {
+		if (usart->tx_callback) {
+			uint8_t c;
+			int rc = usart->tx_callback(usart, &c);
+			if (rc) {
+				usart->regs->DR = c;
+			} else {
+				// no more tx data, disable the tx empty interrupt
+				usart->regs->CR1 &= ~USART_CR1_TXEIE;
+			}
+		}
+	}
+}
+
+//-----------------------------------------------------------------------------
+
 #define USART_SR_MASK (0x3ffU)
 #define USART_CR1_MASK (0xbfffU)
 #define USART_CR2_MASK (0x7f6fU)
@@ -76,6 +107,10 @@ int usart_init(struct usart_drv *usart, struct usart_cfg *cfg) {
 
 	memset(usart, 0, sizeof(struct usart_drv));
 	usart->regs = (USART_TypeDef *) cfg->base;
+	usart->err_callback = cfg->err_callback;
+	usart->rx_callback = cfg->rx_callback;
+	usart->tx_callback = cfg->tx_callback;
+	usart->priv = cfg->priv;
 
 	// enable the usart module
 	usart_module_enable(cfg->base);
