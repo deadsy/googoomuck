@@ -116,7 +116,7 @@ int ggm_init(struct ggm_state *s, struct audio_drv *audio) {
 	dds_sin_init(&s->lfo, 10.f, 15.f, 0.f);
 	dds_sin_init(&s->sin, 1.f, midi_to_frequency(69), 0.f);
 	adsr_init(&s->adsr, 0.05f, 0.2f, 0.5f, 0.5f);
-	gwave_init(&s->gw, 0.0f, 0.0f, 1.f, midi_to_frequency(69), 0.f);
+	gwave_init(&s->gw, 0.5f, 0.5f, 1.f, midi_to_frequency(69), 0.f);
 
  exit:
 	return rc;

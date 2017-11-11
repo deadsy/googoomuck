@@ -90,26 +90,28 @@ static const uint32_t GWAVE_DY_data[GWAVE_SIZE] = {
 
 void gwave_gen(struct gwave *osc, float *out, size_t n) {
 	unsigned int i;
-	float y, dy, frac;
+	float amp;
+	uint32_t sx;
 
 	for (i = 0; i < n; i++) {
 		// what portion of the goom wave are we in?
 		if (osc->x < osc->tp) {
 			// we are in the s0/f0 portion
-			uint32_t sx = osc->x * osc->k0;
-			uint32_t idx = __USAT(sx >> SLOPE_DIV, GWAVE_BITS);
-			y = GWAVE_data[idx];
-			dy = GWAVE_DY_data[idx];
+			sx = osc->x * osc->k0;
+			amp = osc->amp;
 		} else {
 			// we are in the s1/f1 portion
-			uint32_t sx = (osc->x - osc->tp) * osc->k1;
-			uint32_t idx = __USAT(sx >> SLOPE_DIV, GWAVE_BITS);
-			y = -GWAVE_data[idx];
-			dy = -GWAVE_DY_data[idx];
+			sx = (osc->x - osc->tp) * osc->k1;
+			amp = -osc->amp;
 		}
-		// TODO
-		frac = 0.f;
-		out[i] = osc->amp * (y + frac * dy);
+
+		uint32_t idx = __USAT(sx >> SLOPE_DIV, GWAVE_BITS);
+		float frac = (float)(sx & ((1 << SLOPE_DIV) - 1)) / (float)(1 << SLOPE_DIV);
+
+		float y = *(float *)&GWAVE_data[idx];
+		float dy = *(float *)&GWAVE_DY_data[idx];
+		out[i] = amp * (y + frac * dy);
+
 		// step the phase
 		osc->x += osc->xstep;
 		osc->x &= (PHASE_MAX - 1);
@@ -128,13 +130,12 @@ void gwave_gen_am(struct gwave *osc, float *out, float *am, size_t n) {
 // duty = duty cycle 0..1
 // slope = slope 0..1
 void gwave_shape(struct gwave *osc, float duty, float slope) {
-  float s;
- 	// This is where we transition from s0f0 to s1f1.
+	// This is where we transition from s0f0 to s1f1.
 	duty = clamp(duty, 0.f, 1.f);
 	osc->tp = TP_MIN + (uint32_t) ((float)(PHASE_MAX - (TP_MIN << 1)) * duty);
 	// Work out the portion of s0f0/s1f1 that is sloped.
 	slope = clamp(slope, 0.f, 1.f);
-	s = S_MIN + (1.f - S_MIN) * slope;
+	float s = S_MIN + (1.f - S_MIN) * slope;
 	// scaling constant for s0, map the slope to the LUT.
 	osc->k0 = (GWAVE_SIZE << SLOPE_DIV) / (uint32_t) ((float)osc->tp * s);
 	// scaling constant for s1, map the slope to the LUT.
@@ -153,8 +154,8 @@ void gwave_init(struct gwave *osc, float duty, float slope, float amp, float fre
 	osc->xstep = (uint32_t) (osc->freq * GWAVE_FSCALE);
 	// phase
 	osc->phase = fmodf(phase, TAU);
-  // set the shape
-  gwave_shape(osc, duty, slope);
+	// set the shape
+	gwave_shape(osc, duty, slope);
 }
 
 //-----------------------------------------------------------------------------

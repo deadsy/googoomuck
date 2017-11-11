@@ -18,3 +18,4 @@ X_CFLAGS += -O2
 X_CFLAGS += -falign-functions -fomit-frame-pointer -fno-strict-aliasing
 X_CFLAGS += -mlittle-endian -mthumb -mcpu=cortex-m4 -mthumb-interwork
 X_CFLAGS += -mfloat-abi=hard -mfpu=fpv4-sp-d16
+X_CFLAGS += -std=c99

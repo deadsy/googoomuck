@@ -19,13 +19,13 @@ IRQ Control for the Cortex-M
 
 static inline uint32_t disable_irq(void) {
 	uint32_t x;
-	asm volatile ("mrs %0, primask":"=r" (x));
-	asm volatile ("cpsid i":::"memory");
+	__asm__ volatile ("mrs %0, primask":"=r" (x));
+	__asm__ volatile ("cpsid i":::"memory");
 	return x;
 }
 
 static inline void restore_irq(uint32_t x) {
-	asm volatile ("msr primask, %0"::"r" (x):"memory");
+	__asm__ volatile ("msr primask, %0"::"r" (x):"memory");
 }
 
 //-----------------------------------------------------------------------------

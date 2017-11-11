@@ -259,10 +259,10 @@ int _unlink_r(struct _reent *ptr, const char *file) {
 //-----------------------------------------------------------------------------
 // memory allocation
 
-register char *stack_ptr asm("sp");
+register char *stack_ptr __asm__("sp");
 
 void *_sbrk_r(struct _reent *ptr, ptrdiff_t incr) {
-	extern char end asm("end");
+	extern char end __asm__("end");
 	static char *heap_end;
 	char *prev_heap_end;
 
