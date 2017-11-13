@@ -83,7 +83,7 @@ enum {
 	MIDI_STATE_VELOCITY,
 };
 
-static void midi_rx(struct midi_drv *midi, uint8_t c) {
+void midi_rx(struct midi_drv *midi, uint8_t c) {
 	switch (midi->state) {
 	case MIDI_STATE_COMMAND:{
 			uint8_t cmd = c & 0xf0;
@@ -116,11 +116,6 @@ static void midi_rx(struct midi_drv *midi, uint8_t c) {
 			break;
 		}
 	}
-}
-
-// serial isr rx callback for midi
-void midi_rx_isr(struct usart_drv *usart, uint8_t c) {
-	midi_rx((struct midi_drv *)usart->priv, c);
 }
 
 //-----------------------------------------------------------------------------

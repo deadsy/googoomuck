@@ -16,6 +16,10 @@ USART Driver
 
 //-----------------------------------------------------------------------------
 
+#define INC_MOD(x, s) (((x) + 1) & ((s) - 1))
+
+//-----------------------------------------------------------------------------
+
 // enable the clock to the usart module
 static void usart_module_enable(uint32_t base) {
 	if (base == USART1_BASE) {
@@ -31,6 +35,24 @@ static void usart_module_enable(uint32_t base) {
 	} else if (base == USART6_BASE) {
 		RCC->APB2ENR |= (1 << 5 /*USART6EN */ );
 	}
+}
+
+// return the irq used for this usart module
+static int usart_irq(uint32_t base) {
+	if (base == USART1_BASE) {
+		return USART1_IRQn;
+	} else if (base == USART2_BASE) {
+		return USART2_IRQn;
+	} else if (base == USART3_BASE) {
+		return USART3_IRQn;
+	} else if (base == UART4_BASE) {
+		return UART4_IRQn;
+	} else if (base == UART5_BASE) {
+		return UART5_IRQn;
+	} else if (base == USART6_BASE) {
+		return USART6_IRQn;
+	}
+	return 0;
 }
 
 //-----------------------------------------------------------------------------
@@ -65,33 +87,70 @@ static void usart_set_baud(struct usart_drv *usart, int baud) {
 
 //-----------------------------------------------------------------------------
 
+void usart_putc(struct usart_drv *usart, char c) {
+	int tx_wr_inc = INC_MOD(usart->tx_wr, TXBUF_SIZE);
+	// wait for space
+	while (tx_wr_inc == usart->tx_rd) ;
+	// put the character in the tx buffer
+	NVIC_DisableIRQ(usart->irq);
+	usart->txbuf[usart->tx_wr] = c;
+	usart->tx_wr = tx_wr_inc;
+	NVIC_EnableIRQ(usart->irq);
+	// enable the tx empty interrupt
+	usart->regs->CR1 |= USART_CR1_TXEIE;
+}
+
+void usart_flush(struct usart_drv *usart) {
+	while (usart->tx_wr != usart->tx_rd) ;
+}
+
+// return non-zero if we have rx data
+int usart_tstc(struct usart_drv *usart) {
+	return usart->rx_rd != usart->rx_wr;
+}
+
+char usart_getc(struct usart_drv *usart) {
+	// wait for a character
+	while (usart_tstc(usart) == 0) ;
+	NVIC_DisableIRQ(usart->irq);
+	char c = usart->rxbuf[usart->rx_rd];
+	usart->rx_rd = INC_MOD(usart->rx_rd, RXBUF_SIZE);
+	NVIC_EnableIRQ(usart->irq);
+	return c;
+}
+
+//-----------------------------------------------------------------------------
+
 void usart_isr(struct usart_drv *usart) {
 	uint32_t status = usart->regs->SR;
+
 	// check for rx errors
 	if (status & (USART_SR_ORE | USART_SR_PE | USART_SR_FE | USART_SR_NE)) {
-		if (usart->err_callback) {
-			usart->err_callback(usart, status);
-		}
+		usart->rx_errors++;
 	}
 	// receive
 	if (status & USART_SR_RXNE) {
 		uint8_t c = usart->regs->DR;
-		if (usart->rx_callback) {
-			usart->rx_callback(usart, c);
+		int rx_wr_inc = INC_MOD(usart->rx_wr, RXBUF_SIZE);
+		if (rx_wr_inc != usart->rx_rd) {
+			usart->rxbuf[usart->rx_wr] = c;
+			usart->rx_wr = rx_wr_inc;
+		} else {
+			// rx buffer overflow
+			usart->rx_errors++;
 		}
 	}
+	// transmit
 	if (status & USART_SR_TXE) {
-		if (usart->tx_callback) {
-			uint8_t c;
-			int rc = usart->tx_callback(usart, &c);
-			if (rc) {
-				usart->regs->DR = c;
-			} else {
-				// no more tx data, disable the tx empty interrupt
-				usart->regs->CR1 &= ~USART_CR1_TXEIE;
-			}
+		if (usart->tx_rd != usart->tx_wr) {
+			usart->regs->DR = usart->txbuf[usart->tx_rd];
+			usart->tx_rd = INC_MOD(usart->tx_rd, TXBUF_SIZE);
+		} else {
+			// no more tx data, disable the tx empty interrupt
+			usart->regs->CR1 &= ~USART_CR1_TXEIE;
 		}
 	}
+
 }
 
 //-----------------------------------------------------------------------------
@@ -107,10 +166,7 @@ int usart_init(struct usart_drv *usart, struct usart_cfg *cfg) {
 
 	memset(usart, 0, sizeof(struct usart_drv));
 	usart->regs = (USART_TypeDef *) cfg->base;
-	usart->err_callback = cfg->err_callback;
-	usart->rx_callback = cfg->rx_callback;
-	usart->tx_callback = cfg->tx_callback;
-	usart->priv = cfg->priv;
+	usart->irq = usart_irq(cfg->base);
 
 	// enable the usart module
 	usart_module_enable(cfg->base);

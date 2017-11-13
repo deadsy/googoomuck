@@ -24,38 +24,35 @@ See http://www.eistec.se/docs/contiki/a01137_source.html
 //-----------------------------------------------------------------------------
 // low level read/write functions
 
-#if defined(STDIO_UART)		// stdio to the serial port
+#if defined(STDIO_SERIAL)	// stdio to the serial port
 
-#include "usart.h"
+#include "stm32f4_soc.h"
+
+extern struct usart_drv serial_drv;
 
 static _ssize_t io_read_r(struct _reent *ptr, int fd, void *buf, size_t cnt) {
 	static int prev_char = -1;
 	char *cbuf = buf;
 	unsigned int i;
 	char c;
-
-	DBG("%s: %s() line %d cnt %d", __FILE__, __func__, __LINE__, cnt);
-
 	i = 0;
 	while (i < cnt) {
-
 		if (prev_char != -1) {
 			// we have a look-ahead character
 			c = prev_char;
 			prev_char = -1;
 		} else {
 			// block until we get a character
-			while (usart_tstc() == 0) ;
-			c = usart_getc();
+			while (usart_tstc(&serial_drv) == 0) ;
+			c = usart_getc(&serial_drv);
 		}
-
 		// handle a backspace
 		if (c == 8 || c == 0x7F) {
 			if (i > 0) {
 				i--;
-				usart_putc(8);
-				usart_putc(' ');
-				usart_putc(8);
+				usart_putc(&serial_drv, 8);
+				usart_putc(&serial_drv, ' ');
+				usart_putc(&serial_drv, 8);
 			}
 			continue;
 		}
@@ -64,24 +61,23 @@ static _ssize_t io_read_r(struct _reent *ptr, int fd, void *buf, size_t cnt) {
 			continue;
 		}
 		// local echo
-		usart_putc(c);
-
+		usart_putc(&serial_drv, c);
 		// handle \r\n and \n\r sequences
 		if (c == '\r' || c == '\n') {
 			// give the other character a chance to come in
-			if (usart_tstc() == 0) {
+			if (usart_tstc(&serial_drv) == 0) {
 				// TODO
 			}
 			// get the other character, if we have one
-			if (usart_tstc() != 0) {
-				prev_char = usart_getc();
+			if (usart_tstc(&serial_drv) != 0) {
+				prev_char = usart_getc(&serial_drv);
 				if (prev_char + c == '\r' + '\n') {
 					// ignore the other \r or \n
 					prev_char = -1;
 				}
 			}
 			// local echo the other character
-			usart_putc('\r' + '\n' - c);
+			usart_putc(&serial_drv, '\r' + '\n' - c);
 			// return a buffer terminating with \n
 			cbuf[i++] = '\n';
 			return i;
@@ -89,7 +85,6 @@ static _ssize_t io_read_r(struct _reent *ptr, int fd, void *buf, size_t cnt) {
 		// add the character to the buffer
 		cbuf[i++] = c;
 	}
-
 	// return the full buffer
 	return i;
 }
@@ -97,14 +92,13 @@ static _ssize_t io_read_r(struct _reent *ptr, int fd, void *buf, size_t cnt) {
 static _ssize_t io_write_r(struct _reent *ptr, int fd, const void *buf, size_t cnt) {
 	unsigned i;
 	const char *cbuf = buf;
-	DBG("%s: %s() line %d cnt %d", __FILE__, __func__, __LINE__, cnt);
 	for (i = 0; i < cnt; i++) {
 		char c = *cbuf++;
 		// autoadd a CR
 		if (c == '\n') {
-			usart_putc('\r');
+			usart_putc(&serial_drv, '\r');
 		}
-		usart_putc(c);
+		usart_putc(&serial_drv, c);
 	}
 	return cnt;
 }
@@ -135,8 +129,8 @@ static _ssize_t io_write_r(struct _reent *ptr, int fd, const void *buf, size_t c
 #endif
 
 //-----------------------------------------------------------------------------
-// Empty environment definition
 
+// Empty environment definition
 char *__env[1] = { 0 };
 
 char **environ = __env;
@@ -159,7 +153,7 @@ int _close_r(struct _reent *ptr, int fd) {
 }
 
 _ssize_t _read_r(struct _reent * ptr, int fd, void *buf, size_t cnt) {
-	DBG("%s: %s() line %d fd %d cnt %d\r\n", __FILE__, __func__, __LINE__, fd, cnt);
+	//DBG("%s: %s() line %d fd %d cnt %d\r\n", __FILE__, __func__, __LINE__, fd, cnt);
 	switch (fd) {
 	case 0:
 	case 1:

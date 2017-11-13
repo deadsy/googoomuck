@@ -17,26 +17,31 @@ USART Driver
 
 //-----------------------------------------------------------------------------
 
-struct usart_drv {
-	USART_TypeDef *regs;
-	void *priv;		// users private data
-	void (*err_callback) (struct usart_drv * usart, uint32_t errors);	// errors callback
-	void (*rx_callback) (struct usart_drv * usart, uint8_t c);	// rx callback
-	int (*tx_callback) (struct usart_drv * usart, uint8_t * c);	// tx callback
-};
+#define TXBUF_SIZE 128		// must be a power of 2
+#define RXBUF_SIZE 128		// must be a power of 2
 
 struct usart_cfg {
 	uint32_t base;
 	int baud;
-	void *priv;
-	void (*err_callback) (struct usart_drv * usart, uint32_t errors);	// errors callback
-	void (*rx_callback) (struct usart_drv * usart, uint8_t c);	// rx callback
-	int (*tx_callback) (struct usart_drv * usart, uint8_t * c);	// tx callback
+};
+
+struct usart_drv {
+	USART_TypeDef *regs;
+	int irq;
+	uint8_t txbuf[TXBUF_SIZE];
+	uint8_t rxbuf[RXBUF_SIZE];
+	volatile int rx_wr, rx_rd;
+	volatile int tx_wr, tx_rd;
+	int rx_errors;
 };
 
 //-----------------------------------------------------------------------------
 
 int usart_init(struct usart_drv *usart, struct usart_cfg *cfg);
+void usart_putc(struct usart_drv *usart, char c);
+void usart_flush(struct usart_drv *usart);
+int usart_tstc(struct usart_drv *usart);
+char usart_getc(struct usart_drv *usart);
 
 //-----------------------------------------------------------------------------
 
