@@ -21,8 +21,11 @@ USART Driver
 #define RXBUF_SIZE 128		// must be a power of 2
 
 struct usart_cfg {
-	uint32_t base;
-	int baud;
+	uint32_t base;		// base address of usart peripheral
+	int baud;		// baud rate
+	int data;		// data bits
+	int parity;		// parity bits
+	int stop;		// stop bits
 };
 
 struct usart_drv {
@@ -38,6 +41,9 @@ struct usart_drv {
 //-----------------------------------------------------------------------------
 
 int usart_init(struct usart_drv *usart, struct usart_cfg *cfg);
+void usart_isr(struct usart_drv *usart);
+
+// stdio functions
 void usart_putc(struct usart_drv *usart, char c);
 void usart_flush(struct usart_drv *usart);
 int usart_tstc(struct usart_drv *usart);

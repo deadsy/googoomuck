@@ -23,6 +23,10 @@ MB997C Board
 // push button
 #define PUSH_BUTTON GPIO_NUM(PORTA, 0)	// 0 = open, 1 = pressed
 
+// serial port
+#define UART_TX GPIO_NUM(PORTA, 2)
+#define UART_RX GPIO_NUM(PORTA, 3)
+
 static const struct gpio_info gpios[] = {
 	// leds
 	{LED_RED, GPIO_MODER_OUT, GPIO_OTYPER_PP, GPIO_OSPEEDR_LO, GPIO_PUPD_NONE, GPIO_AF0, 0},
@@ -31,6 +35,9 @@ static const struct gpio_info gpios[] = {
 	{LED_AMBER, GPIO_MODER_OUT, GPIO_OTYPER_PP, GPIO_OSPEEDR_LO, GPIO_PUPD_NONE, GPIO_AF0, 0},
 	// push buttons
 	{PUSH_BUTTON, GPIO_MODER_IN, GPIO_OTYPER_PP, GPIO_OSPEEDR_LO, GPIO_PUPD_NONE, GPIO_AF0, 0},
+	// serial port (usart2 function)
+	{UART_TX, GPIO_MODER_AF, GPIO_OTYPER_PP, GPIO_OSPEEDR_HI, GPIO_PUPD_NONE, GPIO_AF7, 0},
+	{UART_RX, GPIO_MODER_AF, GPIO_OTYPER_PP, GPIO_OSPEEDR_HI, GPIO_PUPD_NONE, GPIO_AF7, 0},
 };
 
 //-----------------------------------------------------------------------------
@@ -178,7 +185,24 @@ static struct rng_cfg ggm_rng_cfg = {
 	//.data_callback = rng_data_callback,
 };
 
-struct rng_drv ggm_rng;
+static struct rng_drv ggm_rng;
+
+//-----------------------------------------------------------------------------
+// midi port
+
+static struct usart_cfg serial_cfg = {
+	.base = USART2_BASE,
+	.baud = 115200,
+	.data = 8,
+	.parity = 0,
+	.stop = 1,
+};
+
+struct usart_drv serial_drv;
+
+void USART2_IRQHandler(void) {
+	usart_isr(&serial_drv);
+}
 
 //-----------------------------------------------------------------------------
 
@@ -205,6 +229,22 @@ int main(void) {
 		DBG("debounce_init failed %d\r\n", rc);
 		goto exit;
 	}
+
+	rc = usart_init(&serial_drv, &serial_cfg);
+	if (rc != 0) {
+		DBG("serial_init failed %d\r\n", rc);
+		goto exit;
+	}
+#if 0
+	HAL_NVIC_SetPriority(USART2_IRQn, 10, 0);
+	NVIC_EnableIRQ(USART2_IRQn);
+
+	int n = 0;
+	while (1) {
+		printf("here %d\n", n);
+		n += 1;
+	}
+#endif
 
 	rc = rng_init(&ggm_rng, &ggm_rng_cfg);
 	if (rc != 0) {

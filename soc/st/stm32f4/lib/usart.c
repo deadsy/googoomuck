@@ -182,10 +182,10 @@ int usart_init(struct usart_drv *usart, struct usart_cfg *cfg) {
 	val |= (0 << 8 /*PEIE*/);	// PE interrupt enable
 	val |= (0 << 7 /*TXEIE*/);	// TXE interrupt enable
 	val |= (0 << 6 /*TCIE*/);	// Transmission complete interrupt enable
-	val |= (0 << 5 /*RXNEIE*/);	// RXNE interrupt enable
+	val |= (1 << 5 /*RXNEIE*/);	// RXNE interrupt enable
 	val |= (0 << 4 /*IDLEIE*/);	// IDLE interrupt enable
-	val |= (0 << 3 /*TE*/);	// Transmitter enable
-	val |= (0 << 2 /*RE*/);	// Receiver enable
+	val |= (1 << 3 /*TE*/);	// Transmitter enable
+	val |= (1 << 2 /*RE*/);	// Receiver enable
 	val |= (0 << 1 /*RWU*/);	// Receiver wakeup
 	val |= (0 << 0 /*SBK*/);	// Send break
 	reg_rmw(&usart->regs->CR1, USART_CR1_MASK, val);
@@ -227,6 +227,9 @@ int usart_init(struct usart_drv *usart, struct usart_cfg *cfg) {
 
 	// Guard time and prescaler register
 	reg_rmw(&usart->regs->GTPR, USART_GTPR_MASK, 0);
+
+	// enable the uart
+	usart->regs->CR1 |= USART_CR1_UE;
 
 	return 0;
 }
