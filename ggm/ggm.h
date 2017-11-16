@@ -18,11 +18,11 @@ GooGooMuck Synthesizer
 
 //-----------------------------------------------------------------------------
 
-#define AUDIO_TS (1.0f/AUDIO_FS)
+#define AUDIO_TS (1.f/AUDIO_FS)
 
 #define PI (3.1415927f)
-#define TAU (2.0f * PI)
-#define INV_TAU (1.0f/TAU)
+#define TAU (2.f * PI)
+#define INV_TAU (1.f/TAU)
 
 //-----------------------------------------------------------------------------
 
@@ -113,7 +113,6 @@ int adsr_is_active(struct adsr *e);
 float midi_to_frequency(uint8_t note);
 
 struct midi_drv {
-	struct usart_drv serial_drv;
 	int state;
 	uint8_t channel;
 	uint8_t arg0;
@@ -121,8 +120,7 @@ struct midi_drv {
 	void (*func) (struct midi_drv * midi);
 };
 
-int midi_init(struct midi_drv *midi, uint32_t base);
-void midi_process(struct midi_drv *midi);
+void midi_rx_serial(struct midi_drv *midi, struct usart_drv *serial);
 
 //-----------------------------------------------------------------------------
 // events
@@ -167,15 +165,19 @@ static inline void minor_chord(uint8_t * notes, uint8_t root) {
 //-----------------------------------------------------------------------------
 
 struct ggm_state {
+	// audio output
 	struct audio_drv *audio;
-	struct midi_drv *midi;
+	// midi input
+	struct usart_drv *serial;	// serial port for midi interface
+	struct midi_drv *midi_rx0;	// midi rx from the serial port
+	// sound generation
 	struct dds lfo;
 	struct dds sin;
 	struct adsr adsr;
 	struct gwave gw;
 };
 
-int ggm_init(struct ggm_state *s, struct audio_drv *audio, struct midi_drv *midi);
+int ggm_init(struct ggm_state *s, struct audio_drv *audio, struct usart_drv *midi);
 int ggm_run(struct ggm_state *s);
 
 //-----------------------------------------------------------------------------

@@ -129,6 +129,7 @@ static void midi_rx_reset(struct midi_drv *midi) {
 	midi->func = NULL;
 }
 
+// receive a sysex byte
 static void midi_rx_sysex(struct midi_drv *midi, uint8_t x) {
 	DBG("midi sysex %02x\r\n", x);
 }
@@ -202,10 +203,10 @@ static void midi_rx_status(struct midi_drv *midi, uint8_t status) {
 	}
 }
 
-// Read from the serial port and process MIDI events
-void midi_process(struct midi_drv *midi) {
-	uint8_t c;
-	while (usart_rx(&midi->serial_drv, &c)) {
+// Receive a buffer of midi bytes
+static void midi_rxbuf(struct midi_drv *midi, uint8_t * buf, size_t n) {
+	for (size_t i = 0; i < n; i++) {
+		uint8_t c = buf[i];
 		if (midi->state == MIDI_RX_STATUS) {
 			// process the satus byte
 			midi_rx_status(midi, c);
@@ -241,6 +242,7 @@ void midi_process(struct midi_drv *midi) {
 			}
 			midi_rx_reset(midi);
 		} else if (midi->state == MIDI_RX_SYSEX) {
+			// process sysex bytes
 			if ((c & 0x80) == 0) {
 				midi_rx_sysex(midi, c);
 			} else {
@@ -260,27 +262,16 @@ void midi_process(struct midi_drv *midi) {
 
 //-----------------------------------------------------------------------------
 
-// Initialise a serial MIDI interface driver.
-int midi_init(struct midi_drv *midi, uint32_t base) {
-	struct usart_cfg serial_cfg;
-	int rc;
-
-	memset(midi, 0, sizeof(struct midi_drv));
-
-	serial_cfg.base = base;
-	serial_cfg.baud = 31250;
-	serial_cfg.data = 8;
-	serial_cfg.parity = 0;
-	serial_cfg.stop = 1;
-
-	rc = usart_init(&midi->serial_drv, &serial_cfg);
-	if (rc != 0) {
-		DBG("midi usart_init failed %d\r\n", rc);
-		goto exit;
-	}
-
- exit:
-	return rc;
+// Receive midi messages from a serial port.
+void midi_rx_serial(struct midi_drv *midi, struct usart_drv *serial) {
+	uint8_t buf[16];
+	size_t n;
+	do {
+		// read a buffer from the serial port
+		n = usart_rxbuf(serial, buf, sizeof(buf));
+		// write the buffer to the midi receiver
+		midi_rxbuf(midi, buf, n);
+	} while (n == sizeof(buf));
 }
 
 //-----------------------------------------------------------------------------

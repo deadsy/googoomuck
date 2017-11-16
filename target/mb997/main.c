@@ -190,10 +190,18 @@ static struct rng_drv ggm_rng;
 //-----------------------------------------------------------------------------
 // midi port (on USART2)
 
-struct midi_drv ggm_midi;
+struct usart_cfg midi_serial_cfg = {
+	.base = USART2_BASE,
+	.baud = 31250,
+	.data = 8,
+	.parity = 0,
+	.stop = 1,
+};
+
+struct usart_drv midi_serial;
 
 void USART2_IRQHandler(void) {
-	usart_isr(&ggm_midi.serial_drv);
+	usart_isr(&midi_serial);
 }
 
 //-----------------------------------------------------------------------------
@@ -222,9 +230,9 @@ int main(void) {
 		goto exit;
 	}
 
-	rc = midi_init(&ggm_midi, USART2_BASE);
+	rc = usart_init(&midi_serial, &midi_serial_cfg);
 	if (rc != 0) {
-		DBG("midi_init failed %d\r\n", rc);
+		DBG("usart_init failed %d\r\n", rc);
 		goto exit;
 	}
 	// setup the interrupts for the serial port
@@ -255,7 +263,7 @@ int main(void) {
 		goto exit;
 	}
 
-	rc = ggm_init(&synth, &ggm_audio, &ggm_midi);
+	rc = ggm_init(&synth, &ggm_audio, &midi_serial);
 	if (rc != 0) {
 		DBG("ggm_init failed %d\r\n", rc);
 		goto exit;

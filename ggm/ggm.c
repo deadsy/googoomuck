@@ -96,7 +96,7 @@ int ggm_run(struct ggm_state *s) {
 			}
 		}
 		// get and process serial midi messages
-		midi_process(s->midi);
+		midi_rx_serial(s->midi_rx0, s->serial);
 	}
 	return 0;
 }
@@ -104,12 +104,12 @@ int ggm_run(struct ggm_state *s) {
 //-----------------------------------------------------------------------------
 
 // initialise the ggm state
-int ggm_init(struct ggm_state *s, struct audio_drv *audio, struct midi_drv *midi) {
+int ggm_init(struct ggm_state *s, struct audio_drv *audio, struct usart_drv *serial) {
 	int rc = 0;
 
 	memset(s, 0, sizeof(struct ggm_state));
 	s->audio = audio;
-	s->midi = midi;
+	s->serial = serial;
 
 	rc = event_init();
 	if (rc != 0) {
