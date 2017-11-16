@@ -131,6 +131,24 @@ int usart_rx(struct usart_drv *usart, uint8_t * c) {
 	return 1;
 }
 
+// read serial data into a buffer, return the number of bytes read
+size_t usart_rxbuf(struct usart_drv * usart, uint8_t * buf, size_t n) {
+	size_t i = 0;
+	if ((usart->rx_rd == usart->rx_wr) || (n == 0)) {
+		return 0;
+	}
+	NVIC_DisableIRQ(usart->irq);
+	while (usart->rx_rd != usart->rx_wr) {
+		buf[i++] = usart->rxbuf[usart->rx_rd];
+		usart->rx_rd = INC_MOD(usart->rx_rd, RXBUF_SIZE);
+		if (i == n) {
+			break;
+		}
+	}
+	NVIC_EnableIRQ(usart->irq);
+	return i;
+}
+
 //-----------------------------------------------------------------------------
 
 void usart_isr(struct usart_drv *usart) {
