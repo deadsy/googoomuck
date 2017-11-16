@@ -42,6 +42,7 @@ struct usart_drv {
 
 int usart_init(struct usart_drv *usart, struct usart_cfg *cfg);
 void usart_isr(struct usart_drv *usart);
+int usart_rx(struct usart_drv *usart, uint8_t * c);
 
 // stdio functions
 void usart_putc(struct usart_drv *usart, char c);

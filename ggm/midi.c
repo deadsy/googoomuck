@@ -6,19 +6,54 @@ MIDI Functions
 */
 //-----------------------------------------------------------------------------
 
+#include <string.h>
+
 #include "ggm.h"
+
+#define DEBUG
+#include "logging.h"
+
+//-----------------------------------------------------------------------------
+// MIDI Messages
+
+// MIDI Channel Messages
+#define MIDI_STATUS_NOTE_OFF (8U << 4)
+#define MIDI_STATUS_NOTE_ON (9U << 4)
+#define MIDI_STATUS_POLYPHONIC_AFTERTOUCH (10U << 4)
+#define MIDI_STATUS_CONTROL_CHANGE (11U << 4)
+#define MIDI_STATUS_PROGRAM_CHANGE (12U << 4)
+#define MIDI_STATUS_CHANNEL_AFTERTOUCH (13U << 4)
+#define MIDI_STATUS_PITCH_WHEEL (14U << 4)
+#define MIDI_STATUS_SYSTEM (15U << 4)
+
+// MIDI System Exclusive
+#define MIDI_STATUS_SYSEX_START 0xF0
+#define MIDI_STATUS_SYSEX_END 0xF7
+
+// MIDI System Common
+#define MIDI_STATUS_QUARTER_FRAME 0xF1
+#define MIDI_STATUS_SONG_POINTER 0xF2
+#define MIDI_STATUS_SONG_SELECT 0xF3
+#define MIDI_STATUS_TUNE_REQUEST 0xF6
+
+// MIDI System Realtime
+#define MIDI_STATUS_TIMING_CLOCK 0xF8
+#define MIDI_STATUS_START 0xFA
+#define MIDI_STATUS_CONTINUE 0xFB
+#define MIDI_STATUS_STOP 0xFC
+#define MIDI_STATUS_ACTIVE_SENSING 0xFE
+#define MIDI_STATUS_RESET 0xFF
 
 //-----------------------------------------------------------------------------
 
-#define MIDI_NOTE_ON 9
-#define MIDI_NOTE_OFF 8
-
+#if 0
 // encode a midi message in event type bits 0..24
 #define MIDI_MSG(t, c, x, y) \
   (((t) & 15) << 20 /*type*/) | \
   (((c) & 15) << 16 /*channel*/) | \
   (((x) & 127) << 8 /*x-parameter*/) | \
   ((y) & 127 /*y-parameter*/)
+#endif
 
 //-----------------------------------------------------------------------------
 
@@ -65,57 +100,187 @@ float midi_to_frequency(uint8_t note) {
 
 //-----------------------------------------------------------------------------
 
-// generate a note on event for a midi channel
-void midi_note_on(struct midi_drv *midi, uint8_t note, uint8_t velocity) {
-	event_wr(EVENT_TYPE_MIDI | MIDI_MSG(MIDI_NOTE_ON, midi->ch, note, velocity), NULL);
+static void midi_note_off(struct midi_drv *midi) {
+	DBG("midi note off c %d n %d v %d\r\n", midi->channel, midi->arg0, midi->arg1);
 }
 
-// generate a note off event for a midi channel
-void midi_note_off(struct midi_drv *midi, uint8_t note, uint8_t velocity) {
-	event_wr(EVENT_TYPE_MIDI | MIDI_MSG(MIDI_NOTE_OFF, midi->ch, note, velocity), NULL);
+static void midi_note_on(struct midi_drv *midi) {
+	DBG("midi note on c %d n %d v %d\r\n", midi->channel, midi->arg0, midi->arg1);
+}
+
+static void midi_sysex_end(struct midi_drv *midi) {
+	DBG("midi sysex end\r\n");
 }
 
 //-----------------------------------------------------------------------------
 
+// midi rx states
 enum {
-	MIDI_STATE_COMMAND,
-	MIDI_STATE_NOTE,
-	MIDI_STATE_VELOCITY,
+	MIDI_RX_STATUS,		// get the status byte
+	MIDI_RX_1OF1,		// get 1st byte of 1
+	MIDI_RX_1OF2,		// get 1st byte of 2
+	MIDI_RX_2OF2,		// get 2nd byte of 2
+	MIDI_RX_SYSEX,		// get system exclusive bytes
 };
 
-void midi_rx(struct midi_drv *midi, uint8_t c) {
-	switch (midi->state) {
-	case MIDI_STATE_COMMAND:{
-			uint8_t cmd = c & 0xf0;
-			if (cmd == MIDI_NOTE_ON || cmd == MIDI_NOTE_OFF) {
-				midi->cmd = cmd;
-				midi->state = MIDI_STATE_NOTE;
-			}
-			break;
+// reset the midi rx state
+static void midi_rx_reset(struct midi_drv *midi) {
+	midi->state = MIDI_RX_STATUS;
+	midi->func = NULL;
+}
+
+static void midi_rx_sysex(struct midi_drv *midi, uint8_t x) {
+	DBG("midi sysex %02x\r\n", x);
+}
+
+static void midi_rx_status(struct midi_drv *midi, uint8_t status) {
+	// get the channel
+	midi->channel = (status & 0x0f) + 1;
+	// process the status byte
+	uint8_t chmsg = status & 0xf0;
+	if (chmsg == MIDI_STATUS_NOTE_OFF) {
+		midi->func = midi_note_off;
+		midi->state = MIDI_RX_1OF2;
+	} else if (chmsg == MIDI_STATUS_NOTE_ON) {
+		midi->func = midi_note_on;
+		midi->state = MIDI_RX_1OF2;
+	} else if (chmsg == MIDI_STATUS_POLYPHONIC_AFTERTOUCH) {
+		// TODO: midi->func =
+		midi->state = MIDI_RX_1OF2;
+	} else if (chmsg == MIDI_STATUS_CONTROL_CHANGE) {
+		// TODO: midi->func =
+		midi->state = MIDI_RX_1OF2;
+	} else if (chmsg == MIDI_STATUS_PROGRAM_CHANGE) {
+		// TODO: midi->func =
+		midi->state = MIDI_RX_1OF1;
+	} else if (chmsg == MIDI_STATUS_CHANNEL_AFTERTOUCH) {
+		// TODO: midi->func =
+		midi->state = MIDI_RX_1OF1;
+	} else if (chmsg == MIDI_STATUS_PITCH_WHEEL) {
+		// TODO: midi->func =
+		midi->state = MIDI_RX_1OF2;
+	} else if (chmsg == MIDI_STATUS_SYSTEM) {
+		if (status == MIDI_STATUS_SYSEX_START) {
+			midi->state = MIDI_RX_SYSEX;
+		} else if (status == MIDI_STATUS_QUARTER_FRAME) {
+			// TODO: midi->func =
+			midi->state = MIDI_RX_1OF1;
+		} else if (status == MIDI_STATUS_SONG_POINTER) {
+			// TODO: midi->func =
+			midi->state = MIDI_RX_1OF2;
+		} else if (status == MIDI_STATUS_SONG_SELECT) {
+			// TODO: midi->func =
+			midi->state = MIDI_RX_1OF1;
+		} else if (status == MIDI_STATUS_TUNE_REQUEST) {
+			// TODO: 0 arguments
+			midi_rx_reset(midi);
+		} else if (status == MIDI_STATUS_TIMING_CLOCK) {
+			// TODO: 0 arguments
+			midi_rx_reset(midi);
+		} else if (status == MIDI_STATUS_START) {
+			// TODO: 0 arguments
+			midi_rx_reset(midi);
+		} else if (status == MIDI_STATUS_CONTINUE) {
+			// TODO: 0 arguments
+			midi_rx_reset(midi);
+		} else if (status == MIDI_STATUS_STOP) {
+			// TODO: 0 arguments
+			midi_rx_reset(midi);
+		} else if (status == MIDI_STATUS_ACTIVE_SENSING) {
+			// TODO: 0 arguments
+			midi_rx_reset(midi);
+		} else if (status == MIDI_STATUS_RESET) {
+			// TODO: 0 arguments
+			midi_rx_reset(midi);
+		} else {
+			DBG("unknown system message %02x\r\n", status);
+			midi_rx_reset(midi);
 		}
-	case MIDI_STATE_NOTE:{
+	} else {
+		DBG("unknown channel message %02x\r\n", status);
+		midi_rx_reset(midi);
+	}
+}
+
+// Read from the serial port and process MIDI events
+void midi_process(struct midi_drv *midi) {
+	uint8_t c;
+	while (usart_rx(&midi->serial_drv, &c)) {
+		if (midi->state == MIDI_RX_STATUS) {
+			// process the satus byte
+			midi_rx_status(midi, c);
+		} else if (midi->state == MIDI_RX_1OF1) {
+			// call the midi function (1 argument)
 			if ((c & 0x80) == 0) {
-				midi->note = c;
-				midi->state = MIDI_STATE_VELOCITY;
+				midi->arg0 = c;
+				if (midi->func) {
+					midi->func(midi);
+				}
 			} else {
-				// not a valid note
-				midi->state = MIDI_STATE_COMMAND;
+				DBG("bad midi argument %02x\r\n", c);
 			}
-			break;
-		}
-	case MIDI_STATE_VELOCITY:{
+			midi_rx_reset(midi);
+		} else if (midi->state == MIDI_RX_1OF2) {
+			// get the 1st argument
 			if ((c & 0x80) == 0) {
-				event_wr(EVENT_TYPE_MIDI | MIDI_MSG(midi->cmd, midi->ch, midi->note, c), NULL);
+				midi->arg0 = c;
+				midi->state = MIDI_RX_2OF2;
+			} else {
+				DBG("bad midi argument %02x\r\n", c);
+				midi_rx_reset(midi);
 			}
-			midi->state = MIDI_STATE_COMMAND;
-			break;
-		}
-	default:{
-			// ?
-			midi->state = MIDI_STATE_COMMAND;
-			break;
+		} else if (midi->state == MIDI_RX_2OF2) {
+			// call the midi function (2 arguments)
+			if ((c & 0x80) == 0) {
+				midi->arg1 = c;
+				if (midi->func) {
+					midi->func(midi);
+				}
+			} else {
+				DBG("bad midi argument %02x\r\n", c);
+			}
+			midi_rx_reset(midi);
+		} else if (midi->state == MIDI_RX_SYSEX) {
+			if ((c & 0x80) == 0) {
+				midi_rx_sysex(midi, c);
+			} else {
+				if (c == MIDI_STATUS_SYSEX_END) {
+					midi_sysex_end(midi);
+				} else {
+					DBG("unknown sysex byte %02x\r\n", c);
+				}
+				midi_rx_reset(midi);
+			}
+		} else {
+			DBG("unknown midi state %d\r\n", midi->state);
+			midi_rx_reset(midi);
 		}
 	}
+}
+
+//-----------------------------------------------------------------------------
+
+// Initialise a serial MIDI interface driver.
+int midi_init(struct midi_drv *midi, uint32_t base) {
+	struct usart_cfg serial_cfg;
+	int rc;
+
+	memset(midi, 0, sizeof(struct midi_drv));
+
+	serial_cfg.base = base;
+	serial_cfg.baud = 31250;
+	serial_cfg.data = 8;
+	serial_cfg.parity = 0;
+	serial_cfg.stop = 1;
+
+	rc = usart_init(&midi->serial_drv, &serial_cfg);
+	if (rc != 0) {
+		DBG("midi usart_init failed %d\r\n", rc);
+		goto exit;
+	}
+
+ exit:
+	return rc;
 }
 
 //-----------------------------------------------------------------------------

@@ -188,20 +188,12 @@ static struct rng_cfg ggm_rng_cfg = {
 static struct rng_drv ggm_rng;
 
 //-----------------------------------------------------------------------------
-// midi port
+// midi port (on USART2)
 
-static struct usart_cfg serial_cfg = {
-	.base = USART2_BASE,
-	.baud = 115200,
-	.data = 8,
-	.parity = 0,
-	.stop = 1,
-};
-
-struct usart_drv serial_drv;
+struct midi_drv ggm_midi;
 
 void USART2_IRQHandler(void) {
-	usart_isr(&serial_drv);
+	usart_isr(&ggm_midi.serial_drv);
 }
 
 //-----------------------------------------------------------------------------
@@ -230,21 +222,14 @@ int main(void) {
 		goto exit;
 	}
 
-	rc = usart_init(&serial_drv, &serial_cfg);
+	rc = midi_init(&ggm_midi, USART2_BASE);
 	if (rc != 0) {
-		DBG("serial_init failed %d\r\n", rc);
+		DBG("midi_init failed %d\r\n", rc);
 		goto exit;
 	}
-#if 0
+	// setup the interrupts for the serial port
 	HAL_NVIC_SetPriority(USART2_IRQn, 10, 0);
 	NVIC_EnableIRQ(USART2_IRQn);
-
-	int n = 0;
-	while (1) {
-		printf("here %d\n", n);
-		n += 1;
-	}
-#endif
 
 	rc = rng_init(&ggm_rng, &ggm_rng_cfg);
 	if (rc != 0) {
@@ -270,7 +255,7 @@ int main(void) {
 		goto exit;
 	}
 
-	rc = ggm_init(&synth, &ggm_audio);
+	rc = ggm_init(&synth, &ggm_audio, &ggm_midi);
 	if (rc != 0) {
 		DBG("ggm_init failed %d\r\n", rc);
 		goto exit;

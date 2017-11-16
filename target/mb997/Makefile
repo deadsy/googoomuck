@@ -66,7 +66,7 @@ INCLUDE += -I$(GGM_DIR)
 
 # defines
 DEFINE = -DSTM32F407xx
-DEFINE += -DSTDIO_RTT
+DEFINE += -DSTDIO_SERIAL
 
 # linker flags
 LDSCRIPT = stm32f407vg_flash.ld
