@@ -17,8 +17,8 @@ USART Driver
 
 //-----------------------------------------------------------------------------
 
-#define TXBUF_SIZE 128		// must be a power of 2
-#define RXBUF_SIZE 128		// must be a power of 2
+#define TXBUF_SIZE 32		// must be a power of 2
+#define RXBUF_SIZE 32		// must be a power of 2
 
 struct usart_cfg {
 	uint32_t base;		// base address of usart peripheral

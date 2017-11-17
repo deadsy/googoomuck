@@ -86,6 +86,7 @@ static void usart_set_baud(struct usart_drv *usart, int baud) {
 }
 
 //-----------------------------------------------------------------------------
+// stdio functions
 
 void usart_putc(struct usart_drv *usart, char c) {
 	int tx_wr_inc = INC_MOD(usart->tx_wr, TXBUF_SIZE);
@@ -119,17 +120,7 @@ char usart_getc(struct usart_drv *usart) {
 	return c;
 }
 
-// non-blocking read on the serial port (return 0 for no characters).
-int usart_rx(struct usart_drv *usart, uint8_t * c) {
-	if (usart->rx_rd == usart->rx_wr) {
-		return 0;
-	}
-	NVIC_DisableIRQ(usart->irq);
-	*c = usart->rxbuf[usart->rx_rd];
-	usart->rx_rd = INC_MOD(usart->rx_rd, RXBUF_SIZE);
-	NVIC_EnableIRQ(usart->irq);
-	return 1;
-}
+//-----------------------------------------------------------------------------
 
 // read serial data into a buffer, return the number of bytes read
 size_t usart_rxbuf(struct usart_drv * usart, uint8_t * buf, size_t n) {

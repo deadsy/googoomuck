@@ -46,17 +46,6 @@ MIDI Functions
 
 //-----------------------------------------------------------------------------
 
-#if 0
-// encode a midi message in event type bits 0..24
-#define MIDI_MSG(t, c, x, y) \
-  (((t) & 15) << 20 /*type*/) | \
-  (((c) & 15) << 16 /*channel*/) | \
-  (((x) & 127) << 8 /*x-parameter*/) | \
-  ((y) & 127 /*y-parameter*/)
-#endif
-
-//-----------------------------------------------------------------------------
-
 // midi note to frequency conversion
 static const uint32_t m2f_table[128] = {
 	0x4102d013U, 0x410a9760U, 0x4112d517U, 0x411b9041U,
@@ -99,17 +88,35 @@ float midi_to_frequency(uint8_t note) {
 }
 
 //-----------------------------------------------------------------------------
+// midi events
 
-static void midi_note_off(struct midi_drv *midi) {
-	DBG("midi note off c %d n %d v %d\r\n", midi->channel, midi->arg0, midi->arg1);
+static void midi_note_off(struct midi_rx *midi) {
+	uint8_t ch = midi->status & 0xf;
+	DBG("note off ch %d note %d vel %d\r\n", ch, midi->arg0, midi->arg1);
 }
 
-static void midi_note_on(struct midi_drv *midi) {
-	DBG("midi note on c %d n %d v %d\r\n", midi->channel, midi->arg0, midi->arg1);
+static void midi_note_on(struct midi_rx *midi) {
+	uint8_t ch = midi->status & 0xf;
+	DBG("note on ch %d note %d vel %d\r\n", ch, midi->arg0, midi->arg1);
 }
 
-static void midi_sysex_end(struct midi_drv *midi) {
-	DBG("midi sysex end\r\n");
+static void midi_control_change(struct midi_rx *midi) {
+	uint8_t ch = midi->status & 0xf;
+	DBG("control change ch %d ctrl %d val %d\r\n", ch, midi->arg0, midi->arg1);
+}
+
+static void midi_pitch_wheel(struct midi_rx *midi) {
+	uint16_t val = (midi->arg1 << 7) | midi->arg0;
+	uint8_t ch = midi->status & 0xf;
+	DBG("pitch wheel ch %d val %d\r\n", ch, val);
+}
+
+static void midi_sysex_end(struct midi_rx *midi) {
+	DBG("sysex end\r\n");
+}
+
+static void midi_todo(struct midi_rx *midi) {
+	DBG("midi todo status %02x\r\n", midi->status);
 }
 
 //-----------------------------------------------------------------------------
@@ -124,19 +131,19 @@ enum {
 };
 
 // reset the midi rx state
-static void midi_rx_reset(struct midi_drv *midi) {
+static void midi_rx_reset(struct midi_rx *midi) {
 	midi->state = MIDI_RX_STATUS;
 	midi->func = NULL;
 }
 
 // receive a sysex byte
-static void midi_rx_sysex(struct midi_drv *midi, uint8_t x) {
+static void midi_rx_sysex(struct midi_rx *midi, uint8_t x) {
 	DBG("midi sysex %02x\r\n", x);
 }
 
-static void midi_rx_status(struct midi_drv *midi, uint8_t status) {
-	// get the channel
-	midi->channel = (status & 0x0f) + 1;
+static void midi_rx_status(struct midi_rx *midi, uint8_t status) {
+	// record the status
+	midi->status = status;
 	// process the status byte
 	uint8_t chmsg = status & 0xf0;
 	if (chmsg == MIDI_STATUS_NOTE_OFF) {
@@ -146,52 +153,52 @@ static void midi_rx_status(struct midi_drv *midi, uint8_t status) {
 		midi->func = midi_note_on;
 		midi->state = MIDI_RX_1OF2;
 	} else if (chmsg == MIDI_STATUS_POLYPHONIC_AFTERTOUCH) {
-		// TODO: midi->func =
+		midi->func = midi_todo;	// TODO
 		midi->state = MIDI_RX_1OF2;
 	} else if (chmsg == MIDI_STATUS_CONTROL_CHANGE) {
-		// TODO: midi->func =
+		midi->func = midi_control_change;
 		midi->state = MIDI_RX_1OF2;
 	} else if (chmsg == MIDI_STATUS_PROGRAM_CHANGE) {
-		// TODO: midi->func =
+		midi->func = midi_todo;	// TODO
 		midi->state = MIDI_RX_1OF1;
 	} else if (chmsg == MIDI_STATUS_CHANNEL_AFTERTOUCH) {
-		// TODO: midi->func =
+		midi->func = midi_todo;	// TODO
 		midi->state = MIDI_RX_1OF1;
 	} else if (chmsg == MIDI_STATUS_PITCH_WHEEL) {
-		// TODO: midi->func =
+		midi->func = midi_pitch_wheel;
 		midi->state = MIDI_RX_1OF2;
 	} else if (chmsg == MIDI_STATUS_SYSTEM) {
 		if (status == MIDI_STATUS_SYSEX_START) {
 			midi->state = MIDI_RX_SYSEX;
 		} else if (status == MIDI_STATUS_QUARTER_FRAME) {
-			// TODO: midi->func =
+			midi->func = midi_todo;	// TODO
 			midi->state = MIDI_RX_1OF1;
 		} else if (status == MIDI_STATUS_SONG_POINTER) {
-			// TODO: midi->func =
+			midi->func = midi_todo;	// TODO
 			midi->state = MIDI_RX_1OF2;
 		} else if (status == MIDI_STATUS_SONG_SELECT) {
-			// TODO: midi->func =
+			midi->func = midi_todo;	// TODO
 			midi->state = MIDI_RX_1OF1;
 		} else if (status == MIDI_STATUS_TUNE_REQUEST) {
-			// TODO: 0 arguments
+			midi_todo(midi);	// TODO
 			midi_rx_reset(midi);
 		} else if (status == MIDI_STATUS_TIMING_CLOCK) {
-			// TODO: 0 arguments
+			midi_todo(midi);	// TODO
 			midi_rx_reset(midi);
 		} else if (status == MIDI_STATUS_START) {
-			// TODO: 0 arguments
+			midi_todo(midi);	// TODO
 			midi_rx_reset(midi);
 		} else if (status == MIDI_STATUS_CONTINUE) {
-			// TODO: 0 arguments
+			midi_todo(midi);	// TODO
 			midi_rx_reset(midi);
 		} else if (status == MIDI_STATUS_STOP) {
-			// TODO: 0 arguments
+			midi_todo(midi);	// TODO
 			midi_rx_reset(midi);
 		} else if (status == MIDI_STATUS_ACTIVE_SENSING) {
-			// TODO: 0 arguments
+			midi_todo(midi);	// TODO
 			midi_rx_reset(midi);
 		} else if (status == MIDI_STATUS_RESET) {
-			// TODO: 0 arguments
+			midi_todo(midi);	// TODO
 			midi_rx_reset(midi);
 		} else {
 			DBG("unknown system message %02x\r\n", status);
@@ -204,7 +211,7 @@ static void midi_rx_status(struct midi_drv *midi, uint8_t status) {
 }
 
 // Receive a buffer of midi bytes
-static void midi_rxbuf(struct midi_drv *midi, uint8_t * buf, size_t n) {
+static void midi_rxbuf(struct midi_rx *midi, uint8_t * buf, size_t n) {
 	for (size_t i = 0; i < n; i++) {
 		uint8_t c = buf[i];
 		if (midi->state == MIDI_RX_STATUS) {
@@ -263,7 +270,8 @@ static void midi_rxbuf(struct midi_drv *midi, uint8_t * buf, size_t n) {
 //-----------------------------------------------------------------------------
 
 // Receive midi messages from a serial port.
-void midi_rx_serial(struct midi_drv *midi, struct usart_drv *serial) {
+void midi_rx_serial(struct midi_rx *midi, struct usart_drv *serial) {
+	// Use a buffer size large enough to get all serial bytes in a single read.
 	uint8_t buf[16];
 	size_t n;
 	do {

@@ -112,15 +112,17 @@ int adsr_is_active(struct adsr *e);
 
 float midi_to_frequency(uint8_t note);
 
-struct midi_drv {
-	int state;
-	uint8_t channel;
-	uint8_t arg0;
-	uint8_t arg1;
-	void (*func) (struct midi_drv * midi);
+// midi message receiver
+struct midi_rx {
+	struct ggm_state *ggm;	// pointer back to the parent ggm state
+	void (*func) (struct midi_rx * midi);	// event function
+	int state;		// rx state
+	uint8_t status;		// message status byte
+	uint8_t arg0;		// message argument 0
+	uint8_t arg1;		// message argument 1
 };
 
-void midi_rx_serial(struct midi_drv *midi, struct usart_drv *serial);
+void midi_rx_serial(struct midi_rx *midi, struct usart_drv *serial);
 
 //-----------------------------------------------------------------------------
 // events
@@ -165,11 +167,9 @@ static inline void minor_chord(uint8_t * notes, uint8_t root) {
 //-----------------------------------------------------------------------------
 
 struct ggm_state {
-	// audio output
-	struct audio_drv *audio;
-	// midi input
+	struct audio_drv *audio;	// audio output
 	struct usart_drv *serial;	// serial port for midi interface
-	struct midi_drv *midi_rx0;	// midi rx from the serial port
+	struct midi_rx midi_rx0;	// midi rx from the serial port
 	// sound generation
 	struct dds lfo;
 	struct dds sin;
