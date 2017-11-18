@@ -14,37 +14,6 @@ MIDI Functions
 #include "logging.h"
 
 //-----------------------------------------------------------------------------
-// MIDI Messages
-
-// MIDI Channel Messages
-#define MIDI_STATUS_NOTE_OFF (8U << 4)
-#define MIDI_STATUS_NOTE_ON (9U << 4)
-#define MIDI_STATUS_POLYPHONIC_AFTERTOUCH (10U << 4)
-#define MIDI_STATUS_CONTROL_CHANGE (11U << 4)
-#define MIDI_STATUS_PROGRAM_CHANGE (12U << 4)
-#define MIDI_STATUS_CHANNEL_AFTERTOUCH (13U << 4)
-#define MIDI_STATUS_PITCH_WHEEL (14U << 4)
-#define MIDI_STATUS_SYSTEM (15U << 4)
-
-// MIDI System Exclusive
-#define MIDI_STATUS_SYSEX_START 0xF0
-#define MIDI_STATUS_SYSEX_END 0xF7
-
-// MIDI System Common
-#define MIDI_STATUS_QUARTER_FRAME 0xF1
-#define MIDI_STATUS_SONG_POINTER 0xF2
-#define MIDI_STATUS_SONG_SELECT 0xF3
-#define MIDI_STATUS_TUNE_REQUEST 0xF6
-
-// MIDI System Realtime
-#define MIDI_STATUS_TIMING_CLOCK 0xF8
-#define MIDI_STATUS_START 0xFA
-#define MIDI_STATUS_CONTINUE 0xFB
-#define MIDI_STATUS_STOP 0xFC
-#define MIDI_STATUS_ACTIVE_SENSING 0xFE
-#define MIDI_STATUS_RESET 0xFF
-
-//-----------------------------------------------------------------------------
 
 // midi note to frequency conversion
 static const uint32_t m2f_table[128] = {
@@ -88,7 +57,39 @@ float midi_to_frequency(uint8_t note) {
 }
 
 //-----------------------------------------------------------------------------
-// midi events
+// MIDI Messages
+
+// Channel Messages
+#define MIDI_STATUS_NOTE_OFF (8U << 4)
+#define MIDI_STATUS_NOTE_ON (9U << 4)
+#define MIDI_STATUS_POLYPHONIC_AFTERTOUCH (10U << 4)
+#define MIDI_STATUS_CONTROL_CHANGE (11U << 4)
+#define MIDI_STATUS_PROGRAM_CHANGE (12U << 4)
+#define MIDI_STATUS_CHANNEL_AFTERTOUCH (13U << 4)
+#define MIDI_STATUS_PITCH_WHEEL (14U << 4)
+
+// System Common Messages
+#define MIDI_STATUS_SYSEX_START 0xF0
+#define MIDI_STATUS_QUARTER_FRAME 0xF1
+#define MIDI_STATUS_SONG_POINTER 0xF2
+#define MIDI_STATUS_SONG_SELECT 0xF3
+#define MIDI_STATUS_TUNE_REQUEST 0xF6
+#define MIDI_STATUS_SYSEX_END 0xF7
+
+// System Realtime Messages
+#define MIDI_STATUS_TIMING_CLOCK 0xF8
+#define MIDI_STATUS_START 0xFA
+#define MIDI_STATUS_CONTINUE 0xFB
+#define MIDI_STATUS_STOP 0xFC
+#define MIDI_STATUS_ACTIVE_SENSING 0xFE
+#define MIDI_STATUS_RESET 0xFF
+
+// delimiters
+#define MIDI_STATUS_COMMON 0xf0
+#define MIDI_STATUS_REALTIME 0xf8
+
+//-----------------------------------------------------------------------------
+// channel events
 
 static void midi_note_off(struct midi_rx *midi) {
 	uint8_t ch = midi->status & 0xf;
@@ -96,11 +97,21 @@ static void midi_note_off(struct midi_rx *midi) {
 }
 
 static void midi_note_on(struct midi_rx *midi) {
+	if (midi->arg1 == 0) {
+		// velocity 0 == note off
+		midi_note_off(midi);
+		return;
+	}
 	uint8_t ch = midi->status & 0xf;
 	DBG("note on ch %d note %d vel %d\r\n", ch, midi->arg0, midi->arg1);
 }
 
 static void midi_control_change(struct midi_rx *midi) {
+	if (midi->arg0 >= 120) {
+		// reserved controller number
+		DBG("reserved control change ctrl %d val %d\r\n", midi->arg0, midi->arg1);
+		return;
+	}
 	uint8_t ch = midi->status & 0xf;
 	DBG("control change ch %d ctrl %d val %d\r\n", ch, midi->arg0, midi->arg1);
 }
@@ -111,29 +122,41 @@ static void midi_pitch_wheel(struct midi_rx *midi) {
 	DBG("pitch wheel ch %d val %d\r\n", ch, val);
 }
 
-static void midi_sysex_end(struct midi_rx *midi) {
-	DBG("sysex end\r\n");
+static void midi_polyphonic_aftertouch(struct midi_rx *midi) {
+	uint8_t ch = midi->status & 0xf;
+	DBG("polyphonic aftertouch ch %d key %d val %d\r\n", ch, midi->arg0, midi->arg1);
 }
 
-static void midi_todo(struct midi_rx *midi) {
-	DBG("midi todo status %02x\r\n", midi->status);
+static void midi_program_change(struct midi_rx *midi) {
+	uint8_t ch = midi->status & 0xf;
+	DBG("program change ch %d val %d\r\n", ch, midi->arg0);
+}
+
+static void midi_channel_aftertouch(struct midi_rx *midi) {
+	uint8_t ch = midi->status & 0xf;
+	DBG("channel aftertouch ch %d val %d\r\n", ch, midi->arg0);
 }
 
 //-----------------------------------------------------------------------------
+// common events
 
-// midi rx states
-enum {
-	MIDI_RX_STATUS,		// get the status byte
-	MIDI_RX_1OF1,		// get 1st byte of 1
-	MIDI_RX_1OF2,		// get 1st byte of 2
-	MIDI_RX_2OF2,		// get 2nd byte of 2
-	MIDI_RX_SYSEX,		// get system exclusive bytes
-};
+static void midi_quarter_frame(struct midi_rx *midi) {
+	DBG("quarter frame\r\n");
+}
 
-// reset the midi rx state
-static void midi_rx_reset(struct midi_rx *midi) {
-	midi->state = MIDI_RX_STATUS;
-	midi->func = NULL;
+static void midi_song_pointer(struct midi_rx *midi) {
+	DBG("song pointer\r\n");
+}
+
+static void midi_song_select(struct midi_rx *midi) {
+	DBG("song select\r\n");
+}
+
+//-----------------------------------------------------------------------------
+// sysex events
+
+static void midi_sysex_start(struct midi_rx *midi) {
+	DBG("sysex start\r\n");
 }
 
 // receive a sysex byte
@@ -141,128 +164,141 @@ static void midi_rx_sysex(struct midi_rx *midi, uint8_t x) {
 	DBG("midi sysex %02x\r\n", x);
 }
 
-static void midi_rx_status(struct midi_rx *midi, uint8_t status) {
-	// record the status
-	midi->status = status;
-	// process the status byte
-	uint8_t chmsg = status & 0xf0;
-	if (chmsg == MIDI_STATUS_NOTE_OFF) {
-		midi->func = midi_note_off;
-		midi->state = MIDI_RX_1OF2;
-	} else if (chmsg == MIDI_STATUS_NOTE_ON) {
-		midi->func = midi_note_on;
-		midi->state = MIDI_RX_1OF2;
-	} else if (chmsg == MIDI_STATUS_POLYPHONIC_AFTERTOUCH) {
-		midi->func = midi_todo;	// TODO
-		midi->state = MIDI_RX_1OF2;
-	} else if (chmsg == MIDI_STATUS_CONTROL_CHANGE) {
-		midi->func = midi_control_change;
-		midi->state = MIDI_RX_1OF2;
-	} else if (chmsg == MIDI_STATUS_PROGRAM_CHANGE) {
-		midi->func = midi_todo;	// TODO
-		midi->state = MIDI_RX_1OF1;
-	} else if (chmsg == MIDI_STATUS_CHANNEL_AFTERTOUCH) {
-		midi->func = midi_todo;	// TODO
-		midi->state = MIDI_RX_1OF1;
-	} else if (chmsg == MIDI_STATUS_PITCH_WHEEL) {
-		midi->func = midi_pitch_wheel;
-		midi->state = MIDI_RX_1OF2;
-	} else if (chmsg == MIDI_STATUS_SYSTEM) {
-		if (status == MIDI_STATUS_SYSEX_START) {
-			midi->state = MIDI_RX_SYSEX;
-		} else if (status == MIDI_STATUS_QUARTER_FRAME) {
-			midi->func = midi_todo;	// TODO
-			midi->state = MIDI_RX_1OF1;
-		} else if (status == MIDI_STATUS_SONG_POINTER) {
-			midi->func = midi_todo;	// TODO
-			midi->state = MIDI_RX_1OF2;
-		} else if (status == MIDI_STATUS_SONG_SELECT) {
-			midi->func = midi_todo;	// TODO
-			midi->state = MIDI_RX_1OF1;
-		} else if (status == MIDI_STATUS_TUNE_REQUEST) {
-			midi_todo(midi);	// TODO
-			midi_rx_reset(midi);
-		} else if (status == MIDI_STATUS_TIMING_CLOCK) {
-			midi_todo(midi);	// TODO
-			midi_rx_reset(midi);
-		} else if (status == MIDI_STATUS_START) {
-			midi_todo(midi);	// TODO
-			midi_rx_reset(midi);
-		} else if (status == MIDI_STATUS_CONTINUE) {
-			midi_todo(midi);	// TODO
-			midi_rx_reset(midi);
-		} else if (status == MIDI_STATUS_STOP) {
-			midi_todo(midi);	// TODO
-			midi_rx_reset(midi);
-		} else if (status == MIDI_STATUS_ACTIVE_SENSING) {
-			midi_todo(midi);	// TODO
-			midi_rx_reset(midi);
-		} else if (status == MIDI_STATUS_RESET) {
-			midi_todo(midi);	// TODO
-			midi_rx_reset(midi);
-		} else {
-			DBG("unknown system message %02x\r\n", status);
-			midi_rx_reset(midi);
-		}
-	} else {
-		DBG("unknown channel message %02x\r\n", status);
-		midi_rx_reset(midi);
-	}
+static void midi_sysex_end(struct midi_rx *midi) {
+	DBG("sysex end\r\n");
 }
+
+//-----------------------------------------------------------------------------
+
+// midi rx states
+enum {
+	MIDI_RX_NULL,		// ignore data
+	MIDI_RX_1OF1,		// get 1st byte of 1
+	MIDI_RX_1OF2,		// get 1st byte of 2
+	MIDI_RX_2OF2,		// get 2nd byte of 2
+	MIDI_RX_SYSEX,		// get system exclusive bytes
+};
 
 // Receive a buffer of midi bytes
 static void midi_rxbuf(struct midi_rx *midi, uint8_t * buf, size_t n) {
 	for (size_t i = 0; i < n; i++) {
 		uint8_t c = buf[i];
-		if (midi->state == MIDI_RX_STATUS) {
-			// process the satus byte
-			midi_rx_status(midi, c);
-		} else if (midi->state == MIDI_RX_1OF1) {
-			// call the midi function (1 argument)
-			if ((c & 0x80) == 0) {
-				midi->arg0 = c;
-				if (midi->func) {
-					midi->func(midi);
+		if (c & 0x80) {
+			// status byte
+			// any non-realtime status byte will end the sysex mode
+			if (midi->state == MIDI_RX_SYSEX && c < MIDI_STATUS_REALTIME) {
+				midi_sysex_end(midi);
+				midi->state = MIDI_RX_NULL;
+			}
+			if (c < MIDI_STATUS_COMMON) {
+				// channel message
+				midi->status = c;
+				switch (c & 0xf0) {
+				case MIDI_STATUS_NOTE_OFF:
+					midi->func = midi_note_off;
+					midi->state = MIDI_RX_1OF2;
+					break;
+				case MIDI_STATUS_NOTE_ON:
+					midi->func = midi_note_on;
+					midi->state = MIDI_RX_1OF2;
+					break;
+				case MIDI_STATUS_POLYPHONIC_AFTERTOUCH:
+					midi->func = midi_polyphonic_aftertouch;
+					midi->state = MIDI_RX_1OF2;
+					break;
+				case MIDI_STATUS_CONTROL_CHANGE:
+					midi->func = midi_control_change;
+					midi->state = MIDI_RX_1OF2;
+					break;
+				case MIDI_STATUS_PROGRAM_CHANGE:
+					midi->func = midi_program_change;
+					midi->state = MIDI_RX_1OF1;
+					break;
+				case MIDI_STATUS_CHANNEL_AFTERTOUCH:
+					midi->func = midi_channel_aftertouch;
+					midi->state = MIDI_RX_1OF1;
+					break;
+				case MIDI_STATUS_PITCH_WHEEL:
+					midi->func = midi_pitch_wheel;
+					midi->state = MIDI_RX_1OF2;
+					break;
+				default:
+					DBG("unhandled channel msg %02x\r\n", c);
+					break;
+				}
+			} else if (c < MIDI_STATUS_REALTIME) {
+				// system common message
+				midi->status = 0;	// clear the running status
+				switch (c) {
+				case MIDI_STATUS_SYSEX_START:
+					midi_sysex_start(midi);
+					midi->state = MIDI_RX_SYSEX;
+					break;
+				case MIDI_STATUS_QUARTER_FRAME:
+					midi->func = midi_quarter_frame;
+					midi->state = MIDI_RX_1OF1;
+					break;
+				case MIDI_STATUS_SONG_POINTER:
+					midi->func = midi_song_pointer;
+					midi->state = MIDI_RX_1OF2;
+					break;
+				case MIDI_STATUS_SONG_SELECT:
+					midi->func = midi_song_select;
+					midi->state = MIDI_RX_1OF1;
+					break;
+				case MIDI_STATUS_TUNE_REQUEST:
+					// no-op, we're a digital synth
+					break;
+				case MIDI_STATUS_SYSEX_END:
+					// do nothing - we've already taken care of it.
+					break;
+				default:
+					DBG("unhandled system commmon msg %02x\r\n", c);
+					break;
 				}
 			} else {
-				DBG("bad midi argument %02x\r\n", c);
-			}
-			midi_rx_reset(midi);
-		} else if (midi->state == MIDI_RX_1OF2) {
-			// get the 1st argument
-			if ((c & 0x80) == 0) {
-				midi->arg0 = c;
-				midi->state = MIDI_RX_2OF2;
-			} else {
-				DBG("bad midi argument %02x\r\n", c);
-				midi_rx_reset(midi);
-			}
-		} else if (midi->state == MIDI_RX_2OF2) {
-			// call the midi function (2 arguments)
-			if ((c & 0x80) == 0) {
-				midi->arg1 = c;
-				if (midi->func) {
-					midi->func(midi);
+				// system real time message
+				switch (c) {
+				case MIDI_STATUS_TIMING_CLOCK:
+				case MIDI_STATUS_START:
+				case MIDI_STATUS_CONTINUE:
+				case MIDI_STATUS_STOP:
+				case MIDI_STATUS_ACTIVE_SENSING:
+				case MIDI_STATUS_RESET:
+				default:
+					DBG("unhandled system realtime msg %02x\r\n", c);
+					break;
 				}
-			} else {
-				DBG("bad midi argument %02x\r\n", c);
-			}
-			midi_rx_reset(midi);
-		} else if (midi->state == MIDI_RX_SYSEX) {
-			// process sysex bytes
-			if ((c & 0x80) == 0) {
-				midi_rx_sysex(midi, c);
-			} else {
-				if (c == MIDI_STATUS_SYSEX_END) {
-					midi_sysex_end(midi);
-				} else {
-					DBG("unknown sysex byte %02x\r\n", c);
-				}
-				midi_rx_reset(midi);
 			}
 		} else {
-			DBG("unknown midi state %d\r\n", midi->state);
-			midi_rx_reset(midi);
+			// data byte
+			switch (midi->state) {
+			case MIDI_RX_NULL:
+				// ignore the data byte
+				DBG("ignored data byte %02x\r\n", c);
+				break;
+			case MIDI_RX_1OF1:
+				midi->arg0 = c;
+				midi->func(midi);
+				midi->state = (midi->status) ? MIDI_RX_1OF1 : MIDI_RX_NULL;
+				break;
+			case MIDI_RX_1OF2:
+				midi->arg0 = c;
+				midi->state = MIDI_RX_2OF2;
+				break;
+			case MIDI_RX_2OF2:
+				midi->arg1 = c;
+				midi->func(midi);
+				midi->state = (midi->status) ? MIDI_RX_1OF2 : MIDI_RX_NULL;
+				break;
+			case MIDI_RX_SYSEX:
+				midi_rx_sysex(midi, c);
+				break;
+			default:
+				DBG("bug! unknown rx state %d\r\n", midi->state);
+				midi->state = MIDI_RX_NULL;
+				break;
+			}
 		}
 	}
 }
@@ -272,6 +308,7 @@ static void midi_rxbuf(struct midi_rx *midi, uint8_t * buf, size_t n) {
 // Receive midi messages from a serial port.
 void midi_rx_serial(struct midi_rx *midi, struct usart_drv *serial) {
 	// Use a buffer size large enough to get all serial bytes in a single read.
+	// At the standard MIDI baud rate that's about 3 bytes/ms.
 	uint8_t buf[16];
 	size_t n;
 	do {
