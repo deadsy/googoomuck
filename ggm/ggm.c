@@ -18,14 +18,14 @@ GooGooMuck Synthesizer
 // key events
 
 // handle a key down event
-static void key_dn_handler(struct ggm_state *s, struct event *e) {
+static void key_dn_handler(struct ggm *s, struct event *e) {
 	DBG("key down %d\r\n", EVENT_KEY(e->type));
 	adsr_attack(&s->adsr);
 	led_on(LED_BLUE);
 }
 
 // handle a key up event
-static void key_up_handler(struct ggm_state *s, struct event *e) {
+static void key_up_handler(struct ggm *s, struct event *e) {
 	DBG("key up %d\r\n", EVENT_KEY(e->type));
 	adsr_release(&s->adsr);
 	led_off(LED_BLUE);
@@ -39,7 +39,7 @@ static void key_up_handler(struct ggm_state *s, struct event *e) {
 // MIDI events from USB might use this....
 
 // handle a midi event
-static void midi_handler(struct ggm_state *s, struct event *e) {
+static void midi_handler(struct ggm *s, struct event *e) {
 	DBG("midi %06x\r\n", EVENT_MIDI(e->type));
 }
 
@@ -47,7 +47,7 @@ static void midi_handler(struct ggm_state *s, struct event *e) {
 // audio request events
 
 // handle an audio request event
-static void audio_handler(struct ggm_state *s, struct event *e) {
+static void audio_handler(struct ggm *s, struct event *e) {
 	size_t n = EVENT_BLOCK_SIZE(e->type);
 	int16_t *dst = e->ptr;
 	float out[n];
@@ -73,7 +73,7 @@ static void audio_handler(struct ggm_state *s, struct event *e) {
 //-----------------------------------------------------------------------------
 
 // the main ggm event loop
-int ggm_run(struct ggm_state *s) {
+int ggm_run(struct ggm *s) {
 	while (1) {
 		struct event e;
 		if (!event_rd(&e)) {
@@ -104,10 +104,10 @@ int ggm_run(struct ggm_state *s) {
 //-----------------------------------------------------------------------------
 
 // initialise the ggm state
-int ggm_init(struct ggm_state *s, struct audio_drv *audio, struct usart_drv *serial) {
+int ggm_init(struct ggm *s, struct audio_drv *audio, struct usart_drv *serial) {
 	int rc = 0;
 
-	memset(s, 0, sizeof(struct ggm_state));
+	memset(s, 0, sizeof(struct ggm));
 	s->audio = audio;
 	s->serial = serial;
 

@@ -114,12 +114,12 @@ float midi_to_frequency(uint8_t note);
 
 // midi message receiver
 struct midi_rx {
-	struct ggm_state *ggm;	// pointer back to the parent ggm state
+	struct ggm *ggm;	// pointer back to the parent ggm state
 	void (*func) (struct midi_rx * midi);	// event function
 	int state;		// rx state
 	uint8_t status;		// message status byte
-	uint8_t arg0;		// message argument 0
-	uint8_t arg1;		// message argument 1
+	uint8_t arg0;		// message byte 0
+	uint8_t arg1;		// message byte 1
 };
 
 void midi_rx_serial(struct midi_rx *midi, struct usart_drv *serial);
@@ -151,25 +151,31 @@ int event_rd(struct event *event);
 int event_wr(uint32_t type, void *ptr);
 
 //-----------------------------------------------------------------------------
+// voices
 
-static inline void major_chord(uint8_t * notes, uint8_t root) {
-	notes[0] = root;
-	notes[1] = root + 4;
-	notes[2] = root + 7;
-}
+struct voice {
+	uint8_t note;
+	uint8_t channel;
+};
 
-static inline void minor_chord(uint8_t * notes, uint8_t root) {
-	notes[0] = root;
-	notes[1] = root + 3;
-	notes[2] = root + 7;
-}
+struct voice *voice_lookup(struct ggm *s, uint8_t channel, uint8_t note);
+struct voice *voice_alloc(struct ggm *s, uint8_t channel, uint8_t note);
+
+void voice_note_off(struct voice *v, uint8_t vel);
+void voice_note_on(struct voice *v, uint8_t vel);
 
 //-----------------------------------------------------------------------------
 
-struct ggm_state {
+// number of simultaneous voices
+#define NUM_VOICES 16
+
+struct ggm {
 	struct audio_drv *audio;	// audio output
 	struct usart_drv *serial;	// serial port for midi interface
 	struct midi_rx midi_rx0;	// midi rx from the serial port
+	// voices
+	struct voice voices[NUM_VOICES];
+
 	// sound generation
 	struct dds lfo;
 	struct dds sin;
@@ -177,8 +183,8 @@ struct ggm_state {
 	struct gwave gw;
 };
 
-int ggm_init(struct ggm_state *s, struct audio_drv *audio, struct usart_drv *midi);
-int ggm_run(struct ggm_state *s);
+int ggm_init(struct ggm *s, struct audio_drv *audio, struct usart_drv *midi);
+int ggm_run(struct ggm *s);
 
 //-----------------------------------------------------------------------------
 

@@ -92,18 +92,31 @@ float midi_to_frequency(uint8_t note) {
 // channel events
 
 static void midi_note_off(struct midi_rx *midi) {
-	uint8_t ch = midi->status & 0xf;
-	DBG("note off ch %d note %d vel %d\r\n", ch, midi->arg0, midi->arg1);
+	uint8_t chan = midi->status & 0xf;
+	uint8_t note = midi->arg0;
+	uint8_t vel = midi->arg1;
+	DBG("note off ch %d note %d vel %d\r\n", chan, note, vel);
+	struct voice *v = voice_lookup(midi->ggm, chan, note);
+	if (v) {
+		voice_note_off(v, vel);
+	}
 }
 
 static void midi_note_on(struct midi_rx *midi) {
-	if (midi->arg1 == 0) {
+	uint8_t chan = midi->status & 0xf;
+	uint8_t note = midi->arg0;
+	uint8_t vel = midi->arg1;
+	if (vel == 0) {
 		// velocity 0 == note off
 		midi_note_off(midi);
 		return;
 	}
-	uint8_t ch = midi->status & 0xf;
-	DBG("note on ch %d note %d vel %d\r\n", ch, midi->arg0, midi->arg1);
+	DBG("note on ch %d note %d vel %d\r\n", chan, note, vel);
+	struct voice *v = voice_lookup(midi->ggm, chan, note);
+	if (!v) {
+		v = voice_alloc(midi->ggm, chan, note);
+	}
+	voice_note_on(v, vel);
 }
 
 static void midi_control_change(struct midi_rx *midi) {
