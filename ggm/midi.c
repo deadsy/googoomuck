@@ -91,17 +91,19 @@ float midi_to_frequency(uint8_t note) {
 //-----------------------------------------------------------------------------
 // channel events
 
+// process a midi note off event
 static void midi_note_off(struct midi_rx *midi) {
 	uint8_t chan = midi->status & 0xf;
 	uint8_t note = midi->arg0;
 	uint8_t vel = midi->arg1;
-	DBG("note off ch %d note %d vel %d\r\n", chan, note, vel);
+	//DBG("note off ch %d note %d vel %d\r\n", chan, note, vel);
 	struct voice *v = voice_lookup(midi->ggm, chan, note);
 	if (v) {
-		voice_note_off(v, vel);
+		v->patch->note_off(v, vel);
 	}
 }
 
+// process a midi note on event
 static void midi_note_on(struct midi_rx *midi) {
 	uint8_t chan = midi->status & 0xf;
 	uint8_t note = midi->arg0;
@@ -111,14 +113,17 @@ static void midi_note_on(struct midi_rx *midi) {
 		midi_note_off(midi);
 		return;
 	}
-	DBG("note on ch %d note %d vel %d\r\n", chan, note, vel);
+	//DBG("note on ch %d note %d vel %d\r\n", chan, note, vel);
 	struct voice *v = voice_lookup(midi->ggm, chan, note);
 	if (!v) {
 		v = voice_alloc(midi->ggm, chan, note);
 	}
-	voice_note_on(v, vel);
+	if (v) {
+		v->patch->note_on(v, vel);
+	}
 }
 
+// process a midi control change
 static void midi_control_change(struct midi_rx *midi) {
 	if (midi->arg0 >= 120) {
 		// reserved controller number
@@ -129,22 +134,26 @@ static void midi_control_change(struct midi_rx *midi) {
 	DBG("control change ch %d ctrl %d val %d\r\n", ch, midi->arg0, midi->arg1);
 }
 
+// process a midi pitch wheel change
 static void midi_pitch_wheel(struct midi_rx *midi) {
 	uint16_t val = (midi->arg1 << 7) | midi->arg0;
 	uint8_t ch = midi->status & 0xf;
 	DBG("pitch wheel ch %d val %d\r\n", ch, val);
 }
 
+// process a midi polyphonic aftertouch event
 static void midi_polyphonic_aftertouch(struct midi_rx *midi) {
 	uint8_t ch = midi->status & 0xf;
 	DBG("polyphonic aftertouch ch %d key %d val %d\r\n", ch, midi->arg0, midi->arg1);
 }
 
+// process a midi program change
 static void midi_program_change(struct midi_rx *midi) {
 	uint8_t ch = midi->status & 0xf;
 	DBG("program change ch %d val %d\r\n", ch, midi->arg0);
 }
 
+// process a midi channel aftertouch
 static void midi_channel_aftertouch(struct midi_rx *midi) {
 	uint8_t ch = midi->status & 0xf;
 	DBG("channel aftertouch ch %d val %d\r\n", ch, midi->arg0);
@@ -327,8 +336,10 @@ void midi_rx_serial(struct midi_rx *midi, struct usart_drv *serial) {
 	do {
 		// read a buffer from the serial port
 		n = usart_rxbuf(serial, buf, sizeof(buf));
-		// write the buffer to the midi receiver
-		midi_rxbuf(midi, buf, n);
+		if (n != 0) {
+			// write the buffer to the midi receiver
+			midi_rxbuf(midi, buf, n);
+		}
 	} while (n == sizeof(buf));
 }
 

@@ -20,14 +20,12 @@ GooGooMuck Synthesizer
 // handle a key down event
 static void key_dn_handler(struct ggm *s, struct event *e) {
 	DBG("key down %d\r\n", EVENT_KEY(e->type));
-	adsr_attack(&s->adsr);
 	led_on(LED_BLUE);
 }
 
 // handle a key up event
 static void key_up_handler(struct ggm *s, struct event *e) {
 	DBG("key up %d\r\n", EVENT_KEY(e->type));
-	adsr_release(&s->adsr);
 	led_off(LED_BLUE);
 }
 
@@ -54,14 +52,14 @@ static void audio_handler(struct ggm *s, struct event *e) {
 
 	//DBG("audio %08x %08x\r\n", e->type, e->ptr);
 
-	if (adsr_is_active(&s->adsr)) {
-		//float fm[n];
-		float am[n];
-		//dds_gen(&s->lfo, fm, n);
-		adsr_gen(&s->adsr, am, n);
-		gwave_gen_am(&s->gw, out, am, n);
-	} else {
-		memset(out, 0, n * sizeof(float));
+	memset(out, 0, n * sizeof(float));
+	for (int i = 0; i < NUM_VOICES; i++) {
+		struct voice *v = &s->voices[i];
+		if (v->patch && v->patch->active(v)) {
+			float buf[n];
+			v->patch->generate(v, buf, n);
+			block_add(out, buf, n);
+		}
 	}
 
 	// write the samples to the dma buffer
@@ -119,11 +117,13 @@ int ggm_init(struct ggm *s, struct audio_drv *audio, struct usart_drv *serial) {
 		DBG("event_init failed %d\r\n", rc);
 		goto exit;
 	}
+	// setup the channel to patch table
+	s->channel_to_patch[0] = &patch0;
 
-	dds_sin_init(&s->lfo, 10.f, 15.f, 0.f);
-	dds_sin_init(&s->sin, 1.f, midi_to_frequency(69), 0.f);
-	adsr_init(&s->adsr, 0.05f, 0.2f, 0.5f, 0.5f);
-	gwave_init(&s->gw, 0.5f, 0.5f, 1.f, midi_to_frequency(69), 0.f);
+	// setup the voices
+	for (int i = 0; i < NUM_VOICES; i++) {
+		s->voices[i].idx = i;
+	}
 
  exit:
 	return rc;

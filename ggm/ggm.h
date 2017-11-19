@@ -26,10 +26,17 @@ GooGooMuck Synthesizer
 
 //-----------------------------------------------------------------------------
 
-static inline void block_mul(float *out, float *k, size_t n) {
-	unsigned int i;
-	for (i = 0; i < n; i++) {
-		out[i] *= k[i];
+// multiply two buffers
+static inline void block_mul(float *out, float *buf, size_t n) {
+	for (size_t i = 0; i < n; i++) {
+		out[i] *= buf[i];
+	}
+}
+
+// add two buffers
+static inline void block_add(float *out, float *buf, size_t n) {
+	for (size_t i = 0; i < n; i++) {
+		out[i] += buf[i];
 	}
 }
 
@@ -153,34 +160,49 @@ int event_wr(uint32_t type, void *ptr);
 //-----------------------------------------------------------------------------
 // voices
 
+#define PATCH_STATE_SIZE 128
+
 struct voice {
-	uint8_t note;
-	uint8_t channel;
+	int idx;		// index in table
+	uint8_t note;		// current note
+	uint8_t channel;	// current channel
+	const struct patch_ops *patch;	// patch in use
+	uint8_t state[PATCH_STATE_SIZE];	// patch state
 };
 
 struct voice *voice_lookup(struct ggm *s, uint8_t channel, uint8_t note);
 struct voice *voice_alloc(struct ggm *s, uint8_t channel, uint8_t note);
 
-void voice_note_off(struct voice *v, uint8_t vel);
-void voice_note_on(struct voice *v, uint8_t vel);
+//-----------------------------------------------------------------------------
+// patches
+
+// patch operations
+struct patch_ops {
+	void (*start) (struct voice * v);	// start the patch
+	void (*stop) (struct voice * v);	// stop the patch
+	void (*note_on) (struct voice * v, uint8_t vel);	// note on
+	void (*note_off) (struct voice * v, uint8_t vel);	// note off
+	int (*active) (struct voice * v);	// is the patch active
+	void (*generate) (struct voice * v, float *out, size_t n);	//generate samples
+};
+
+// implemented patches
+extern const struct patch_ops patch0;
 
 //-----------------------------------------------------------------------------
 
 // number of simultaneous voices
 #define NUM_VOICES 16
+// number of channels (patches)
+#define NUM_CHANNELS 16
 
 struct ggm {
 	struct audio_drv *audio;	// audio output
 	struct usart_drv *serial;	// serial port for midi interface
 	struct midi_rx midi_rx0;	// midi rx from the serial port
-	// voices
-	struct voice voices[NUM_VOICES];
-
-	// sound generation
-	struct dds lfo;
-	struct dds sin;
-	struct adsr adsr;
-	struct gwave gw;
+	const struct patch_ops *channel_to_patch[NUM_CHANNELS];	// channel to patch table
+	struct voice voices[NUM_VOICES];	// voices
+	int voice_idx;		// FIXME round robin voice allocation
 };
 
 int ggm_init(struct ggm *s, struct audio_drv *audio, struct usart_drv *midi);
