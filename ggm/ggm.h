@@ -33,6 +33,13 @@ static inline void block_mul(float *out, float *buf, size_t n) {
 	}
 }
 
+// multiply a block by a scalar
+static inline void block_mul_k(float *out, float k, size_t n) {
+	for (size_t i = 0; i < n; i++) {
+		out[i] *= k;
+	}
+}
+
 // add two buffers
 static inline void block_add(float *out, float *buf, size_t n) {
 	for (size_t i = 0; i < n; i++) {
