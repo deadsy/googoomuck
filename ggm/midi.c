@@ -125,20 +125,30 @@ static void midi_note_on(struct midi_rx *midi) {
 
 // process a midi control change
 static void midi_control_change(struct midi_rx *midi) {
-	if (midi->arg0 >= 120) {
+	uint8_t chan = midi->status & 0xf;
+	uint8_t ctrl = midi->arg0;
+	uint8_t val = midi->arg1;
+	if (ctrl >= 120) {
 		// reserved controller number
-		DBG("reserved control change ctrl %d val %d\r\n", midi->arg0, midi->arg1);
+		DBG("reserved control change ctrl %d val %d\r\n", ctrl, val);
 		return;
 	}
-	uint8_t ch = midi->status & 0xf;
-	DBG("control change ch %d ctrl %d val %d\r\n", ch, midi->arg0, midi->arg1);
+	//DBG("control change ch %d ctrl %d val %d\r\n", chan, ctrl, val);
+	const struct patch_ops *p = midi->ggm->patches[chan];
+	if (p) {
+		p->control_change(ctrl, val);
+	}
 }
 
 // process a midi pitch wheel change
 static void midi_pitch_wheel(struct midi_rx *midi) {
+	uint8_t chan = midi->status & 0xf;
 	uint16_t val = (midi->arg1 << 7) | midi->arg0;
-	uint8_t ch = midi->status & 0xf;
-	DBG("pitch wheel ch %d val %d\r\n", ch, val);
+	//DBG("pitch wheel ch %d val %d\r\n", chan, val);
+	const struct patch_ops *p = midi->ggm->patches[chan];
+	if (p) {
+		p->pitch_wheel(val);
+	}
 }
 
 // process a midi polyphonic aftertouch event

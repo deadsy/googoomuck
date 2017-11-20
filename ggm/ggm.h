@@ -178,12 +178,17 @@ struct voice *voice_alloc(struct ggm *s, uint8_t channel, uint8_t note);
 
 // patch operations
 struct patch_ops {
-	void (*start) (struct voice * v);	// start the patch
-	void (*stop) (struct voice * v);	// stop the patch
-	void (*note_on) (struct voice * v, uint8_t vel);	// note on
-	void (*note_off) (struct voice * v, uint8_t vel);	// note off
-	int (*active) (struct voice * v);	// is the patch active
-	void (*generate) (struct voice * v, float *out, size_t n);	//generate samples
+	// voice functions
+	void (*start) (struct voice * v);	// start a voice
+	void (*stop) (struct voice * v);	// stop a voice
+	void (*note_on) (struct voice * v, uint8_t vel);
+	void (*note_off) (struct voice * v, uint8_t vel);
+	int (*active) (struct voice * v);	// is the voice active
+	void (*generate) (struct voice * v, float *out, size_t n);	// generate samples
+	// global functions
+	int (*init) (void);	// initialisation
+	void (*control_change) (uint8_t ctrl, uint8_t val);
+	void (*pitch_wheel) (uint16_t val);
 };
 
 // implemented patches
@@ -200,7 +205,7 @@ struct ggm {
 	struct audio_drv *audio;	// audio output
 	struct usart_drv *serial;	// serial port for midi interface
 	struct midi_rx midi_rx0;	// midi rx from the serial port
-	const struct patch_ops *channel_to_patch[NUM_CHANNELS];	// channel to patch table
+	const struct patch_ops *patches[NUM_CHANNELS];	// channel to patch table
 	struct voice voices[NUM_VOICES];	// voices
 	int voice_idx;		// FIXME round robin voice allocation
 };

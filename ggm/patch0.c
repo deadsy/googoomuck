@@ -26,6 +26,7 @@ struct p_state {
 _Static_assert(sizeof(struct p_state) <= PATCH_STATE_SIZE, "sizeof(struct p_state) > PATCH_STATE_SIZE");
 
 //-----------------------------------------------------------------------------
+// voice operations
 
 // start the patch
 static void start(struct voice *v) {
@@ -70,6 +71,22 @@ static void generate(struct voice *v, float *out, size_t n) {
 }
 
 //-----------------------------------------------------------------------------
+// global operations
+
+static int init(void) {
+	// nothing
+	return 0;
+}
+
+static void control_change(uint8_t ctrl, uint8_t val) {
+	DBG("patch0 ctrl %d val %d\r\n", ctrl, val);
+}
+
+static void pitch_wheel(uint16_t val) {
+	DBG("patch0 pitch %d\r\n", val);
+}
+
+//-----------------------------------------------------------------------------
 
 const struct patch_ops patch0 = {
 	.start = start,
@@ -78,6 +95,9 @@ const struct patch_ops patch0 = {
 	.note_off = note_off,
 	.active = active,
 	.generate = generate,
+	.init = init,
+	.control_change = control_change,
+	.pitch_wheel = pitch_wheel,
 };
 
 //-----------------------------------------------------------------------------
