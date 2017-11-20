@@ -5,9 +5,7 @@
 
 ## What Is It?
 
-GGM is a software based sound synthesizer that runs on the STM32F4 Discovery Board.
-
-http://www.st.com/en/evaluation-tools/stm32f4discovery.html
+GGM is a software based sound/music synthesizer that runs on the STM32F4 Discovery Board.
 
 The synth and platfom code have been partitioned for ease of portability.
 The synth code is written using floating point, so a target CPU should
@@ -18,6 +16,13 @@ have a 32 bit (single precision) FPU. E.g. ARM Cortex M4 or better.
  * 16 bits/sample 
  * stereo output
  * 32-bit floats for internal operations
+ * MIDI input (serial)
+ * 16 voice polyphony
+ * 16 concurrent patches
+ 
+## Hardware
+  * STM32F4Discovery Board (MB997) http://www.st.com/en/evaluation-tools/stm32f4discovery.html
+  * MIDI to serial breakout board http://ubld.it/products/midi-breakout-board/
 
 ## Source Layout
  * common - common souces (target/SoC independent)
@@ -27,7 +32,7 @@ have a 32 bit (single precision) FPU. E.g. ARM Cortex M4 or better.
  * scripts - python scripts 
  * soc - SoC drivers and definitions
  * target - target specific code
- * usb - tinyusb stack (ported to the STM32F4)
+ * usb - tinyusb stack (ported to the STM32F4, work in progress)
 
 ## Inspirations
 * https://www.quinapalus.com/goom.html
