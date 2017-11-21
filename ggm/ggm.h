@@ -193,7 +193,7 @@ struct patch_ops {
 	int (*active) (struct voice * v);	// is the voice active
 	void (*generate) (struct voice * v, float *out, size_t n);	// generate samples
 	// patch functions
-	int (*init) (void);	// initialisation
+	int (*init) (struct patch * p);	// initialisation
 	void (*control_change) (uint8_t ctrl, uint8_t val);
 	void (*pitch_wheel) (uint16_t val);
 };

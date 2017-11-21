@@ -23,7 +23,11 @@ struct v_state {
 	struct adsr adsr;
 };
 
+struct p_state {
+};
+
 _Static_assert(sizeof(struct v_state) <= VOICE_STATE_SIZE, "sizeof(struct v_state) > VOICE_STATE_SIZE");
+_Static_assert(sizeof(struct p_state) <= PATCH_STATE_SIZE, "sizeof(struct p_state) > PATCH_STATE_SIZE");
 
 //-----------------------------------------------------------------------------
 // voice operations
@@ -73,8 +77,9 @@ static void generate(struct voice *v, float *out, size_t n) {
 //-----------------------------------------------------------------------------
 // global operations
 
-static int init(void) {
-	// nothing
+static int init(struct patch *p) {
+	struct p_state *ps = (struct p_state *)p->state;
+	memset(ps, 0, sizeof(struct p_state));
 	return 0;
 }
 

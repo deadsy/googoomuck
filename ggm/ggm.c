@@ -162,11 +162,11 @@ int ggm_init(struct ggm *s, struct audio_drv *audio, struct usart_drv *serial) {
 	// setup the patches
 	s->patches[0].ops = &patch1;
 	s->patches[1].ops = &patch0;
-  // call init for all patches
+	// call init for all patches
 	for (int i = 0; i < NUM_PATCHES; i++) {
 		struct patch *p = &s->patches[i];
 		if (p->ops) {
-			int rc = p->ops->init();
+			int rc = p->ops->init(p);
 			if (rc != 0) {
 				DBG("patch %d init failed (rc=%d)\r\n", i, rc);
 			}
