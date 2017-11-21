@@ -66,12 +66,12 @@ def gen_ydy_table(name, bits, func):
 
 def cos_func(i, n):
   k = float(1 << n)
-  y0 = math.cos(float(i) * 0.5 * math.pi / k)
-  y1 = math.cos(float(i+1) * 0.5 * math.pi / k)
+  y0 = math.cos(float(i) * 2.0 * math.pi / k)
+  y1 = math.cos(float(i+1) * 2.0 * math.pi / k)
   return (y0, y1 - y0)
 
 def main():
-  n = 6
+  n = 7
   gen_ydy_table('COS_TABLE', n, lambda i: cos_func(i, n))
 
 
