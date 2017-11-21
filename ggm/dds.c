@@ -7,7 +7,6 @@ DDS Lookup Table Based Oscillators
 //-----------------------------------------------------------------------------
 
 #include <math.h>
-#include <string.h>
 
 #include "ggm.h"
 
@@ -46,7 +45,6 @@ static const uint32_t COS_TABLE_data[COS_TABLE_SIZE] = {
 //-----------------------------------------------------------------------------
 
 static void dds_init(struct dds *osc, float amp, float freq, float phase) {
-	memset(osc, 0, sizeof(struct dds));
 	// amplitude
 	osc->amp = amp;
 	// frequency

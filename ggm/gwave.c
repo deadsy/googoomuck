@@ -19,7 +19,6 @@ The idea for goom waves comes from: https://www.quinapalus.com/goom.html
 */
 //-----------------------------------------------------------------------------
 
-#include <string.h>
 #include <math.h>
 
 #include "ggm.h"
@@ -148,7 +147,6 @@ void gwave_shape(struct gwave *osc, float duty, float slope) {
 
 // Initialise a Goom wave.
 void gwave_init(struct gwave *osc, float duty, float slope, float amp, float freq, float phase) {
-	memset(osc, 0, sizeof(struct gwave));
 	// amplitude
 	osc->amp = amp;
 	// frequency

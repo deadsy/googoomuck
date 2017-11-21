@@ -7,7 +7,6 @@ Attack Decay Sustain Release Envelopes
 //-----------------------------------------------------------------------------
 
 #include <math.h>
-#include <string.h>
 
 #include "ggm.h"
 
@@ -136,7 +135,6 @@ void adsr_gen(struct adsr *e, float *out, size_t n) {
 // s = sustain level (0 to 1)
 // r = release time in seconds (>= 0)
 void adsr_init(struct adsr *e, float a, float d, float s, float r) {
-	memset(e, 0, sizeof(struct adsr));
 	e->s = s;
 	e->ka = get_k(a);
 	e->kd = get_k(d);

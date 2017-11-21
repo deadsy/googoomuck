@@ -31,7 +31,7 @@ struct voice *voice_lookup(struct ggm *s, uint8_t channel, uint8_t note) {
 // allocate a new voice, possibly reusing a current active voice.
 struct voice *voice_alloc(struct ggm *s, uint8_t channel, uint8_t note) {
 	// validate the channel
-	if (channel >= NUM_CHANNELS || s->patches[channel] == NULL) {
+	if (channel >= NUM_PATCHES || s->patches[channel].ops == NULL) {
 		DBG("no patch defined for channel %d\r\n", channel);
 		return NULL;
 	}
@@ -44,13 +44,13 @@ struct voice *voice_alloc(struct ggm *s, uint8_t channel, uint8_t note) {
 	}
 	// stop an existing patch on this voice
 	if (v->patch) {
-		v->patch->stop(v);
+		v->patch->ops->stop(v);
 	}
 	// setup the new voice
 	v->note = note;
 	v->channel = channel;
-	v->patch = s->patches[channel];
-	v->patch->start(v);
+	v->patch = &s->patches[channel];
+	v->patch->ops->start(v);
 
 	return v;
 }
@@ -96,9 +96,10 @@ static void audio_handler(struct ggm *s, struct event *e) {
 	memset(out, 0, n * sizeof(float));
 	for (int i = 0; i < NUM_VOICES; i++) {
 		struct voice *v = &s->voices[i];
-		if (v->patch && v->patch->active(v)) {
+		struct patch *p = v->patch;
+		if (p && p->ops->active(v)) {
 			float buf[n];
-			v->patch->generate(v, buf, n);
+			p->ops->generate(v, buf, n);
 			block_add(out, buf, n);
 		}
 	}
@@ -159,11 +160,13 @@ int ggm_init(struct ggm *s, struct audio_drv *audio, struct usart_drv *serial) {
 		goto exit;
 	}
 	// setup the patches
-	s->patches[0] = &patch0;
-	for (int i = 0; i < NUM_CHANNELS; i++) {
-		const struct patch_ops *p = s->patches[i];
-		if (p) {
-			int rc = p->init();
+	s->patches[0].ops = &patch1;
+	s->patches[1].ops = &patch0;
+  // call init for all patches
+	for (int i = 0; i < NUM_PATCHES; i++) {
+		struct patch *p = &s->patches[i];
+		if (p->ops) {
+			int rc = p->ops->init();
 			if (rc != 0) {
 				DBG("patch %d init failed (rc=%d)\r\n", i, rc);
 			}

@@ -167,14 +167,14 @@ int event_wr(uint32_t type, void *ptr);
 //-----------------------------------------------------------------------------
 // voices
 
-#define PATCH_STATE_SIZE 128
+#define VOICE_STATE_SIZE 128
 
 struct voice {
 	int idx;		// index in table
 	uint8_t note;		// current note
 	uint8_t channel;	// current channel
-	const struct patch_ops *patch;	// patch in use
-	uint8_t state[PATCH_STATE_SIZE];	// patch state
+	struct patch *patch;	// patch in use
+	uint8_t state[VOICE_STATE_SIZE];	// per voice state
 };
 
 struct voice *voice_lookup(struct ggm *s, uint8_t channel, uint8_t note);
@@ -192,27 +192,35 @@ struct patch_ops {
 	void (*note_off) (struct voice * v, uint8_t vel);
 	int (*active) (struct voice * v);	// is the voice active
 	void (*generate) (struct voice * v, float *out, size_t n);	// generate samples
-	// global functions
+	// patch functions
 	int (*init) (void);	// initialisation
 	void (*control_change) (uint8_t ctrl, uint8_t val);
 	void (*pitch_wheel) (uint16_t val);
 };
 
+#define PATCH_STATE_SIZE 128
+
+struct patch {
+	const struct patch_ops *ops;
+	uint8_t state[PATCH_STATE_SIZE];	// per patch state
+};
+
 // implemented patches
 extern const struct patch_ops patch0;
+extern const struct patch_ops patch1;
 
 //-----------------------------------------------------------------------------
 
 // number of simultaneous voices
 #define NUM_VOICES 16
-// number of channels (patches)
-#define NUM_CHANNELS 16
+// number of patches
+#define NUM_PATCHES 16
 
 struct ggm {
 	struct audio_drv *audio;	// audio output
 	struct usart_drv *serial;	// serial port for midi interface
 	struct midi_rx midi_rx0;	// midi rx from the serial port
-	const struct patch_ops *patches[NUM_CHANNELS];	// channel to patch table
+	struct patch patches[NUM_PATCHES];	// patches
 	struct voice voices[NUM_VOICES];	// voices
 	int voice_idx;		// FIXME round robin voice allocation
 };

@@ -99,7 +99,7 @@ static void midi_note_off(struct midi_rx *midi) {
 	//DBG("note off ch %d note %d vel %d\r\n", chan, note, vel);
 	struct voice *v = voice_lookup(midi->ggm, chan, note);
 	if (v) {
-		v->patch->note_off(v, vel);
+		v->patch->ops->note_off(v, vel);
 	}
 }
 
@@ -119,7 +119,7 @@ static void midi_note_on(struct midi_rx *midi) {
 		v = voice_alloc(midi->ggm, chan, note);
 	}
 	if (v) {
-		v->patch->note_on(v, vel);
+		v->patch->ops->note_on(v, vel);
 	}
 }
 
@@ -134,9 +134,9 @@ static void midi_control_change(struct midi_rx *midi) {
 		return;
 	}
 	//DBG("control change ch %d ctrl %d val %d\r\n", chan, ctrl, val);
-	const struct patch_ops *p = midi->ggm->patches[chan];
+	const struct patch *p = &midi->ggm->patches[chan];
 	if (p) {
-		p->control_change(ctrl, val);
+		p->ops->control_change(ctrl, val);
 	}
 }
 
@@ -145,9 +145,9 @@ static void midi_pitch_wheel(struct midi_rx *midi) {
 	uint8_t chan = midi->status & 0xf;
 	uint16_t val = (midi->arg1 << 7) | midi->arg0;
 	//DBG("pitch wheel ch %d val %d\r\n", chan, val);
-	const struct patch_ops *p = midi->ggm->patches[chan];
+	const struct patch *p = &midi->ggm->patches[chan];
 	if (p) {
-		p->pitch_wheel(val);
+		p->ops->pitch_wheel(val);
 	}
 }
 
