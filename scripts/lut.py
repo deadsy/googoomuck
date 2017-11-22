@@ -42,10 +42,10 @@ def goom_func(i, n):
 
 def goom_func_dy(i, n):
   if i == (1 << n) - 1:
-    return 0.0  
+    return 0.0
   y0 = goom_func(i, n)
   y1 = goom_func(i + 1, n)
-  return y1 - y0 
+  return y1 - y0
 
 
 def gen_ydy_table(name, bits, func):
@@ -66,13 +66,13 @@ def gen_ydy_table(name, bits, func):
 
 def cos_func(i, n):
   k = float(1 << n)
-  y0 = math.cos(float(i) * 2.0 * math.pi / k)
-  y1 = math.cos(float(i+1) * 2.0 * math.pi / k)
+  y0 = math.cos(float(i) * math.pi / k)
+  y1 = math.cos(float(i+1) * math.pi / k)
   return (y0, y1 - y0)
 
 def main():
-  n = 7
-  gen_ydy_table('COS_TABLE', n, lambda i: cos_func(i, n))
+  n = 6
+  gen_ydy_table('COS', n, lambda i: cos_func(i, n))
 
 
   #gen_table('GWAVE', n, lambda i: goom_func(i, n))

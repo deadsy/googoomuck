@@ -134,9 +134,9 @@ static void midi_control_change(struct midi_rx *midi) {
 		return;
 	}
 	//DBG("control change ch %d ctrl %d val %d\r\n", chan, ctrl, val);
-	const struct patch *p = &midi->ggm->patches[chan];
+	struct patch *p = &midi->ggm->patches[chan];
 	if (p) {
-		p->ops->control_change(ctrl, val);
+		p->ops->control_change(p, ctrl, val);
 	}
 }
 
@@ -145,9 +145,9 @@ static void midi_pitch_wheel(struct midi_rx *midi) {
 	uint8_t chan = midi->status & 0xf;
 	uint16_t val = (midi->arg1 << 7) | midi->arg0;
 	//DBG("pitch wheel ch %d val %d\r\n", chan, val);
-	const struct patch *p = &midi->ggm->patches[chan];
+	struct patch *p = &midi->ggm->patches[chan];
 	if (p) {
-		p->ops->pitch_wheel(val);
+		p->ops->pitch_wheel(p, val);
 	}
 }
 

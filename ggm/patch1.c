@@ -24,6 +24,8 @@ struct v_state {
 };
 
 struct p_state {
+	float duty;		// duty cycle for gwave (0..1)
+	float slope;		// slope for gwave (0..1)
 };
 
 _Static_assert(sizeof(struct v_state) <= VOICE_STATE_SIZE, "sizeof(struct v_state) > VOICE_STATE_SIZE");
@@ -36,8 +38,12 @@ _Static_assert(sizeof(struct p_state) <= PATCH_STATE_SIZE, "sizeof(struct p_stat
 static void start(struct voice *v) {
 	DBG("patch1 start (%d %d %d)\r\n", v->idx, v->channel, v->note);
 	struct v_state *vs = (struct v_state *)v->state;
+	struct p_state *ps = (struct p_state *)v->patch->state;
 	memset(vs, 0, sizeof(struct v_state));
-	gwave_init(&vs->gwave, 0.5f, 0.1f, 1.f, midi_to_frequency(v->note), 0.f);
+	// setup the gwave
+	gwave_init(&vs->gwave, 1.f, midi_to_frequency(v->note), 0.f);
+	gwave_shape(&vs->gwave, ps->duty, ps->slope);
+	// setup the adsr
 	adsr_init(&vs->adsr, 0.05f, 0.2f, 0.5f, 0.5f);
 }
 
@@ -77,17 +83,44 @@ static void generate(struct voice *v, float *out, size_t n) {
 //-----------------------------------------------------------------------------
 // global operations
 
-static int init(struct patch *p) {
+static void init(struct patch *p) {
 	struct p_state *ps = (struct p_state *)p->state;
 	memset(ps, 0, sizeof(struct p_state));
-	return 0;
+	ps->duty = 0.5;
+	ps->slope = 1.0;
 }
 
-static void control_change(uint8_t ctrl, uint8_t val) {
+static void control_change(struct patch *p, uint8_t ctrl, uint8_t val) {
+	struct p_state *ps = (struct p_state *)p->state;
+	int update = 0;
+
 	DBG("patch1 ctrl %d val %d\r\n", ctrl, val);
+
+	switch (ctrl) {
+	case 1:
+		ps->duty = (float)val / 127.f;
+		update = 1;
+		break;
+	case 2:
+		ps->slope = (float)val / 127.f;
+		update = 1;
+		break;
+	default:
+		break;
+	}
+	if (update) {
+		// update each voice using this patch
+		for (int i = 0; i < NUM_VOICES; i++) {
+			struct voice *v = &p->ggm->voices[i];
+			if (v->patch == p) {
+				struct v_state *vs = (struct v_state *)v->state;
+				gwave_shape(&vs->gwave, ps->duty, ps->slope);
+			}
+		}
+	}
 }
 
-static void pitch_wheel(uint16_t val) {
+static void pitch_wheel(struct patch *p, uint16_t val) {
 	DBG("patch1 pitch %d\r\n", val);
 }
 

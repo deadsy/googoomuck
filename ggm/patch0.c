@@ -77,17 +77,16 @@ static void generate(struct voice *v, float *out, size_t n) {
 //-----------------------------------------------------------------------------
 // global operations
 
-static int init(struct patch *p) {
+static void init(struct patch *p) {
 	struct p_state *ps = (struct p_state *)p->state;
 	memset(ps, 0, sizeof(struct p_state));
-	return 0;
 }
 
-static void control_change(uint8_t ctrl, uint8_t val) {
+static void control_change(struct patch *p, uint8_t ctrl, uint8_t val) {
 	DBG("patch0 ctrl %d val %d\r\n", ctrl, val);
 }
 
-static void pitch_wheel(uint16_t val) {
+static void pitch_wheel(struct patch *p, uint16_t val) {
 	DBG("patch0 pitch %d\r\n", val);
 }
 

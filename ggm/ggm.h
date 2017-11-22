@@ -76,18 +76,18 @@ void dds_gen_fm_am(struct dds *osc, float *out, float *fm, float *am, size_t n);
 // Goom Waves
 
 struct gwave {
-	uint32_t x;		// phase position
-	uint32_t xstep;		// phase step per sample
+	float amp;		// amplitude
+	float freq;		// base frequency
+	float phase;		// base phase
 	uint32_t tp;		// s0f0 to s1f1 transition point
 	uint32_t k0;		// scaling factor for slope 0
 	uint32_t k1;		// scaling factor for slope 1
-	float phase;		// base phase
-	float freq;		// base frequency
-	float amp;		// amplitude
+	uint32_t x;		// phase position
+	uint32_t xstep;		// phase step per sample
 };
 
+void gwave_init(struct gwave *osc, float amp, float freq, float phase);
 void gwave_shape(struct gwave *osc, float duty, float slope);
-void gwave_init(struct gwave *osc, float duty, float slope, float amp, float freq, float phase);
 void gwave_gen(struct gwave *osc, float *out, size_t n);
 void gwave_gen_am(struct gwave *osc, float *out, float *am, size_t n);
 
@@ -193,14 +193,15 @@ struct patch_ops {
 	int (*active) (struct voice * v);	// is the voice active
 	void (*generate) (struct voice * v, float *out, size_t n);	// generate samples
 	// patch functions
-	int (*init) (struct patch * p);	// initialisation
-	void (*control_change) (uint8_t ctrl, uint8_t val);
-	void (*pitch_wheel) (uint16_t val);
+	void (*init) (struct patch * p);
+	void (*control_change) (struct patch * p, uint8_t ctrl, uint8_t val);
+	void (*pitch_wheel) (struct patch * p, uint16_t val);
 };
 
 #define PATCH_STATE_SIZE 128
 
 struct patch {
+	struct ggm *ggm;	// pointer back to the parent ggm state
 	const struct patch_ops *ops;
 	uint8_t state[PATCH_STATE_SIZE];	// per patch state
 };
