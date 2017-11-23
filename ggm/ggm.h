@@ -123,9 +123,27 @@ void adsr_idle(struct adsr *e);
 int adsr_is_active(struct adsr *e);
 
 //-----------------------------------------------------------------------------
-// midi
+// Karplus Strong
 
-float midi_to_frequency(uint8_t note);
+#define KS_DELAY_BITS (6U)
+#define KS_DELAY_SIZE (1U << KS_DELAY_BITS)
+
+struct ks {
+	float amp;		// amplitude
+	float freq;		// base frequency
+	float delay[KS_DELAY_SIZE];
+	float k;		// attenuation and averaging constant 0 to 0.5
+	uint32_t x;		// phase position
+	uint32_t xstep;		// phase step per sample
+};
+
+void ks_init(struct ks *osc, float freq, float attenuate);
+void ks_attenuate(struct ks *osc, float attenuate);
+void ks_pluck(struct ks *osc);
+void ks_gen(struct ks *osc, float *out, size_t n);
+
+//-----------------------------------------------------------------------------
+// midi
 
 // midi message receiver
 struct midi_rx {
@@ -138,6 +156,8 @@ struct midi_rx {
 };
 
 void midi_rx_serial(struct midi_rx *midi, struct usart_drv *serial);
+float midi_scale(uint8_t val, float a, float b);
+float midi_to_frequency(uint8_t note);
 
 //-----------------------------------------------------------------------------
 // events
@@ -168,7 +188,7 @@ int event_wr(uint32_t type, void *ptr);
 //-----------------------------------------------------------------------------
 // voices
 
-#define VOICE_STATE_SIZE 128
+#define VOICE_STATE_SIZE 1024
 
 struct voice {
 	int idx;		// index in table
@@ -210,6 +230,7 @@ struct patch {
 // implemented patches
 extern const struct patch_ops patch0;
 extern const struct patch_ops patch1;
+extern const struct patch_ops patch2;
 
 //-----------------------------------------------------------------------------
 

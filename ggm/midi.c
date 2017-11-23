@@ -15,6 +15,13 @@ MIDI Functions
 
 //-----------------------------------------------------------------------------
 
+// scale a 0..127 midi control value from a..b
+float midi_scale(uint8_t val, float a, float b) {
+	return a + ((b - a) / 127.f) * (float)(val & 0x7f);
+}
+
+//-----------------------------------------------------------------------------
+
 // midi note to frequency conversion
 static const uint32_t m2f_table[128] = {
 	0x4102d013U, 0x410a9760U, 0x4112d517U, 0x411b9041U,
