@@ -70,12 +70,11 @@ static const uint32_t COS_data[COS_SIZE << 1] = {
 
 //-----------------------------------------------------------------------------
 
-void gwave_gen(struct gwave *osc, float *out, size_t n) {
-	unsigned int i;
-	float amp;
-	uint32_t sx;
+void gwave_gen(struct gwave *osc, float *out, float *fm, size_t n) {
+	for (size_t i = 0; i < n; i++) {
+		float amp;
+		uint32_t sx;
 
-	for (i = 0; i < n; i++) {
 		// what portion of the goom wave are we in?
 		if (osc->x < osc->tp) {
 			// we are in the s0/f0 portion
@@ -95,14 +94,18 @@ void gwave_gen(struct gwave *osc, float *out, size_t n) {
 		out[i] = amp * (y + frac * dy);
 
 		// step the phase
-		osc->x += osc->xstep;
+		if (fm) {
+			osc->x += (uint32_t) ((osc->freq + fm[i]) * GWAVE_FSCALE);
+		} else {
+			osc->x += osc->xstep;
+		}
 		osc->x &= (PHASE_MAX - 1);
 	}
 }
 
 // gwave generation with amplitude modulation
-void gwave_gen_am(struct gwave *osc, float *out, float *am, size_t n) {
-	gwave_gen(osc, out, n);
+void gwave_gen_am(struct gwave *osc, float *out, float *fm, float *am, size_t n) {
+	gwave_gen(osc, out, fm, n);
 	block_mul(out, am, n);
 }
 
@@ -112,11 +115,11 @@ void gwave_gen_am(struct gwave *osc, float *out, float *am, size_t n) {
 // duty = duty cycle 0..1
 // slope = slope 0..1
 void gwave_shape(struct gwave *osc, float duty, float slope) {
-	// This is where we transition from s0f0 to s1f1.
 	duty = clamp(duty, 0.f, 1.f);
-	osc->tp = TP_MIN + (uint32_t) ((float)(PHASE_MAX - (TP_MIN << 1)) * duty);
-	// Work out the portion of s0f0/s1f1 that is sloped.
 	slope = clamp(slope, 0.f, 1.f);
+	// This is where we transition from s0f0 to s1f1.
+	osc->tp = (PHASE_MAX >> 1) - (uint32_t) ((float)((PHASE_MAX >> 1) - TP_MIN) * duty);
+	// Work out the portion of s0f0/s1f1 that is sloped.
 	float s = S_MIN + (1.f - S_MIN) * slope;
 	// scaling constant for s0, map the slope to the LUT.
 	osc->k0 = (COS_SIZE << SLOPE_DIV) / (uint32_t) ((float)osc->tp * s);

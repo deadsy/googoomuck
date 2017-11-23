@@ -88,8 +88,9 @@ struct gwave {
 
 void gwave_init(struct gwave *osc, float amp, float freq, float phase);
 void gwave_shape(struct gwave *osc, float duty, float slope);
-void gwave_gen(struct gwave *osc, float *out, size_t n);
-void gwave_gen_am(struct gwave *osc, float *out, float *am, size_t n);
+
+void gwave_gen(struct gwave *osc, float *out, float *fm, size_t n);
+void gwave_gen_am(struct gwave *osc, float *out, float *fm, float *am, size_t n);
 
 //-----------------------------------------------------------------------------
 // ADSR envelope

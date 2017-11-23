@@ -77,7 +77,7 @@ static void generate(struct voice *v, float *out, size_t n) {
 	float am[n];
 	struct v_state *vs = (struct v_state *)v->state;
 	adsr_gen(&vs->adsr, am, n);
-	gwave_gen_am(&vs->gwave, out, am, n);
+	gwave_gen_am(&vs->gwave, out, NULL, am, n);
 }
 
 //-----------------------------------------------------------------------------
