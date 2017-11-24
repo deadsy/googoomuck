@@ -49,9 +49,11 @@ SRC += $(GGM_DIR)/dds.c \
 	$(GGM_DIR)/adsr.c \
 	$(GGM_DIR)/gwave.c \
 	$(GGM_DIR)/ks.c \
+	$(GGM_DIR)/lpf.c \
 	$(GGM_DIR)/patch0.c \
 	$(GGM_DIR)/patch1.c \
 	$(GGM_DIR)/patch2.c \
+	$(GGM_DIR)/patch3.c \
 
 OBJ = $(patsubst %.c, %.o, $(SRC))
 OBJ += $(TARGET_DIR)/start.o

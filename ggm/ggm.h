@@ -143,6 +143,15 @@ void ks_pluck(struct ks *osc);
 void ks_gen(struct ks *osc, float *out, size_t n);
 
 //-----------------------------------------------------------------------------
+// Low Pass Filter
+
+struct lpf {
+};
+
+void lpf_init(struct lpf *f);
+void lpf_gen(struct lpf *f, float *out, float *in, size_t n);
+
+//-----------------------------------------------------------------------------
 // midi
 
 // midi message receiver
