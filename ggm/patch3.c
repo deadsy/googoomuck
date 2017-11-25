@@ -20,6 +20,11 @@ See the voice architecture diagram at https://www.quinapalus.com/goom.html
 
 //-----------------------------------------------------------------------------
 
+#define NOTE_LO 12		// fixed lo frequency note
+#define NOTE_HI 36		// fixed hi frequency note
+
+//-----------------------------------------------------------------------------
+
 struct v_state {
 	struct gwave o0;	// main oscillator
 	struct gwave o1;	// modulating oscillator
@@ -27,6 +32,7 @@ struct v_state {
 	struct adsr feg;	// filter envelope generator
 	struct adsr aeg;	// amplitude envelope generator
 	struct lpf lpf;		// output low pass filter
+	float velocity;		// note velocity 0..1
 };
 
 enum {
@@ -35,21 +41,15 @@ enum {
 	OMODE_FM_FB,		// feedback on osc1, and osc1 FMs osc0
 };
 
-enum {
-	FMODE_NOTE,		// osc1 is set to note frequency
-	FMODE_HI,		// osc1 is set to high frequency
-	FMOD_LO,		// osc1 is set to low frequency
-};
-
 struct p_state {
 	// oscillator 0
 	float o0_duty, o0_slope;	// oscillator 0 duty cycle and slope
 	// oscillator 1
-	int f_mode;		// frequency mode
+	int f_mode;		// frequency mode (0 == played note, NOTE_LO, NOTE_HI)
 	int o_mode;		// oscillator combining mode
 	float o1_coarse, o1_fine;	// oscillator 1 frequency adjust
 	float o1_duty, o1_slope;	// oscillator 1 duty cycle and slope
-	float eg_a, eg_r;	// envelope generator ad parameters
+	float eg_a, eg_d;	// envelope generator ad parameters
 	float o1_level;		// oscillator 1 output level
 	// filter
 	float feg_a, feg_d, feg_s, feg_r;	// filter envelope generator adsr parameters
@@ -67,9 +67,30 @@ _Static_assert(sizeof(struct p_state) <= PATCH_STATE_SIZE, "sizeof(struct p_stat
 
 // start the patch
 static void start(struct voice *v) {
-	DBG("pX start v%d c%d n%d\r\n", v->idx, v->channel, v->note);
 	struct v_state *vs = (struct v_state *)v->state;
+	struct p_state *ps = (struct p_state *)v->patch->state;
+
+	DBG("pX start v%d c%d n%d\r\n", v->idx, v->channel, v->note);
 	memset(vs, 0, sizeof(struct v_state));
+
+	// setup oscillator 0
+	gwave_init(&vs->o0, 1.f, midi_to_frequency(v->note), 0.f);
+	gwave_shape(&vs->o0, ps->o0_duty, ps->o0_slope);
+
+	// setup oscillator 1
+	uint8_t n = (ps->f_mode) ? ps->f_mode : v->note;
+	// TODO tuning
+	gwave_init(&vs->o1, 1.f, midi_to_frequency(n), 0.f);
+	gwave_shape(&vs->o1, ps->o0_duty, ps->o0_slope);
+	ad_init(&vs->eg, ps->eg_a, ps->eg_d);
+
+	// setup the filter
+	lpf_init(&vs->lpf, ps->cutoff, ps->resonance);
+	adsr_init(&vs->feg, ps->feg_a, ps->feg_d, ps->feg_s, ps->feg_r);
+
+	// setup output
+	adsr_init(&vs->aeg, ps->aeg_a, ps->aeg_d, ps->aeg_s, ps->aeg_r);
+
 }
 
 // stop the patch
@@ -79,21 +100,75 @@ static void stop(struct voice *v) {
 
 // note on
 static void note_on(struct voice *v, uint8_t vel) {
+	struct v_state *vs = (struct v_state *)v->state;
 	DBG("pX note on v%d c%d n%d\r\n", v->idx, v->channel, v->note);
+	vs->velocity = (float)vel / 127.f;
+	adsr_attack(&vs->eg);
+	adsr_attack(&vs->feg);
+	adsr_attack(&vs->aeg);
 }
 
 // note off
 static void note_off(struct voice *v, uint8_t vel) {
+	struct v_state *vs = (struct v_state *)v->state;
 	DBG("pX note off v%d c%d n%d\r\n", v->idx, v->channel, v->note);
+	adsr_release(&vs->eg);
+	adsr_release(&vs->feg);
+	adsr_release(&vs->aeg);
 }
 
 // return !=0 if the patch is active
 static int active(struct voice *v) {
-	return 0;
+	struct v_state *vs = (struct v_state *)v->state;
+	return adsr_is_active(&vs->aeg);
 }
 
 // generate samples
 static void generate(struct voice *v, float *out, size_t n) {
+	struct v_state *vs = (struct v_state *)v->state;
+	struct p_state *ps = (struct p_state *)v->patch->state;
+
+	float buf0[n];
+	float buf1[n];
+
+	// oscillator 1
+	if (ps->o_mode == OMODE_FM_FB) {
+		// feedback
+		// TODO
+	} else {
+		// no feedback
+		adsr_gen(&vs->eg, buf0, n);
+		gwave_gen(&vs->o1, buf1, NULL, n);
+		block_mul(buf1, buf0, n);
+	}
+	// buf1 has the oscillator 1 output
+
+	// oscillator 0
+	if (ps->o_mode == OMODE_MIX) {
+		// mix mode
+		gwave_gen(&vs->o0, buf0, NULL, n);
+		block_add(buf0, buf1, n);
+	} else {
+		// fm mode
+		gwave_gen(&vs->o0, buf0, buf1, n);
+	}
+	// buf0 has the oscillator 0 output
+
+	// filter
+	adsr_gen(&vs->feg, buf1, n);
+	block_mul_k(buf1, vs->velocity * ps->sensitivity, n);
+	block_add_k(buf1, ps->cutoff, n);
+	lpf_gen(&vs->lpf, out, buf0, buf1, n);
+	// out has the filter ouput
+
+	// output
+	adsr_gen(&vs->aeg, buf0, n);
+	block_mul_k(buf0, vs->velocity, n);
+	block_mul(out, buf0, n);
+
+	block_mul_k(out, ps->volume, n);
+	// TODO pan
+
 }
 
 //-----------------------------------------------------------------------------
@@ -102,6 +177,38 @@ static void generate(struct voice *v, float *out, size_t n) {
 static void init(struct patch *p) {
 	struct p_state *ps = (struct p_state *)p->state;
 	memset(ps, 0, sizeof(struct p_state));
+
+	// oscillator 0
+	ps->o0_duty = 0.3f;
+	ps->o0_slope = 0.9f;
+
+	// oscillator 1
+	ps->f_mode = 0;
+	ps->o_mode = OMODE_MIX;
+	ps->o1_coarse = 0.f;
+	ps->o1_fine = 0.f;
+	ps->o1_duty = 0.5f;
+	ps->o1_slope = 0.9f;
+	ps->eg_a = 0.05f;
+	ps->eg_d = 0.5f;
+	ps->o1_level = 1.f;
+
+	// filter
+	ps->feg_a = 0.05f;
+	ps->feg_d = 0.2f;
+	ps->feg_s = 0.5f;
+	ps->feg_r = 0.5f;
+	ps->sensitivity = 1.f;
+	ps->cutoff = 1.f;
+	ps->resonance = 1.f;
+
+	// output
+	ps->aeg_a = 0.05f;
+	ps->aeg_d = 0.2f;
+	ps->aeg_s = 0.5f;
+	ps->aeg_r = 0.5f;
+	ps->volume = 0.3f;
+	ps->pan = 0.f;
 }
 
 static void control_change(struct patch *p, uint8_t ctrl, uint8_t val) {
@@ -130,7 +237,7 @@ static void pitch_wheel(struct patch *p, uint16_t val) {
 
 //-----------------------------------------------------------------------------
 
-const struct patch_ops patchX = {
+const struct patch_ops patch3 = {
 	.start = start,
 	.stop = stop,
 	.note_on = note_on,

@@ -103,12 +103,6 @@ void gwave_gen(struct gwave *osc, float *out, float *fm, size_t n) {
 	}
 }
 
-// gwave generation with amplitude modulation
-void gwave_gen_am(struct gwave *osc, float *out, float *fm, float *am, size_t n) {
-	gwave_gen(osc, out, fm, n);
-	block_mul(out, am, n);
-}
-
 //-----------------------------------------------------------------------------
 
 // Control the shape of the Goom wave.

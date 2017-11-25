@@ -47,6 +47,13 @@ static inline void block_add(float *out, float *buf, size_t n) {
 	}
 }
 
+// add a scalar to a buffer
+static inline void block_add_k(float *out, float k, size_t n) {
+	for (size_t i = 0; i < n; i++) {
+		out[i] += k;
+	}
+}
+
 //-----------------------------------------------------------------------------
 // DDS Oscillators
 
@@ -88,9 +95,7 @@ struct gwave {
 
 void gwave_init(struct gwave *osc, float amp, float freq, float phase);
 void gwave_shape(struct gwave *osc, float duty, float slope);
-
 void gwave_gen(struct gwave *osc, float *out, float *fm, size_t n);
-void gwave_gen_am(struct gwave *osc, float *out, float *fm, float *am, size_t n);
 
 //-----------------------------------------------------------------------------
 // ADSR envelope
@@ -146,10 +151,12 @@ void ks_gen(struct ks *osc, float *out, size_t n);
 // Low Pass Filter
 
 struct lpf {
+	float cutoff;
+	float resonance;
 };
 
-void lpf_init(struct lpf *f);
-void lpf_gen(struct lpf *f, float *out, float *in, size_t n);
+void lpf_init(struct lpf *f, float cutoff, float resonance);
+void lpf_gen(struct lpf *f, float *out, float *in, float *x, size_t n);
 
 //-----------------------------------------------------------------------------
 // midi
@@ -240,6 +247,7 @@ struct patch {
 extern const struct patch_ops patch0;
 extern const struct patch_ops patch1;
 extern const struct patch_ops patch2;
+extern const struct patch_ops patch3;
 
 //-----------------------------------------------------------------------------
 
