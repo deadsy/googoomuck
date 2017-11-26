@@ -37,7 +37,7 @@ static void start(struct voice *v) {
 	DBG("patch0 start (%d %d %d)\r\n", v->idx, v->channel, v->note);
 	struct v_state *vs = (struct v_state *)v->state;
 	memset(vs, 0, sizeof(struct v_state));
-	dds_sin_init(&vs->sin, 1.f, midi_to_frequency(v->note), 0.f);
+	dds_sin_init(&vs->sin, midi_to_frequency(v->note), 0.f);
 	adsr_init(&vs->adsr, 0.05f, 0.2f, 0.5f, 0.5f);
 }
 
@@ -71,7 +71,8 @@ static void generate(struct voice *v, float *out, size_t n) {
 	float am[n];
 	struct v_state *vs = (struct v_state *)v->state;
 	adsr_gen(&vs->adsr, am, n);
-	dds_gen_am(&vs->sin, out, am, n);
+	dds_gen(&vs->sin, out, NULL, n);
+	block_mul(out, am, n);
 }
 
 //-----------------------------------------------------------------------------

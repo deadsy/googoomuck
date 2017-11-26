@@ -41,7 +41,7 @@ static void start(struct voice *v) {
 	struct p_state *ps = (struct p_state *)v->patch->state;
 	memset(vs, 0, sizeof(struct v_state));
 	// setup the gwave
-	gwave_init(&vs->gwave, 1.f, midi_to_frequency(v->note), 0.f);
+	gwave_init(&vs->gwave, midi_to_frequency(v->note), 0.f);
 	gwave_shape(&vs->gwave, ps->duty, ps->slope);
 	// setup the adsr
 	adsr_init(&vs->adsr, 0.05f, 0.2f, 0.5f, 0.5f);

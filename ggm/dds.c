@@ -44,9 +44,7 @@ static const uint32_t COS_TABLE_data[COS_TABLE_SIZE] = {
 
 //-----------------------------------------------------------------------------
 
-static void dds_init(struct dds *osc, float amp, float freq, float phase) {
-	// amplitude
-	osc->amp = amp;
+static void dds_init(struct dds *osc, float freq, float phase) {
 	// frequency
 	osc->freq = freq;
 	osc->xstep = (uint32_t) (osc->freq * DDS_FSCALE);
@@ -63,23 +61,8 @@ static void dds_table(struct dds *osc, float *table, int bits) {
 	osc->frac_scale = (float)(1.f / (float)(1ULL << osc->frac_bits));
 }
 
-// simple dds generation (no modulation)
-void dds_gen(struct dds *osc, float *out, size_t n) {
-	unsigned int i;
-	for (i = 0; i < n; i++) {
-		int x0 = osc->x >> osc->frac_bits;
-		int x1 = (x0 + 1) & osc->table_mask;
-		float y0 = osc->table[x0];
-		float y1 = osc->table[x1];
-		// interpolate
-		out[i] = osc->amp * (y0 + (y1 - y0) * osc->frac_scale * (float)(osc->x & osc->frac_mask));
-		// step the x position
-		osc->x += osc->xstep;
-	}
-}
-
 // dds generation with frequency modulation
-void dds_gen_fm(struct dds *osc, float *out, float *fm, size_t n) {
+void dds_gen(struct dds *osc, float *out, float *fm, size_t n) {
 	unsigned int i;
 	for (i = 0; i < n; i++) {
 		int x0 = osc->x >> osc->frac_bits;
@@ -87,28 +70,20 @@ void dds_gen_fm(struct dds *osc, float *out, float *fm, size_t n) {
 		float y0 = osc->table[x0];
 		float y1 = osc->table[x1];
 		// interpolate
-		out[i] = osc->amp * (y0 + (y1 - y0) * osc->frac_scale * (float)(osc->x & osc->frac_mask));
+		out[i] = y0 + (y1 - y0) * osc->frac_scale * (float)(osc->x & osc->frac_mask);
 		// step the x position
-		osc->x += (uint32_t) ((osc->freq + fm[i]) * DDS_FSCALE);
+		if (fm) {
+			osc->x += (uint32_t) ((osc->freq + fm[i]) * DDS_FSCALE);
+		} else {
+			osc->x += osc->xstep;
+		}
 	}
-}
-
-// dds generation with amplitude modulation
-void dds_gen_am(struct dds *osc, float *out, float *am, size_t n) {
-	dds_gen(osc, out, n);
-	block_mul(out, am, n);
-}
-
-// dds generation with fm followed by am
-void dds_gen_fm_am(struct dds *osc, float *out, float *fm, float *am, size_t n) {
-	dds_gen_fm(osc, out, fm, n);
-	block_mul(out, am, n);
 }
 
 //-----------------------------------------------------------------------------
 
-void dds_sin_init(struct dds *osc, float amp, float freq, float phase) {
-	dds_init(osc, amp, freq, phase);
+void dds_sin_init(struct dds *osc, float freq, float phase) {
+	dds_init(osc, freq, phase);
 	dds_table(osc, (float *)COS_TABLE_data, COS_TABLE_BITS);
 }
 

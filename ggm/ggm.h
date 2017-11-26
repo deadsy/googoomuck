@@ -58,6 +58,8 @@ static inline void block_add_k(float *out, float k, size_t n) {
 // DDS Oscillators
 
 struct dds {
+	float freq;		// base frequency
+	float phase;		// base phase
 	const float *table;	// lookup table
 	uint32_t table_mask;	// mask for the table bits
 	uint32_t frac_bits;	// number of fraction bits
@@ -65,25 +67,15 @@ struct dds {
 	uint32_t x;		// current x-value
 	uint32_t xstep;		// current x-step
 	float frac_scale;	// scaling for the fractional portion
-	float phase;		// base phase
-	float freq;		// base frequency
-	float amp;		// amplitude
 };
 
-// oscillators
-void dds_sin_init(struct dds *osc, float amp, float freq, float phase);
-
-// generators
-void dds_gen(struct dds *osc, float *out, size_t n);
-void dds_gen_am(struct dds *osc, float *out, float *am, size_t n);
-void dds_gen_fm(struct dds *osc, float *out, float *fm, size_t n);
-void dds_gen_fm_am(struct dds *osc, float *out, float *fm, float *am, size_t n);
+void dds_sin_init(struct dds *osc, float freq, float phase);
+void dds_gen(struct dds *osc, float *out, float *fm, size_t n);
 
 //-----------------------------------------------------------------------------
 // Goom Waves
 
 struct gwave {
-	float amp;		// amplitude
 	float freq;		// base frequency
 	float phase;		// base phase
 	uint32_t tp;		// s0f0 to s1f1 transition point
@@ -93,7 +85,7 @@ struct gwave {
 	uint32_t xstep;		// phase step per sample
 };
 
-void gwave_init(struct gwave *osc, float amp, float freq, float phase);
+void gwave_init(struct gwave *osc, float freq, float phase);
 void gwave_shape(struct gwave *osc, float duty, float slope);
 void gwave_gen(struct gwave *osc, float *out, float *fm, size_t n);
 
@@ -134,7 +126,6 @@ int adsr_is_active(struct adsr *e);
 #define KS_DELAY_SIZE (1U << KS_DELAY_BITS)
 
 struct ks {
-	float amp;		// amplitude
 	float freq;		// base frequency
 	float delay[KS_DELAY_SIZE];
 	float k;		// attenuation and averaging constant 0 to 0.5

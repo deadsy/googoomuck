@@ -72,26 +72,25 @@ static const uint32_t COS_data[COS_SIZE << 1] = {
 
 void gwave_gen(struct gwave *osc, float *out, float *fm, size_t n) {
 	for (size_t i = 0; i < n; i++) {
-		float amp;
+		int inv = 0;
 		uint32_t sx;
 
 		// what portion of the goom wave are we in?
 		if (osc->x < osc->tp) {
 			// we are in the s0/f0 portion
 			sx = osc->x * osc->k0;
-			amp = osc->amp;
 		} else {
 			// we are in the s1/f1 portion
 			sx = (osc->x - osc->tp) * osc->k1;
-			amp = -osc->amp;
+			inv = 1;
 		}
 
 		uint32_t idx = __USAT(sx >> SLOPE_DIV, COS_BITS) << 1;
 		float frac = (float)(sx & ((1 << SLOPE_DIV) - 1)) / (float)(1 << SLOPE_DIV);
-
 		float y = *(float *)&COS_data[idx];
 		float dy = *(float *)&COS_data[idx + 1];
-		out[i] = amp * (y + frac * dy);
+		y += (frac * dy);
+		out[i] = (inv) ? -y : y;
 
 		// step the phase
 		if (fm) {
@@ -124,9 +123,7 @@ void gwave_shape(struct gwave *osc, float duty, float slope) {
 //-----------------------------------------------------------------------------
 
 // Initialise a Goom wave.
-void gwave_init(struct gwave *osc, float amp, float freq, float phase) {
-	// amplitude
-	osc->amp = amp;
+void gwave_init(struct gwave *osc, float freq, float phase) {
 	// frequency
 	osc->freq = freq;
 	osc->xstep = (uint32_t) (osc->freq * GWAVE_FSCALE);
