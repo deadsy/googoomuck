@@ -54,6 +54,7 @@ SRC += $(GGM_DIR)/dds.c \
 	$(GGM_DIR)/patch1.c \
 	$(GGM_DIR)/patch2.c \
 	$(GGM_DIR)/patch3.c \
+	$(GGM_DIR)/patch4.c \
 
 OBJ = $(patsubst %.c, %.o, $(SRC))
 OBJ += $(TARGET_DIR)/start.o
