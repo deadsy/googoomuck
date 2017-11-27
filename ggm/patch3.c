@@ -114,7 +114,7 @@ static void note_on(struct voice *v, uint8_t vel) {
 // note off
 static void note_off(struct voice *v, uint8_t vel) {
 	struct v_state *vs = (struct v_state *)v->state;
-	DBG("pX note off v%d c%d n%d\r\n", v->idx, v->channel, v->note);
+	DBG("p3 note off v%d c%d n%d\r\n", v->idx, v->channel, v->note);
 	adsr_release(&vs->eg);
 	adsr_release(&vs->feg);
 	adsr_release(&vs->aeg);
