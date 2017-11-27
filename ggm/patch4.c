@@ -16,7 +16,7 @@ Goom Voice - using the original code
 
 //-----------------------------------------------------------------------------
 
-#define NCHAN NUM_PATCHES
+#define NCHAN NUM_CHANNELS
 #define NPOLY NUM_VOICES
 
 //-----------------------------------------------------------------------------
@@ -67,6 +67,12 @@ struct p_state {
 	unsigned char res;	// 12    filter resonance
 	unsigned char omode;	// 13    oscillator mode: 0=mix 1=FM 2=FM+FB
 	struct egparams egp[2];	// 14,22 parameters for amplitude and filter envelope generators
+
+	// moved into patch state
+	unsigned char ctrl[24];	// 7-bit control values
+	unsigned char chup;	// channel controls updated?
+	unsigned char sus;	// sustain pedal position
+	short pbend;		// pitch bend position
 };
 
 _Static_assert(sizeof(struct v_state) <= VOICE_STATE_SIZE, "sizeof(struct v_state) > VOICE_STATE_SIZE");
@@ -74,7 +80,7 @@ _Static_assert(sizeof(struct p_state) <= PATCH_STATE_SIZE, "sizeof(struct p_stat
 
 //-----------------------------------------------------------------------------
 
-const short sintab[256] = {	// sine table, linearly interpolated by oscillators:
+static const short sintab[256] = {	// sine table, linearly interpolated by oscillators:
 // In Octave:
 // a=round(sin(2*pi*([-63 -63:1:63 63]/252))*32767)
 // reshape([a'(1:128) a'(2:129)-a'(1:128)]',1,256)
@@ -95,14 +101,14 @@ const short sintab[256] = {	// sine table, linearly interpolated by oscillators:
 };
 
 // product of the following two tables is exp_2 of 12-bit fraction in Q30
-const unsigned short exptab0[64] = {	// "top octave generator": round(2^15*(2.^([0:1:63]/64)))
+static const unsigned short exptab0[64] = {	// "top octave generator": round(2^15*(2.^([0:1:63]/64)))
 	32768, 33125, 33486, 33850, 34219, 34591, 34968, 35349, 35734, 36123, 36516, 36914, 37316, 37722, 38133, 38548,
 	38968, 39392, 39821, 40255, 40693, 41136, 41584, 42037, 42495, 42958, 43425, 43898, 44376, 44859, 45348, 45842,
 	46341, 46846, 47356, 47871, 48393, 48920, 49452, 49991, 50535, 51085, 51642, 52204, 52773, 53347, 53928, 54515,
 	55109, 55709, 56316, 56929, 57549, 58176, 58809, 59449, 60097, 60751, 61413, 62081, 62757, 63441, 64132, 64830
 };
 
-const unsigned short exptab1[64] = {	// fine tuning: round(2^15*(2.^([0:1:31]/1024)))
+static const unsigned short exptab1[64] = {	// fine tuning: round(2^15*(2.^([0:1:31]/1024)))
 	32768, 32774, 32779, 32785, 32790, 32796, 32801, 32807, 32812, 32818, 32823, 32829, 32835, 32840, 32846, 32851,
 	32857, 32862, 32868, 32874, 32879, 32885, 32890, 32896, 32901, 32907, 32912, 32918, 32924, 32929, 32935, 32940,
 	32946, 32952, 32957, 32963, 32968, 32974, 32979, 32985, 32991, 32996, 33002, 33007, 33013, 33018, 33024, 33030,
@@ -111,16 +117,111 @@ const unsigned short exptab1[64] = {	// fine tuning: round(2^15*(2.^([0:1:31]/10
 
 //-----------------------------------------------------------------------------
 
-unsigned char chup[NCHAN];	// channel controls updated?
-unsigned char sus[NCHAN];	// sustain pedal position
-unsigned short knob[24];	// raw 10-bit MSB-justified ADC results
-unsigned char ctrl[NCHAN][24];	// 7-bit control values
-short pbend[NCHAN];		// pitch bend position
+//static volatile int obuf[4][2]; // L,R samples being output
+//static volatile int tbuf[4][2]; // L,R samples being prepared
+//static volatile int i0cnt,i1cnt; // interrupt counters
+static volatile int i1cnt;	// interrupt counters
+
+//-----------------------------------------------------------------------------
+
+static void wavupa(void) {
+}
+
+// called once every 4 samples ~9kHz=72MHz/8192
+static void CT32B0handler(struct voice *v) {
+	struct v_state *vs = (struct v_state *)v->state;
+	struct p_state *ps = (struct p_state *)v->patch->state;
+	int h, i, j, k, n;
+	struct egparams *ep;
+	struct egvars *ev;
+
+	wavupa();
+
+	h = i1cnt++;		// count interrupts
+	//v=vcs+(h&(NPOLY-1)); // choose a voice for eg processing
+	//p=patch+v->chan;     // find its parameters
+	n = ! !(h & NPOLY);	// choose an eg
+
+	ep = ps->egp + n;	// get pointers to parameters and variables
+	ev = vs->egv + n;
+	i = ev->logout;
+	j = (vs->note & 0x80) || ps->sus != 0;	// note down?
+	if (ev->state == 0)
+		i = 0;
+	else {
+		if (!j)
+			ev->state = 5;	// exit sustain when note is released
+		switch (ev->state) {
+		case 1:
+			i += ep->a;	// attack
+			if (i >= 0x10000)
+				i = 0xffff, ev->state = 2;
+			break;
+		case 2:
+			i--;	// hold at top of attack
+			if (i <= 0xfff0)
+				ev->state = 3;	// hold for 16 iterations
+			break;
+		case 3:
+			i -= ep->d;	// decay
+			if (i < ep->s)
+				i = ep->s, ev->state = 4;
+			break;
+		case 4:	// sustain
+			break;
+		case 5:
+			i -= ep->r;	// release
+			if (i < 0)
+				i = 0, ev->state = 0;
+			break;
+		}
+	}
+	ev->logout = i;
+	if (i == 0)
+		ev->out = 0;
+	else
+		ev->out = (exptab0[(i & 0xfc0) >> 6] * exptab1[i & 0x3f]) >> (31 - (i >> 12));	// compute linear output
+
+	if (n == 0) {		// do oscillator 1 eg as well
+		i = vs->eg0trip;
+		if (i > 4)
+			vs->vol = ev->out;
+		if (vs->vol == ev->out)
+			i = 0;
+		i++;
+		vs->eg0trip = i;
+		i = vs->o1eglogout;
+		if (!j)
+			vs->o1egstate = 1;
+		if (vs->o1egstate == 0) {	// attack
+			i += ps->o1ega;
+			if (i >= 0x10000)
+				i = 0xffff, vs->o1egstate = 1;
+		} else {	// decay
+			i -= ps->o1egd;
+			if (i < 0)
+				i = 0;
+		}
+		vs->o1eglogout = i;
+		if (i == 0)
+			vs->o1egout = 0;
+		else
+			vs->o1egout = (((exptab0[(i & 0xfc0) >> 6] * exptab1[i & 0x3f]) >> (31 - (i >> 12))) * ps->o1vol) >> 16;	// compute linear output
+	} else {		// recalculate filter coefficient
+		k = ((ps->cut * ps->cut) >> 8) + ((vs->egv[1].logout * ((ps->fega * vs->vel) >> 6)) >> 15);
+		if (k < 0)
+			k = 0;
+		if (k > 255)
+			k = 255;
+		vs->fk = k;
+	}
+
+}
 
 //-----------------------------------------------------------------------------
 
 // derive frequency and volume settings from controller values for one voice
-void setfreqvol(struct voice *v, unsigned char *ct) {
+static void setfreqvol(struct voice *v, unsigned char *ct) {
 	struct v_state *vs = (struct v_state *)v->state;
 	struct p_state *ps = (struct p_state *)v->patch->state;
 	int u, l;
@@ -129,7 +230,7 @@ void setfreqvol(struct voice *v, unsigned char *ct) {
 
 	// oscillator 0 frequency
 	u = ((vs->note & 0x7f) << 12) / 12;	// pitch of note, Q12 in octaves, middle C =5
-	u += pbend[vs->chan] / 12;	// gives +/- 2 semitones
+	u += ps->pbend / 12;	// gives +/- 2 semitones
 	u -= 287;		// constant to give correct tuning for sample rate: log((72e6/2048)/(440*2^-0.75)/128)/log(2)*4096 for A=440Hz
 	f = (exptab0[(u & 0xfc0) >> 6] * exptab1[u & 0x3f]) >> (10 - (u >> 12));	// convert to linear frequency
 	vs->o0dph = f;
@@ -191,6 +292,67 @@ void setfreqvol(struct voice *v, unsigned char *ct) {
 }
 
 //-----------------------------------------------------------------------------
+
+// process all controllers for given channel
+void procctrl(struct patch *p) {
+	struct p_state *ps = (struct p_state *)p->state;
+	unsigned char *ct = ps->ctrl;
+	int i;
+
+	i = ct[6];
+	if (i)
+		i = (exptab0[(i & 0xf) << 2]) >> (7 - (i >> 4));	// convert oscillator 1 level to linear
+	ps->o1vol = i;
+
+	ps->o1ega = 0xffff / (ct[4] * ct[4] / 16 + 1);	// scale oscillator 1 eg parameters
+	if (ct[5] == 127)
+		ps->o1egd = 0;
+	else
+		ps->o1egd = 0xffff / (ct[5] * ct[5] + 1);
+
+	ps->egp[0].a = 0xffff / (ct[12] * ct[12] / 16 + 1);	// scale amplitude eg parameters
+	ps->egp[0].d = 0xffff / (ct[13] * ct[13] + 1);
+	if (ct[14] == 0)
+		ps->egp[0].s = 0;
+	else
+		ps->egp[0].s = 0xc000 + (ct[14] << 7);
+	ps->egp[0].r = 0xffff / (ct[15] * ct[15] + 1);
+
+	ps->egp[1].a = 0xffff / (ct[8] * ct[8] / 16 + 1);	// scale filter eg parameters
+	ps->egp[1].d = 0xffff / (ct[9] * ct[9] + 1);
+	i = ct[10];		// sustain level
+	if (i)
+		i = exptab0[(i & 0xf) << 2] >> (7 - (i >> 4));
+	ps->egp[1].s = i;
+	ps->egp[1].r = 0xffff / (ct[11] * ct[11] + 1);
+
+	ps->cut = ct[20] << 1;	// scale filter control parameters
+	ps->fega = (ct[19] << 1) - 128;
+	ps->res = 0xff - (ct[21] << 1);
+
+	if (ct[18] < 0x20)
+		ps->omode = 0;	// oscillator combine mode
+	else if (ct[18] > 0x60)
+		ps->omode = 2;
+	else
+		ps->omode = 1;
+
+	i = ct[22];		// volume
+	if (i)
+		i = exptab0[(i & 0xf) << 2] >> (7 - (i >> 4));	// convert to linear
+	ps->lvol = (sintab[254 - (ct[23] & ~1)] * i) >> 15;	// apply pan settings maintining constant total power
+	ps->rvol = (sintab[128 + (ct[23] & ~1)] * i) >> 15;
+
+	// update each voice using this patch
+	for (int i = 0; i < NUM_VOICES; i++) {
+		struct voice *v = &p->ggm->voices[i];
+		if (v->patch == p) {
+			setfreqvol(v, ct);
+		}
+	}
+}
+
+//-----------------------------------------------------------------------------
 // voice operations
 
 // start the patch
@@ -209,10 +371,11 @@ static void stop(struct voice *v) {
 static void note_on(struct voice *v, uint8_t vel) {
 	DBG("p4 note on v%d c%d n%d\r\n", v->idx, v->channel, v->note);
 	struct v_state *vs = (struct v_state *)v->state;
+	struct p_state *ps = (struct p_state *)v->patch->state;
 	vs->note = v->note | 0x80;	// set up voice data
 	vs->chan = v->channel;
 	vs->vel = vel;
-	setfreqvol(v, ctrl[v->channel]);
+	setfreqvol(v, ps->ctrl);
 	vs->egv[0].state = 1;	// trigger note
 	vs->egv[1].state = 1;
 	vs->eg0trip = 0;
@@ -256,6 +419,9 @@ static int active(struct voice *v) {
 
 // generate samples
 static void generate(struct voice *v, float *out, size_t n) {
+	for (size_t i = 0; i < n; i += 4) {
+		CT32B0handler(v);
+	}
 }
 
 //-----------------------------------------------------------------------------

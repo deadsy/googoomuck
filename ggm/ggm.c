@@ -31,7 +31,7 @@ struct voice *voice_lookup(struct ggm *s, uint8_t channel, uint8_t note) {
 // allocate a new voice, possibly reusing a current active voice.
 struct voice *voice_alloc(struct ggm *s, uint8_t channel, uint8_t note) {
 	// validate the channel
-	if (channel >= NUM_PATCHES || s->patches[channel].ops == NULL) {
+	if (channel >= NUM_CHANNELS || s->patches[channel].ops == NULL) {
 		DBG("no patch defined for channel %d\r\n", channel);
 		return NULL;
 	}
@@ -165,8 +165,8 @@ int ggm_init(struct ggm *s, struct audio_drv *audio, struct usart_drv *serial) {
 	s->patches[2].ops = &patch1;
 	s->patches[3].ops = &patch0;
 
-	// setup the  patches
-	for (int i = 0; i < NUM_PATCHES; i++) {
+	// setup the patch on each channel
+	for (int i = 0; i < NUM_CHANNELS; i++) {
 		struct patch *p = &s->patches[i];
 		// call init for each patch
 		if (p->ops) {

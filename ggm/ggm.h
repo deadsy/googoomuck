@@ -244,14 +244,14 @@ extern const struct patch_ops patch3;
 
 // number of simultaneous voices
 #define NUM_VOICES 16
-// number of patches
-#define NUM_PATCHES 16
+// number of concurrent channels
+#define NUM_CHANNELS 16
 
 struct ggm {
 	struct audio_drv *audio;	// audio output
 	struct usart_drv *serial;	// serial port for midi interface
 	struct midi_rx midi_rx0;	// midi rx from the serial port
-	struct patch patches[NUM_PATCHES];	// patches
+	struct patch patches[NUM_CHANNELS];	// current patch set
 	struct voice voices[NUM_VOICES];	// voices
 	int voice_idx;		// FIXME round robin voice allocation
 };
