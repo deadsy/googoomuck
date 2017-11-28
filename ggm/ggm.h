@@ -54,6 +54,13 @@ static inline void block_add_k(float *out, float k, size_t n) {
 	}
 }
 
+// copy a block
+static inline void block_copy(float *dst, float *src, size_t n) {
+	for (size_t i = 0; i < n; i++) {
+		dst[i] = src[i];
+	}
+}
+
 //-----------------------------------------------------------------------------
 // DDS Oscillators
 
@@ -219,7 +226,7 @@ struct patch_ops {
 	void (*note_on) (struct voice * v, uint8_t vel);
 	void (*note_off) (struct voice * v, uint8_t vel);
 	int (*active) (struct voice * v);	// is the voice active
-	void (*generate) (struct voice * v, float *out, size_t n);	// generate samples
+	void (*generate) (struct voice * v, float *out_l, float *out_r, size_t n);	// generate samples
 	// patch functions
 	void (*init) (struct patch * p);
 	void (*control_change) (struct patch * p, uint8_t ctrl, uint8_t val);

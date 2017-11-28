@@ -64,9 +64,10 @@ static int active(struct voice *v) {
 }
 
 // generate samples
-static void generate(struct voice *v, float *out, size_t n) {
+static void generate(struct voice *v, float *out_l, float *out_r, size_t n) {
 	struct v_state *vs = (struct v_state *)v->state;
-	ks_gen(&vs->ks, out, n);
+	ks_gen(&vs->ks, out_l, n);
+	block_copy(out_r, out_l, n);
 }
 
 //-----------------------------------------------------------------------------

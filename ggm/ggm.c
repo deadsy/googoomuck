@@ -89,23 +89,29 @@ static void midi_handler(struct ggm *s, struct event *e) {
 static void audio_handler(struct ggm *s, struct event *e) {
 	size_t n = EVENT_BLOCK_SIZE(e->type);
 	int16_t *dst = e->ptr;
-	float out[n];
 
 	//DBG("audio %08x %08x\r\n", e->type, e->ptr);
 
-	memset(out, 0, n * sizeof(float));
+	// clear the output buffers
+	float out_l[n], out_r[n];
+	memset(out_l, 0, n * sizeof(float));
+	memset(out_r, 0, n * sizeof(float));
+
 	for (int i = 0; i < NUM_VOICES; i++) {
 		struct voice *v = &s->voices[i];
 		struct patch *p = v->patch;
 		if (p && p->ops->active(v)) {
-			float buf[n];
-			p->ops->generate(v, buf, n);
-			block_add(out, buf, n);
+			// generate left/right samples
+			float buf_l[n], buf_r[n];
+			p->ops->generate(v, buf_l, buf_r, n);
+			// accumulate in the output buffers
+			block_add(out_l, buf_l, n);
+			block_add(out_r, buf_r, n);
 		}
 	}
 
 	// write the samples to the dma buffer
-	audio_wr(dst, n, out, out);
+	audio_wr(dst, n, out_l, out_r);
 	// record some realtime stats
 	audio_stats(s->audio, dst);
 }
@@ -160,7 +166,7 @@ int ggm_init(struct ggm *s, struct audio_drv *audio, struct usart_drv *serial) {
 		goto exit;
 	}
 	// setup the patch operations
-	s->patches[0].ops = &patch3;
+	s->patches[0].ops = &patch2;
 	s->patches[1].ops = &patch2;
 	s->patches[2].ops = &patch1;
 	s->patches[3].ops = &patch0;

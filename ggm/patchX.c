@@ -56,7 +56,7 @@ static int active(struct voice *v) {
 }
 
 // generate samples
-static void generate(struct voice *v, float *out, size_t n) {
+static void generate(struct voice *v, float *out_l, float *out_r, size_t n) {
 }
 
 //-----------------------------------------------------------------------------

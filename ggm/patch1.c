@@ -73,12 +73,13 @@ static int active(struct voice *v) {
 }
 
 // generate samples
-static void generate(struct voice *v, float *out, size_t n) {
-	float am[n];
+static void generate(struct voice *v, float *out_l, float *out_r, size_t n) {
+	float *am = out_r;
 	struct v_state *vs = (struct v_state *)v->state;
 	adsr_gen(&vs->adsr, am, n);
-	gwave_gen(&vs->gwave, out, NULL, n);
-	block_mul(out, am, n);
+	gwave_gen(&vs->gwave, out_l, NULL, n);
+	block_mul(out_l, am, n);
+	block_copy(out_r, out_l, n);
 }
 
 //-----------------------------------------------------------------------------

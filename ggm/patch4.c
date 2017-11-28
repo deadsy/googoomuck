@@ -117,10 +117,7 @@ static const unsigned short exptab1[64] = {	// fine tuning: round(2^15*(2.^([0:1
 
 //-----------------------------------------------------------------------------
 
-//static volatile int obuf[4][2]; // L,R samples being output
 volatile int tbuf[4][2];	// L,R samples being prepared
-//static volatile int i0cnt,i1cnt; // interrupt counters
-static volatile int i1cnt;	// interrupt counters
 
 //-----------------------------------------------------------------------------
 
@@ -128,22 +125,15 @@ static volatile int i1cnt;	// interrupt counters
 extern void wavupa(struct v_state *vs, struct p_state *ps);
 
 // called once every 4 samples ~9kHz=72MHz/8192
-static void CT32B0handler(struct voice *v) {
+static void CT32B0handler(struct voice *v, int n) {
 	struct v_state *vs = (struct v_state *)v->state;
 	struct p_state *ps = (struct p_state *)v->patch->state;
-	int h, i, j, k, n;
-	struct egparams *ep;
-	struct egvars *ev;
+	struct egparams *ep = &ps->egp[n];
+	struct egvars *ev = &vs->egv[n];
+	int i, j, k;
 
 	wavupa(vs, ps);
 
-	h = i1cnt++;		// count interrupts
-	//v=vcs+(h&(NPOLY-1)); // choose a voice for eg processing
-	//p=patch+v->chan;     // find its parameters
-	n = ! !(h & NPOLY);	// choose an eg
-
-	ep = ps->egp + n;	// get pointers to parameters and variables
-	ev = vs->egv + n;
 	i = ev->logout;
 	j = (vs->note & 0x80) || ps->sus != 0;	// note down?
 	if (ev->state == 0)
@@ -418,9 +408,9 @@ static int active(struct voice *v) {
 }
 
 // generate samples
-static void generate(struct voice *v, float *out, size_t n) {
+static void generate(struct voice *v, float *out_l, float *out_r, size_t n) {
 	for (size_t i = 0; i < n; i += 4) {
-		CT32B0handler(v);
+		CT32B0handler(v, (n >> 2) & 1);
 	}
 }
 
@@ -430,6 +420,9 @@ static void generate(struct voice *v, float *out, size_t n) {
 static void init(struct patch *p) {
 	struct p_state *ps = (struct p_state *)p->state;
 	memset(ps, 0, sizeof(struct p_state));
+
+	memset(ps->ctrl, 64, sizeof(ps->ctrl));
+	ps->chup = 1;
 }
 
 static void control_change(struct patch *p, uint8_t ctrl, uint8_t val) {

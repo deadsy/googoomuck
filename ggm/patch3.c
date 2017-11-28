@@ -127,7 +127,7 @@ static int active(struct voice *v) {
 }
 
 // generate samples
-static void generate(struct voice *v, float *out, size_t n) {
+static void generate(struct voice *v, float *out_l, float *out_r, size_t n) {
 	struct v_state *vs = (struct v_state *)v->state;
 	struct p_state *ps = (struct p_state *)v->patch->state;
 
@@ -162,17 +162,17 @@ static void generate(struct voice *v, float *out, size_t n) {
 	adsr_gen(&vs->feg, buf1, n);
 	block_mul_k(buf1, vs->velocity * ps->sensitivity, n);
 	block_add_k(buf1, ps->cutoff, n);
-	lpf_gen(&vs->lpf, out, buf0, buf1, n);
+	lpf_gen(&vs->lpf, out_l, buf0, buf1, n);
 	// out has the filter output
 
 	// output
 	adsr_gen(&vs->aeg, buf0, n);
 	block_mul_k(buf0, vs->velocity, n);
-	block_mul(out, buf0, n);
+	block_mul(out_l, buf0, n);
 
-	block_mul_k(out, ps->volume, n);
+	block_mul_k(out_l, ps->volume, n);
 	// TODO pan
-
+	block_copy(out_r, out_l, n);
 }
 
 //-----------------------------------------------------------------------------
