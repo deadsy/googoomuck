@@ -80,7 +80,7 @@ _Static_assert(sizeof(struct p_state) <= PATCH_STATE_SIZE, "sizeof(struct p_stat
 
 //-----------------------------------------------------------------------------
 
-static const short sintab[256] = {	// sine table, linearly interpolated by oscillators:
+const short sintab[256] = {	// sine table, linearly interpolated by oscillators:
 // In Octave:
 // a=round(sin(2*pi*([-63 -63:1:63 63]/252))*32767)
 // reshape([a'(1:128) a'(2:129)-a'(1:128)]',1,256)
@@ -118,14 +118,14 @@ static const unsigned short exptab1[64] = {	// fine tuning: round(2^15*(2.^([0:1
 //-----------------------------------------------------------------------------
 
 //static volatile int obuf[4][2]; // L,R samples being output
-//static volatile int tbuf[4][2]; // L,R samples being prepared
+volatile int tbuf[4][2];	// L,R samples being prepared
 //static volatile int i0cnt,i1cnt; // interrupt counters
 static volatile int i1cnt;	// interrupt counters
 
 //-----------------------------------------------------------------------------
 
-static void wavupa(void) {
-}
+// waveform generation code
+extern void wavupa(struct v_state *vs, struct p_state *ps);
 
 // called once every 4 samples ~9kHz=72MHz/8192
 static void CT32B0handler(struct voice *v) {
@@ -135,7 +135,7 @@ static void CT32B0handler(struct voice *v) {
 	struct egparams *ep;
 	struct egvars *ev;
 
-	wavupa();
+	wavupa(vs, ps);
 
 	h = i1cnt++;		// count interrupts
 	//v=vcs+(h&(NPOLY-1)); // choose a voice for eg processing

@@ -239,6 +239,7 @@ extern const struct patch_ops patch0;
 extern const struct patch_ops patch1;
 extern const struct patch_ops patch2;
 extern const struct patch_ops patch3;
+extern const struct patch_ops patch4;
 
 //-----------------------------------------------------------------------------
 

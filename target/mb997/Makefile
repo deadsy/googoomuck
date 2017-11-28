@@ -58,6 +58,7 @@ SRC += $(GGM_DIR)/dds.c \
 
 OBJ = $(patsubst %.c, %.o, $(SRC))
 OBJ += $(TARGET_DIR)/start.o
+OBJ += $(GGM_DIR)/p4wave.o
 
 # include files
 
