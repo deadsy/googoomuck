@@ -18,7 +18,7 @@ have a 32 bit (single precision) FPU. E.g. ARM Cortex M4 or better.
  * 32-bit floats for internal operations
  * MIDI input (serial)
  * 16 voice polyphony
- * 16 concurrent patches
+ * 16 channels with independent patches
  
 ## Hardware
   * STM32F4Discovery Board (MB997) http://www.st.com/en/evaluation-tools/stm32f4discovery.html
