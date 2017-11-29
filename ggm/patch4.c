@@ -70,7 +70,6 @@ struct p_state {
 
 	// moved into patch state
 	unsigned char ctrl[24];	// 7-bit control values
-	unsigned char chup;	// channel controls updated?
 	unsigned char sus;	// sustain pedal position
 	short pbend;		// pitch bend position
 };
@@ -136,9 +135,9 @@ static void CT32B0handler(struct voice *v, int n) {
 
 	i = ev->logout;
 	j = (vs->note & 0x80) || ps->sus != 0;	// note down?
-	if (ev->state == 0)
+	if (ev->state == 0) {
 		i = 0;
-	else {
+	} else {
 		if (!j)
 			ev->state = 5;	// exit sustain when note is released
 		switch (ev->state) {
@@ -166,13 +165,18 @@ static void CT32B0handler(struct voice *v, int n) {
 			break;
 		}
 	}
-	ev->logout = i;
-	if (i == 0)
-		ev->out = 0;
-	else
-		ev->out = (exptab0[(i & 0xfc0) >> 6] * exptab1[i & 0x3f]) >> (31 - (i >> 12));	// compute linear output
 
-	if (n == 0) {		// do oscillator 1 eg as well
+	// output
+	ev->logout = i;
+	if (i == 0) {
+		ev->out = 0;
+	} else {
+		// compute linear output
+		ev->out = (exptab0[(i & 0xfc0) >> 6] * exptab1[i & 0x3f]) >> (31 - (i >> 12));
+	}
+
+	if (n == 0) {
+		// do oscillator 1 eg as well
 		i = vs->eg0trip;
 		if (i > 4)
 			vs->vol = ev->out;
@@ -183,21 +187,29 @@ static void CT32B0handler(struct voice *v, int n) {
 		i = vs->o1eglogout;
 		if (!j)
 			vs->o1egstate = 1;
-		if (vs->o1egstate == 0) {	// attack
+		if (vs->o1egstate == 0) {
+			// attack
 			i += ps->o1ega;
 			if (i >= 0x10000)
 				i = 0xffff, vs->o1egstate = 1;
-		} else {	// decay
+		} else {
+			// decay
 			i -= ps->o1egd;
 			if (i < 0)
 				i = 0;
 		}
+
+		// output
 		vs->o1eglogout = i;
-		if (i == 0)
+		if (i == 0) {
 			vs->o1egout = 0;
-		else
-			vs->o1egout = (((exptab0[(i & 0xfc0) >> 6] * exptab1[i & 0x3f]) >> (31 - (i >> 12))) * ps->o1vol) >> 16;	// compute linear output
-	} else {		// recalculate filter coefficient
+		} else {
+			// compute linear output
+			vs->o1egout = (((exptab0[(i & 0xfc0) >> 6] * exptab1[i & 0x3f]) >> (31 - (i >> 12))) * ps->o1vol) >> 16;
+		}
+
+	} else {
+		// recalculate filter coefficient
 		k = ((ps->cut * ps->cut) >> 8) + ((vs->egv[1].logout * ((ps->fega * vs->vel) >> 6)) >> 15);
 		if (k < 0)
 			k = 0;
@@ -205,7 +217,6 @@ static void CT32B0handler(struct voice *v, int n) {
 			k = 255;
 		vs->fk = k;
 	}
-
 }
 
 //-----------------------------------------------------------------------------
@@ -379,38 +390,27 @@ static void note_on(struct voice *v, uint8_t vel) {
 static void note_off(struct voice *v, uint8_t vel) {
 	DBG("p4 note off v%d c%d n%d\r\n", v->idx, v->channel, v->note);
 	struct v_state *vs = (struct v_state *)v->state;
-	vs->egv[0].state = 0;	// stop aeg processing for voice
-	vs->egv[0].logout = 0;
-	vs->egv[0].out = 0;	// silence voice
-	vs->egv[1].state = 0;	// stop feg processing for voice
-	vs->egv[1].logout = 0;
-	vs->egv[1].out = 0;
-	vs->eg0trip = 0;
-	vs->o1egstate = 1;
-	vs->o1eglogout = 0;
-	vs->o1egout = 0;
-	vs->o1vol = 0;
-	vs->o1o = 0;
-	vs->o1fb = 0;
-	vs->fk = 0;
-	vs->chan = NCHAN - 1;
-	vs->vol = 0;
-	vs->out = 0;
-	vs->o0ph = 0x00000000;
-	vs->o0dph = 0x00000000;
-	vs->o1dph = 0x00000000;
-	vs->lo = vs->ba = 0;
+	vs->note = v->note & 0x7f;
 }
 
 // return !=0 if the patch is active
 static int active(struct voice *v) {
-	return 0;
+	struct v_state *vs = (struct v_state *)v->state;
+	return vs->egv[0].state != 0;
 }
 
 // generate samples
 static void generate(struct voice *v, float *out_l, float *out_r, size_t n) {
 	for (size_t i = 0; i < n; i += 4) {
-		CT32B0handler(v, (n >> 2) & 1);
+		CT32B0handler(v, (i >> 2) & 1);
+		out_l[i + 0] = (float)tbuf[0][0] / 32768.f;
+		out_l[i + 1] = (float)tbuf[1][0] / 32768.f;
+		out_l[i + 2] = (float)tbuf[2][0] / 32768.f;
+		out_l[i + 3] = (float)tbuf[3][0] / 32768.f;
+		out_r[i + 0] = (float)tbuf[0][1] / 32768.f;
+		out_r[i + 1] = (float)tbuf[1][1] / 32768.f;
+		out_r[i + 2] = (float)tbuf[2][1] / 32768.f;
+		out_r[i + 3] = (float)tbuf[3][1] / 32768.f;
 	}
 }
 
@@ -420,17 +420,40 @@ static void generate(struct voice *v, float *out_l, float *out_r, size_t n) {
 static void init(struct patch *p) {
 	struct p_state *ps = (struct p_state *)p->state;
 	memset(ps, 0, sizeof(struct p_state));
-
 	memset(ps->ctrl, 64, sizeof(ps->ctrl));
-	ps->chup = 1;
+	procctrl(p);
 }
 
 static void control_change(struct patch *p, uint8_t ctrl, uint8_t val) {
+	struct p_state *ps = (struct p_state *)p->state;
+	int update = 0;
 	DBG("p4 ctrl %d val %d\r\n", ctrl, val);
+	if (ctrl == 64) {
+		ps->sus = val;
+		update = 1;
+	} else if (ctrl >= 16 && ctrl <= 32) {
+		ps->ctrl[ctrl - 16] = val;
+		update = 1;
+	} else if (ctrl >= 102 && ctrl <= 110) {
+		ps->ctrl[ctrl - 102 + 16] = val;
+		update = 1;
+	}
+	if (update) {
+		procctrl(p);
+	}
 }
 
 static void pitch_wheel(struct patch *p, uint16_t val) {
+	struct p_state *ps = (struct p_state *)p->state;
 	DBG("p4 pitch %d\r\n", val);
+	ps->pbend = val - 0x2000;
+	// update each voice using this patch
+	for (int i = 0; i < NUM_VOICES; i++) {
+		struct voice *v = &p->ggm->voices[i];
+		if (v->patch == p) {
+			setfreqvol(v, ps->ctrl);
+		}
+	}
 }
 
 //-----------------------------------------------------------------------------
