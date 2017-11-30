@@ -16,8 +16,11 @@ Goom Voice - using the original code
 
 //-----------------------------------------------------------------------------
 
-#define NCHAN NUM_CHANNELS
-#define NPOLY NUM_VOICES
+// constant to give correct tuning for sample rate
+// k = math.log(fs/(440.0*math.pow(2.0,-0.75))/128.0)/math.log(2.0)*4096.0
+// fs = 72e6 / 2048 = 35156.25 Hz -> k = 287 (goom original)
+// fs = 44099.507 Hz -> k = 1627
+#define TUNING_K 1627
 
 //-----------------------------------------------------------------------------
 
@@ -113,10 +116,6 @@ static const unsigned short exptab1[64] = {	// fine tuning: round(2^15*(2.^([0:1
 	32946, 32952, 32957, 32963, 32968, 32974, 32979, 32985, 32991, 32996, 33002, 33007, 33013, 33018, 33024, 33030,
 	33035, 33041, 33046, 33052, 33058, 33063, 33069, 33074, 33080, 33086, 33091, 33097, 33102, 33108, 33114, 33119
 };
-
-//-----------------------------------------------------------------------------
-
-volatile int tbuf[4][2];	// L,R samples being prepared
 
 //-----------------------------------------------------------------------------
 
@@ -232,7 +231,7 @@ static void setfreqvol(struct voice *v, unsigned char *ct) {
 	// oscillator 0 frequency
 	u = ((vs->note & 0x7f) << 12) / 12;	// pitch of note, Q12 in octaves, middle C =5
 	u += ps->pbend / 12;	// gives +/- 2 semitones
-	u -= 287;		// constant to give correct tuning for sample rate: log((72e6/2048)/(440*2^-0.75)/128)/log(2)*4096 for A=440Hz
+	u -= TUNING_K;
 	f = (exptab0[(u & 0xfc0) >> 6] * exptab1[u & 0x3f]) >> (10 - (u >> 12));	// convert to linear frequency
 	vs->o0dph = f;
 
@@ -260,9 +259,9 @@ static void setfreqvol(struct voice *v, unsigned char *ct) {
 
 	// oscillator 1 frequency
 	if (ct[7] > 0x60)
-		u = -0x1000 - 287;	// fixed "low" frequency
+		u = -0x1000 - TUNING_K;	// fixed "low" frequency
 	else if (ct[7] > 0x20)
-		u = 0x3000 - 287;	// fixed "high" frequency
+		u = 0x3000 - TUNING_K;	// fixed "high" frequency
 	u += (ct[2] << 7) + (ct[3] << 3) - 0x2200;
 	f = (exptab0[(u & 0xfc0) >> 6] * exptab1[u & 0x3f]) >> (10 - (u >> 12));
 	vs->o1dph = f;
@@ -399,18 +398,21 @@ static int active(struct voice *v) {
 	return vs->egv[0].state != 0;
 }
 
+// L,R samples being prepared
+int tbuf[4][2];
+
 // generate samples
 static void generate(struct voice *v, float *out_l, float *out_r, size_t n) {
 	for (size_t i = 0; i < n; i += 4) {
 		CT32B0handler(v, (i >> 2) & 1);
-		out_l[i + 0] = (float)tbuf[0][0] / 32768.f;
-		out_l[i + 1] = (float)tbuf[1][0] / 32768.f;
-		out_l[i + 2] = (float)tbuf[2][0] / 32768.f;
-		out_l[i + 3] = (float)tbuf[3][0] / 32768.f;
-		out_r[i + 0] = (float)tbuf[0][1] / 32768.f;
-		out_r[i + 1] = (float)tbuf[1][1] / 32768.f;
-		out_r[i + 2] = (float)tbuf[2][1] / 32768.f;
-		out_r[i + 3] = (float)tbuf[3][1] / 32768.f;
+		out_l[i + 0] = q31_to_f(tbuf[0][0]);
+		out_l[i + 1] = q31_to_f(tbuf[1][0]);
+		out_l[i + 2] = q31_to_f(tbuf[2][0]);
+		out_l[i + 3] = q31_to_f(tbuf[3][0]);
+		out_r[i + 0] = q31_to_f(tbuf[0][1]);
+		out_r[i + 1] = q31_to_f(tbuf[1][1]);
+		out_r[i + 2] = q31_to_f(tbuf[2][1]);
+		out_r[i + 3] = q31_to_f(tbuf[3][1]);
 	}
 }
 
@@ -420,6 +422,7 @@ static void generate(struct voice *v, float *out_l, float *out_r, size_t n) {
 static void init(struct patch *p) {
 	struct p_state *ps = (struct p_state *)p->state;
 	memset(ps, 0, sizeof(struct p_state));
+	// default all the controls to midway (64)
 	memset(ps->ctrl, 64, sizeof(ps->ctrl));
 	procctrl(p);
 }
@@ -431,10 +434,10 @@ static void control_change(struct patch *p, uint8_t ctrl, uint8_t val) {
 	if (ctrl == 64) {
 		ps->sus = val;
 		update = 1;
-	} else if (ctrl >= 16 && ctrl <= 32) {
+	} else if (ctrl >= 16 && ctrl < 32) {
 		ps->ctrl[ctrl - 16] = val;
 		update = 1;
-	} else if (ctrl >= 102 && ctrl <= 110) {
+	} else if (ctrl >= 102 && ctrl < 110) {
 		ps->ctrl[ctrl - 102 + 16] = val;
 		update = 1;
 	}

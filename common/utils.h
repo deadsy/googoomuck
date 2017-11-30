@@ -19,6 +19,12 @@ Common Utility Functions/Macros
 
 //-----------------------------------------------------------------------------
 
+static inline float q31_to_f(int x) {
+	return (float)x *(1.f / (float)(1 << 31));
+}
+
+//-----------------------------------------------------------------------------
+
 // clamp x between a and b
 static inline float clamp(float x, float a, float b) {
 	x = (x < a) ? a : x;
