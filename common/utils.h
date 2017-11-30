@@ -19,8 +19,8 @@ Common Utility Functions/Macros
 
 //-----------------------------------------------------------------------------
 
-static inline float q31_to_f(int x) {
-	return (float)x *(1.f / (float)(1 << 31));
+static inline float q31_to_float(int x) {
+	return (float)x / (float)(1 << 31);
 }
 
 //-----------------------------------------------------------------------------

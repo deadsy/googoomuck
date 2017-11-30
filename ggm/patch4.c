@@ -293,6 +293,32 @@ static void setfreqvol(struct voice *v, unsigned char *ct) {
 
 //-----------------------------------------------------------------------------
 
+// 24 controls
+// 0  - ctrl 16 - oscillator 1 duty
+// 1  - ctrl 17 - oscillator 1 slope
+// 2  - ctrl 18 - coarse tuning
+// 3  - ctrl 19 - fine tuning
+// 4  - ctrl 20 - oscillator 1 envelope attack
+// 5  - ctrl 21 - oscillator 1 envelope decay
+// 6  - ctrl 22 - ocillator 1 output level
+// 7  - ctrl 23 - oscillator 1 frequency mode (3 way switch)
+// 8  - ctrl 24 - filter envelope attack
+// 9  - ctrl 25 - filter envelope decay
+// 10 - ctrl 26 - filter envelope sustain
+// 11 - ctrl 27 - filter envelope release
+// 12 - ctrl 28 - oscillator 0 envelope attack
+// 13 - ctrl 29 - oscillator 0 envelope decay
+// 14 - ctrl 30 - oscillator 0 envelope sustain
+// 15 - ctrl 31 - oscillator 0 envelope release
+// 16 - ctrl 102 - oscillator 0 duty
+// 17 - ctrl 103 - oscillator 0 slope
+// 18 - ctrl 104 - oscillator combine mode (3 way switch)
+// 19 - ctrl 105 - fliter sensitivity
+// 20 - ctrl 106 - filter cutoff
+// 21 - ctrl 107 - filter resonance
+// 22 - ctrl 108 - output volume
+// 23 - ctrl 109 - output pan
+
 // process all controllers for given channel
 void procctrl(struct patch *p) {
 	struct p_state *ps = (struct p_state *)p->state;
@@ -405,14 +431,14 @@ int tbuf[4][2];
 static void generate(struct voice *v, float *out_l, float *out_r, size_t n) {
 	for (size_t i = 0; i < n; i += 4) {
 		CT32B0handler(v, (i >> 2) & 1);
-		out_l[i + 0] = q31_to_f(tbuf[0][0]);
-		out_l[i + 1] = q31_to_f(tbuf[1][0]);
-		out_l[i + 2] = q31_to_f(tbuf[2][0]);
-		out_l[i + 3] = q31_to_f(tbuf[3][0]);
-		out_r[i + 0] = q31_to_f(tbuf[0][1]);
-		out_r[i + 1] = q31_to_f(tbuf[1][1]);
-		out_r[i + 2] = q31_to_f(tbuf[2][1]);
-		out_r[i + 3] = q31_to_f(tbuf[3][1]);
+		out_l[i + 0] = q31_to_float(tbuf[0][0]);
+		out_l[i + 1] = q31_to_float(tbuf[1][0]);
+		out_l[i + 2] = q31_to_float(tbuf[2][0]);
+		out_l[i + 3] = q31_to_float(tbuf[3][0]);
+		out_r[i + 0] = q31_to_float(tbuf[0][1]);
+		out_r[i + 1] = q31_to_float(tbuf[1][1]);
+		out_r[i + 2] = q31_to_float(tbuf[2][1]);
+		out_r[i + 3] = q31_to_float(tbuf[3][1]);
 	}
 }
 
