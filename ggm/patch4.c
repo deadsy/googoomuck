@@ -135,46 +135,26 @@ void swvol0(struct v_state *vs) {
 
 }
 
-void filter(struct v_state *vs, struct p_state *ps, int *samples) {
-
+void filter(struct v_state *vs, uint8_t res, int *samples) {
 	uint8_t r2 = vs->fk;
-	uint8_t r3 = ps->res;
 	int r4 = vs->lo;
 	int r5 = vs->ba;
-
-	//7dc:   7807            ldrb    r7, [r0, #0]
-	//7de:   7b09            ldrb    r1, [r1, #12]
-	//7e2:   6c05            ldr     r5, [r0, #64]   ; 0x40
-	//7da:   6c46            ldr     r6, [r0, #68]   ; 0x44
-
-	int r7 = r2 * r5;	// simple CSound-style second order filter
-	r7 >>= 8;
-	r7 *= r2;
-	r4 += (r7 >> 8);
-
-	r7 = r3 * r5;
-	r7 = samples[0] - (r7 >> 8);
-	r7 -= r4;
-
-	r7 *= r2;
-	r7 >>= 8;
-	r7 *= r2;
-
-	r5 += (r7 >> 8);
-
-	samples[0] = __SSAT(r4, 17);
-	//80a:   f304 0110       ssat    r1, #17, r4
-	//80e:   6011            str     r1, [r2, #0]
-
-	//int r9 = samples[0];
-	//int r10 = samples[0];
-	//int r11 = samples[0];
-
+	for (int i = 0; i < 4; i++) {
+		int r7 = r2 * r5;
+		r7 >>= 8;
+		r7 *= r2;
+		r4 += r7 >> 8;
+		r7 = res * r5;
+		r7 = samples[i] - (r7 >> 8);
+		r7 -= r4;
+		r7 *= r2;
+		r7 >>= 8;
+		r7 *= r2;
+		r5 += r7 >> 8;
+		samples[i] = __SSAT(r4, 17);
+	}
 	vs->lo = r4;
 	vs->ba = r5;
-	//810:   6404            str     r4, [r0, #64]   ; 0x40
-	//812:   6443            str     r3, [r0, #68]   ; 0x44
-
 }
 
 void wavupac(struct v_state *vs, struct p_state *ps) {
