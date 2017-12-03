@@ -87,7 +87,7 @@ static void control_change(struct patch *p, uint8_t ctrl, uint8_t val) {
 
 	switch (ctrl) {
 	case 1:
-		ps->attenuate = midi_scale(val, 0.87f, 1.f);
+		ps->attenuate = midi_map(val, 0.87f, 1.f);
 		update = 1;
 		break;
 	default:

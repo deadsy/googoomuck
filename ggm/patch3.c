@@ -31,7 +31,7 @@ struct v_state {
 	struct adsr eg;		// envelope generator for oscillator 1
 	struct adsr feg;	// filter envelope generator
 	struct adsr aeg;	// amplitude envelope generator
-	struct lpf lpf;		// output low pass filter
+	struct svf lpf;		// output low pass filter
 	float velocity;		// note velocity 0..1
 };
 
@@ -74,17 +74,17 @@ static void start(struct voice *v) {
 	memset(vs, 0, sizeof(struct v_state));
 
 	// setup oscillator 0
-	gwave_init(&vs->o0, midi_to_frequency(v->note), 0.f);
+	gwave_init(&vs->o0, midi_to_frequency(v->note));
 	gwave_shape(&vs->o0, ps->o0_duty, ps->o0_slope);
 
 	// setup oscillator 1
 	uint8_t n = (ps->f_mode) ? ps->f_mode : v->note;
 	// TODO tuning
-	gwave_init(&vs->o1, midi_to_frequency(n), 0.f);
+	gwave_init(&vs->o1, midi_to_frequency(n));
 	gwave_shape(&vs->o1, ps->o0_duty, ps->o0_slope);
 
 	// setup the filter
-	lpf_init(&vs->lpf, ps->cutoff, ps->resonance);
+	svf_init(&vs->lpf, ps->cutoff, ps->resonance);
 }
 
 // stop the patch
@@ -162,7 +162,7 @@ static void generate(struct voice *v, float *out_l, float *out_r, size_t n) {
 	adsr_gen(&vs->feg, buf1, n);
 	block_mul_k(buf1, vs->velocity * ps->sensitivity, n);
 	block_add_k(buf1, ps->cutoff, n);
-	lpf_gen(&vs->lpf, out_l, buf0, buf1, n);
+	svf_gen(&vs->lpf, out_l, buf0, buf1, n);
 	// out has the filter output
 
 	// output
@@ -223,13 +223,13 @@ static void control_change(struct patch *p, uint8_t ctrl, uint8_t val) {
 
 	switch (ctrl) {
 	case 1:
-		ps->o1_level = midi_scale(val, 5.f, 40.f);
+		ps->o1_level = midi_map(val, 5.f, 40.f);
 		break;
 	case 2:
-		ps->eg_a = midi_scale(val, 0.01f, 1.f);
+		ps->eg_a = midi_map(val, 0.01f, 1.f);
 		break;
 	case 3:
-		ps->eg_d = midi_scale(val, 0.05f, 5.f);
+		ps->eg_d = midi_map(val, 0.05f, 5.f);
 		break;
 	default:
 		break;

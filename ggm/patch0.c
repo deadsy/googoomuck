@@ -19,7 +19,7 @@ A simple patch - Just an envelope on a sine wave.
 //-----------------------------------------------------------------------------
 
 struct v_state {
-	struct dds sin;
+	struct sin sin;
 	struct adsr adsr;
 };
 
@@ -37,7 +37,7 @@ static void start(struct voice *v) {
 	DBG("patch0 start (%d %d %d)\r\n", v->idx, v->channel, v->note);
 	struct v_state *vs = (struct v_state *)v->state;
 	memset(vs, 0, sizeof(struct v_state));
-	dds_sin_init(&vs->sin, midi_to_frequency(v->note), 0.f);
+	sin_init(&vs->sin, midi_to_frequency(v->note));
 	adsr_init(&vs->adsr, 0.05f, 0.2f, 0.5f, 0.5f);
 }
 
@@ -71,7 +71,8 @@ static void generate(struct voice *v, float *out_l, float *out_r, size_t n) {
 	float *am = out_r;
 	struct v_state *vs = (struct v_state *)v->state;
 	adsr_gen(&vs->adsr, am, n);
-	dds_gen(&vs->sin, out_l, NULL, n);
+	sin_gen(&vs->sin, out_l, NULL, n);
+	block_mul_k(am, 0.3f, n);
 	block_mul(out_l, am, n);
 	block_copy(out_r, out_l, n);
 }

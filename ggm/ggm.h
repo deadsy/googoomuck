@@ -62,29 +62,31 @@ static inline void block_copy(float *dst, float *src, size_t n) {
 }
 
 //-----------------------------------------------------------------------------
-// DDS Oscillators
+// lookup tables
 
-struct dds {
+#define COS_BITS (6U)
+#define COS_SIZE (1U << COS_BITS)
+extern const uint32_t COS_data[COS_SIZE << 1];
+
+//-----------------------------------------------------------------------------
+// Sine Wave Oscillators
+
+struct sin {
 	float freq;		// base frequency
-	float phase;		// base phase
-	const float *table;	// lookup table
-	uint32_t table_mask;	// mask for the table bits
-	uint32_t frac_bits;	// number of fraction bits
-	uint32_t frac_mask;	// mask for fraction bits
 	uint32_t x;		// current x-value
 	uint32_t xstep;		// current x-step
-	float frac_scale;	// scaling for the fractional portion
 };
 
-void dds_sin_init(struct dds *osc, float freq, float phase);
-void dds_gen(struct dds *osc, float *out, float *fm, size_t n);
+float sin_eval(float x);
+float cos_eval(float x);
+void sin_init(struct sin *osc, float freq);
+void sin_gen(struct sin *osc, float *out, float *fm, size_t n);
 
 //-----------------------------------------------------------------------------
 // Goom Waves
 
 struct gwave {
 	float freq;		// base frequency
-	float phase;		// base phase
 	uint32_t tp;		// s0f0 to s1f1 transition point
 	uint32_t k0;		// scaling factor for slope 0
 	uint32_t k1;		// scaling factor for slope 1
@@ -92,7 +94,7 @@ struct gwave {
 	uint32_t xstep;		// phase step per sample
 };
 
-void gwave_init(struct gwave *osc, float freq, float phase);
+void gwave_init(struct gwave *osc, float freq);
 void gwave_shape(struct gwave *osc, float duty, float slope);
 void gwave_gen(struct gwave *osc, float *out, float *fm, size_t n);
 
@@ -146,15 +148,17 @@ void ks_pluck(struct ks *osc);
 void ks_gen(struct ks *osc, float *out, size_t n);
 
 //-----------------------------------------------------------------------------
-// Low Pass Filter
+// Low Pass Filters
 
-struct lpf {
-	float cutoff;
-	float resonance;
+struct svf {
+	float kf;		// constant for cutoff frequency
+	float kq;		// constant for filter resonance
+	float bp;		// bandpass state variable
+	float lp;		// low pass state variable
 };
 
-void lpf_init(struct lpf *f, float cutoff, float resonance);
-void lpf_gen(struct lpf *f, float *out, float *in, float *x, size_t n);
+void svf_init(struct svf *f, float cutoff, float resonance);
+void svf_gen(struct svf *f, float *out, float *in, float *x, size_t n);
 
 //-----------------------------------------------------------------------------
 // midi
@@ -170,7 +174,7 @@ struct midi_rx {
 };
 
 void midi_rx_serial(struct midi_rx *midi, struct usart_drv *serial);
-float midi_scale(uint8_t val, float a, float b);
+float midi_map(uint8_t val, float a, float b);
 float midi_to_frequency(float note);
 
 //-----------------------------------------------------------------------------

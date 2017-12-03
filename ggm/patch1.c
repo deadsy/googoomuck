@@ -41,7 +41,7 @@ static void start(struct voice *v) {
 	struct p_state *ps = (struct p_state *)v->patch->state;
 	memset(vs, 0, sizeof(struct v_state));
 	// setup the gwave
-	gwave_init(&vs->gwave, midi_to_frequency(v->note), 0.f);
+	gwave_init(&vs->gwave, midi_to_frequency(v->note));
 	gwave_shape(&vs->gwave, ps->duty, ps->slope);
 	// setup the adsr
 	adsr_init(&vs->adsr, 0.05f, 0.2f, 0.5f, 0.5f);
@@ -89,7 +89,7 @@ static void init(struct patch *p) {
 	struct p_state *ps = (struct p_state *)p->state;
 	memset(ps, 0, sizeof(struct p_state));
 	ps->duty = 0.5f;
-	ps->slope = 1.f;
+	ps->slope = 0.5f;
 }
 
 static void control_change(struct patch *p, uint8_t ctrl, uint8_t val) {
@@ -100,11 +100,11 @@ static void control_change(struct patch *p, uint8_t ctrl, uint8_t val) {
 
 	switch (ctrl) {
 	case 1:
-		ps->duty = (float)val / 127.f;
+		ps->duty = midi_map(val, 0.f, 1.f);
 		update = 1;
 		break;
 	case 2:
-		ps->slope = (float)val / 127.f;
+		ps->slope = midi_map(val, 0.f, 1.f);
 		update = 1;
 		break;
 	default:

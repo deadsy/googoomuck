@@ -16,8 +16,8 @@ MIDI Functions
 
 //-----------------------------------------------------------------------------
 
-// scale a 0..127 midi control value from a..b
-float midi_scale(uint8_t val, float a, float b) {
+// map a 0..127 midi control value from a..b
+float midi_map(uint8_t val, float a, float b) {
 	return a + ((b - a) / 127.f) * (float)(val & 0x7f);
 }
 

@@ -18,18 +18,41 @@ Common Utility Functions/Macros
 #define ALIGN(x) __attribute__ ((aligned (x)))
 
 //-----------------------------------------------------------------------------
+// Q format to float conversions
 
 static inline float q31_to_float(int x) {
 	return (float)x / (float)(1 << 31);
 }
 
 //-----------------------------------------------------------------------------
+// clamp floating point values
 
 // clamp x between a and b
-static inline float clamp(float x, float a, float b) {
-	x = (x < a) ? a : x;
-	x = (x > b) ? b : x;
+static inline float clampf(float x, float a, float b) {
+	if (x < a) {
+		return a;
+	}
+	if (x > b) {
+		return b;
+	}
 	return x;
+}
+
+// clamp x to >= a
+static inline float clampf_lo(float x, float a) {
+	return (x < a) ? a : x;
+}
+
+// clamp x to <= a
+static inline float clampf_hi(float x, float a) {
+	return (x > a) ? a : x;
+}
+
+//-----------------------------------------------------------------------------
+
+// linear mapping map x = 0..1 to y = a..b
+static inline float mapf(float x, float a, float b) {
+	return ((b - a) * x) + a;
 }
 
 //-----------------------------------------------------------------------------
