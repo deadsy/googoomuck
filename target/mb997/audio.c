@@ -212,14 +212,9 @@ int audio_start(struct audio_drv *audio) {
 
 //-----------------------------------------------------------------------------
 
-// clip and convert samples to the -32767..32767 range.
+// clip and convert samples to the -32768..32767 range.
 static int16_t clip_convert(float x) {
-	if (x >= 1.f) {
-		return 32767;
-	} else if (x <= -1.f) {
-		return -32767;
-	}
-	return (int16_t) (x * 32767.f);
+	return (int16_t) __SSAT((int32_t) (x * 32767.f), 16);
 }
 
 // write l/r channel samples to the audio output buffer
