@@ -124,6 +124,7 @@ slope = split s0f0 and s1f1 beween slope and flat.
 The idea for goom waves comes from: https://www.quinapalus.com/goom.html
 
 */
+//-----------------------------------------------------------------------------
 
 // Limit how close the duty cyle can get to 0/100%.
 #define TP_MIN 0.05f
@@ -132,24 +133,25 @@ The idea for goom waves comes from: https://www.quinapalus.com/goom.html
 #define SLOPE_MIN 0.1f
 
 #define FULL_CYCLE ((float)(1ULL << 32))
-#define HALF_CYCLE (1 << 31)
+#define HALF_CYCLE ((uint32_t)(1U << 31))
 
 void gwave_gen(struct gwave *osc, float *out, float *fm, size_t n) {
 	for (size_t i = 0; i < n; i++) {
-		uint64_t x;
 		uint32_t ofs;
+		float x;
 
 		// what portion of the goom wave are we in?
 		if (osc->x < osc->tp) {
 			// we are in the s0/f0 portion
-			x = (uint64_t) osc->x * (uint64_t) osc->k0;
+			x = (float)osc->x * osc->k0;
 			ofs = 0;
 		} else {
 			// we are in the s1/f1 portion
-			x = (uint64_t) (osc->x - osc->tp) * (uint64_t) osc->k1;
+			x = (float)(osc->x - osc->tp) * osc->k1;
 			ofs = HALF_CYCLE;
 		}
-		out[i] = cos_lookup(__USAT(x, 31) + ofs);
+		x = (x > 1.f) ? 1.f : x;
+		out[i] = cos_lookup((uint32_t) (x * (float)HALF_CYCLE) + ofs);
 
 		// step the phase
 		if (fm) {
@@ -167,19 +169,13 @@ void gwave_shape(struct gwave *osc, float duty, float slope) {
 	duty = clampf(duty, 0.f, 1.f);
 	slope = clampf(slope, 0.f, 1.f);
 	// This is where we transition from s0f0 to s1f1.
-	osc->tp = (uint32_t) (FULL_CYCLE * mapf(duty, TP_MIN, 1.f - TP_MIN));
+	osc->tp = (uint32_t) (FULL_CYCLE * mapf(duty, TP_MIN, 0.5));
 	// Work out the portion of s0f0/s1f1 that is sloped.
 	float s = mapf(slope, SLOPE_MIN, 1.0);
-
-	// TODO fix
-
 	// scaling constant for s0, map the slope to the LUT.
-	osc->k0 = HALF_CYCLE / (uint32_t) ((float)osc->tp * s);
+	osc->k0 = 1.f / ((float)osc->tp * s);
 	// scaling constant for s1, map the slope to the LUT.
-	osc->k1 = HALF_CYCLE / (uint32_t) ((FULL_CYCLE - (float)osc->tp) * s);
-
-	DBG("tp %08x k0 %08x k1 %08x\r\n", osc->tp, osc->k0, osc->k1);
-
+	osc->k1 = 1.f / ((FULL_CYCLE - (float)osc->tp) * s);
 }
 
 void gwave_init(struct gwave *osc, float freq) {

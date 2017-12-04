@@ -88,8 +88,8 @@ void sin_gen(struct sin *osc, float *out, float *fm, size_t n);
 struct gwave {
 	float freq;		// base frequency
 	uint32_t tp;		// s0f0 to s1f1 transition point
-	uint32_t k0;		// scaling factor for slope 0
-	uint32_t k1;		// scaling factor for slope 1
+	float k0;		// scaling factor for slope 0
+	float k1;		// scaling factor for slope 1
 	uint32_t x;		// phase position
 	uint32_t xstep;		// phase step per sample
 };
