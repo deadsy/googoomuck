@@ -27,6 +27,8 @@ GooGooMuck Synthesizer
 //-----------------------------------------------------------------------------
 // block operations
 
+void block_benchmark(void);
+
 void block_mul(float *out, float *buf, size_t n);
 void block_mul_k(float *out, float k, size_t n);
 void block_add(float *out, float *buf, size_t n);
