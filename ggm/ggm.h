@@ -25,9 +25,13 @@ GooGooMuck Synthesizer
 #define INV_TAU (1.f/TAU)
 
 //-----------------------------------------------------------------------------
-// block operations
+// benchmarks
 
+void pow_benchmark(void);
 void block_benchmark(void);
+
+//-----------------------------------------------------------------------------
+// block operations
 
 void block_mul(float *out, float *buf, size_t n);
 void block_mul_k(float *out, float k, size_t n);
@@ -36,15 +40,16 @@ void block_add_k(float *out, float k, size_t n);
 void block_copy(float *dst, float *src, size_t n);
 
 //-----------------------------------------------------------------------------
-// lookup tables
+// power functions
 
-#define COS_BITS (6U)
-#define COS_SIZE (1U << COS_BITS)
-extern const uint32_t COS_data[COS_SIZE << 1];
+float pow2_int(int x);
+float pow2_frac(float x);
+float pow2(float x);
 
 //-----------------------------------------------------------------------------
-// Sine Wave Oscillators
+// sine wave oscillators
 
+// Sin Oscillator
 struct sin {
 	float freq;		// base frequency
 	uint32_t x;		// current x-value
@@ -56,9 +61,7 @@ float cos_eval(float x);
 void sin_init(struct sin *osc, float freq);
 void sin_gen(struct sin *osc, float *out, float *fm, size_t n);
 
-//-----------------------------------------------------------------------------
 // Goom Waves
-
 struct gwave {
 	float freq;		// base frequency
 	uint32_t tp;		// s0f0 to s1f1 transition point

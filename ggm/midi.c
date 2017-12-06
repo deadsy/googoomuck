@@ -7,7 +7,6 @@ MIDI Functions
 //-----------------------------------------------------------------------------
 
 #include <string.h>
-#include <math.h>
 
 #include "ggm.h"
 
@@ -24,7 +23,7 @@ float midi_map(uint8_t val, float a, float b) {
 // midi note to frequency conversion
 // Note: treat the note as a float for pitch bending, tuning, etc.
 float midi_to_frequency(float note) {
-	return 440.f * powf(2.f, (note - 69.f) * (1.f / 12.f));
+	return 440.f * pow2((note - 69.f) * (1.f / 12.f));
 }
 
 //-----------------------------------------------------------------------------
