@@ -3,6 +3,15 @@
 
 Karplus Strong Plucked String Modelling
 
+KS generally has a delay line buffer size that determines the fundamental frequency
+of the sound. That has some practical problems. The delay line buffer is too
+large for low frequencies and it makes it hard to provide fine resolution
+control over the frequency. This implementation uses a fixed buffer size and
+steps through it with a 32 bit phase value. The step size determines the
+frequency of the sound. When the step position falls between samples we do
+linear interpolation to get the output value. When we move beyond a sample
+we do the low pass filtering on it (in this case simple averaging).
+
 */
 //-----------------------------------------------------------------------------
 
