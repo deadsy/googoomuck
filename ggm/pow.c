@@ -36,7 +36,7 @@ static const uint16_t exp1_table[64] = {
 
 //-----------------------------------------------------------------------------
 
-// return pow(2.f, x) where x is an integer
+// return pow(2.f, x) where x is [-126,127]
 float pow2_int(int x) {
 	float f;
 	*(uint32_t *) & f = (127 + x) << 23;
