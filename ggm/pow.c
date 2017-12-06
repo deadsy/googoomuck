@@ -55,7 +55,7 @@ float pow2_frac(float x) {
 float pow2(float x) {
 	float nf = truncf(x);
 	float ff = x - nf;
-	if (x < 0 && ff < 0) {
+	if (ff < 0) {
 		nf -= 1.f;
 		ff += 1.f;
 	}
