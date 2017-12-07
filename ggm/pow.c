@@ -1,7 +1,7 @@
 //-----------------------------------------------------------------------------
 /*
 
-Fast Power Functions
+Fast (but slightly inaccurate) Power Functions
 
 Notes:
 
@@ -20,6 +20,8 @@ pow2() = 500nS
 
 //-----------------------------------------------------------------------------
 
+// See ./scripts/exp.py
+
 static const uint16_t exp0_table[64] = {
 	0x8000, 0x8165, 0x82ce, 0x843a, 0x85ab, 0x871f, 0x8898, 0x8a15, 0x8b96, 0x8d1b, 0x8ea4, 0x9032, 0x91c4, 0x935a, 0x94f5, 0x9694,
 	0x9838, 0x99e0, 0x9b8d, 0x9d3f, 0x9ef5, 0xa0b0, 0xa270, 0xa435, 0xa5ff, 0xa7ce, 0xa9a1, 0xab7a, 0xad58, 0xaf3b, 0xb124, 0xb312,
@@ -36,14 +38,15 @@ static const uint16_t exp1_table[64] = {
 
 //-----------------------------------------------------------------------------
 
-// return pow(2.f, x) where x is [-126,127]
+// return powf(2.f, x) where x is an integer [-126,127]
 float pow2_int(int x) {
 	float f;
+	// make a float32 per IEEE754
 	*(uint32_t *) & f = (127 + x) << 23;
 	return f;
 }
 
-// return pow(2.f, x) where x = [0,1)
+// return powf(2.f, x) where x = [0,1)
 float pow2_frac(float x) {
 	int n = (int)(x * (float)(1U << 12));
 	uint16_t x0 = exp0_table[(n >> 6) & 0x3f];
@@ -51,7 +54,7 @@ float pow2_frac(float x) {
 	return (float)(x0 * x1) * (1.f / (float)(1U << 30));
 }
 
-// return pow(2.f, x)
+// return powf(2.f, x)
 float pow2(float x) {
 	float nf = truncf(x);
 	float ff = x - nf;
@@ -60,6 +63,13 @@ float pow2(float x) {
 		ff += 1.f;
 	}
 	return pow2_frac(ff) * pow2_int((int)nf);
+}
+
+#define LOG_E2 (1.4426950408889634f)	// 1.0 / math.log(2.0)
+
+// return powf(e, x)
+float powe(float x) {
+	return pow2(LOG_E2 * x);
 }
 
 //-----------------------------------------------------------------------------

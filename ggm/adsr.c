@@ -6,8 +6,6 @@ Attack Decay Sustain Release Envelopes
 */
 //-----------------------------------------------------------------------------
 
-#include <math.h>
-
 #include "ggm.h"
 
 #define DEBUG
@@ -32,10 +30,10 @@ enum {
 
 // Return a k value to give the exponential rise/fall in the required time.
 static float get_k(float t) {
-	if (t <= 0.f) {
+	if (t <= 0) {
 		return 1.f;
 	}
-	return 1.f - expf(LN_LEVEL_EPSILON / (t * AUDIO_FS));
+	return 1.f - powe(LN_LEVEL_EPSILON / (t * AUDIO_FS));
 }
 
 //-----------------------------------------------------------------------------

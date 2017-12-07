@@ -45,6 +45,7 @@ void block_copy(float *dst, float *src, size_t n);
 float pow2_int(int x);
 float pow2_frac(float x);
 float pow2(float x);
+float powe(float x);
 
 //-----------------------------------------------------------------------------
 // sine wave oscillators
@@ -58,7 +59,9 @@ struct sin {
 
 float sin_eval(float x);
 float cos_eval(float x);
+
 void sin_init(struct sin *osc, float freq);
+void sin_ctrl_frequency(struct sin *osc, float freq);
 void sin_gen(struct sin *osc, float *out, float *fm, size_t n);
 
 // Goom Waves

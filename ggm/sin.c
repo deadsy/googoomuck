@@ -100,9 +100,13 @@ void sin_gen(struct sin *osc, float *out, float *fm, size_t n) {
 	}
 }
 
-void sin_init(struct sin *osc, float freq) {
+void sin_ctrl_frequency(struct sin *osc, float freq) {
 	osc->freq = freq;
 	osc->xstep = (uint32_t) (osc->freq * FREQ_SCALE);
+}
+
+void sin_init(struct sin *osc, float freq) {
+	sin_ctrl_frequency(osc, freq);
 }
 
 //-----------------------------------------------------------------------------
