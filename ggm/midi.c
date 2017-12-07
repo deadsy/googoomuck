@@ -20,6 +20,12 @@ float midi_map(uint8_t val, float a, float b) {
 	return a + ((b - a) / 127.f) * (float)(val & 0x7f);
 }
 
+// map a pitch bend value onto a note offset
+float midi_pitch_bend(uint16_t val) {
+	// 0..8192..16383 maps to -/+ 2 semitones
+	return (float)(val - 8192) * (2.f / 8192.f);
+}
+
 // midi note to frequency conversion
 // Note: treat the note as a float for pitch bending, tuning, etc.
 float midi_to_frequency(float note) {

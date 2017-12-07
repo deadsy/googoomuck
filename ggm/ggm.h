@@ -156,6 +156,7 @@ struct midi_rx {
 void midi_rx_serial(struct midi_rx *midi, struct usart_drv *serial);
 float midi_map(uint8_t val, float a, float b);
 float midi_to_frequency(float note);
+float midi_pitch_bend(uint16_t val);
 
 //-----------------------------------------------------------------------------
 // events
