@@ -75,7 +75,8 @@ struct gwave {
 };
 
 void gwave_init(struct gwave *osc, float freq);
-void gwave_shape(struct gwave *osc, float duty, float slope);
+void gwave_ctrl_frequency(struct gwave *osc, float freq);
+void gwave_ctrl_shape(struct gwave *osc, float duty, float slope);
 void gwave_gen(struct gwave *osc, float *out, float *fm, size_t n);
 
 //-----------------------------------------------------------------------------

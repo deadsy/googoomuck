@@ -75,13 +75,13 @@ static void start(struct voice *v) {
 
 	// setup oscillator 0
 	gwave_init(&vs->o0, midi_to_frequency(v->note));
-	gwave_shape(&vs->o0, ps->o0_duty, ps->o0_slope);
+	gwave_ctrl_shape(&vs->o0, ps->o0_duty, ps->o0_slope);
 
 	// setup oscillator 1
 	uint8_t n = (ps->f_mode) ? ps->f_mode : v->note;
 	// TODO tuning
 	gwave_init(&vs->o1, midi_to_frequency(n));
-	gwave_shape(&vs->o1, ps->o0_duty, ps->o0_slope);
+	gwave_ctrl_shape(&vs->o1, ps->o0_duty, ps->o0_slope);
 
 	// setup the filter
 	svf_init(&vs->lpf, ps->cutoff, ps->resonance);

@@ -42,7 +42,7 @@ static void start(struct voice *v) {
 	memset(vs, 0, sizeof(struct v_state));
 	// setup the gwave
 	gwave_init(&vs->gwave, midi_to_frequency(v->note));
-	gwave_shape(&vs->gwave, ps->duty, ps->slope);
+	gwave_ctrl_shape(&vs->gwave, ps->duty, ps->slope);
 	// setup the adsr
 	adsr_init(&vs->adsr, 0.05f, 0.2f, 0.5f, 0.5f);
 }
@@ -116,7 +116,7 @@ static void control_change(struct patch *p, uint8_t ctrl, uint8_t val) {
 			struct voice *v = &p->ggm->voices[i];
 			if (v->patch == p) {
 				struct v_state *vs = (struct v_state *)v->state;
-				gwave_shape(&vs->gwave, ps->duty, ps->slope);
+				gwave_ctrl_shape(&vs->gwave, ps->duty, ps->slope);
 			}
 		}
 	}

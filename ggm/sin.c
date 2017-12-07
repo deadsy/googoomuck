@@ -121,7 +121,7 @@ A Goom Wave is a wave shape with the following segments:
 3) s1: A rising (-1 to 1) sine curve
 4) f1: A flat piece at the top
 
-Shape is controller by two parameters:
+Shape is controlled by two parameters:
 duty = split the total period between s0,f0 and s1,f1
 slope = split s0f0 and s1f1 beween slope and flat.
 
@@ -130,7 +130,7 @@ The idea for goom waves comes from: https://www.quinapalus.com/goom.html
 */
 //-----------------------------------------------------------------------------
 
-// Limit how close the duty cyle can get to 0/100%.
+// Limit how close the duty cycle can get to 0/100%.
 #define TP_MIN 0.05f
 
 // Limit how fast the slope can rise.
@@ -169,7 +169,7 @@ void gwave_gen(struct gwave *osc, float *out, float *fm, size_t n) {
 // Control the shape of the Goom wave.
 // duty = duty cycle 0..1
 // slope = slope 0..1
-void gwave_shape(struct gwave *osc, float duty, float slope) {
+void gwave_ctrl_shape(struct gwave *osc, float duty, float slope) {
 	duty = clampf(duty, 0.f, 1.f);
 	slope = clampf(slope, 0.f, 1.f);
 	// This is where we transition from s0f0 to s1f1.
@@ -182,9 +182,13 @@ void gwave_shape(struct gwave *osc, float duty, float slope) {
 	osc->k1 = 1.f / ((FULL_CYCLE - (float)osc->tp) * s);
 }
 
-void gwave_init(struct gwave *osc, float freq) {
+void gwave_ctrl_frequency(struct gwave *osc, float freq) {
 	osc->freq = freq;
 	osc->xstep = (uint32_t) (osc->freq * FREQ_SCALE);
+}
+
+void gwave_init(struct gwave *osc, float freq) {
+	gwave_ctrl_frequency(osc, freq);
 }
 
 //-----------------------------------------------------------------------------
