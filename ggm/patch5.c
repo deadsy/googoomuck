@@ -1,9 +1,7 @@
 //-----------------------------------------------------------------------------
 /*
 
-Patch Zero
-
-A simple patch - Just an envelope on a sine wave.
+Patch 5 - FM Synthesis
 
 */
 //-----------------------------------------------------------------------------
@@ -19,12 +17,15 @@ A simple patch - Just an envelope on a sine wave.
 //-----------------------------------------------------------------------------
 
 struct v_state {
-	struct sin sin;
-	struct adsr adsr;
+	struct sin modulator;
+	struct sin carrier;
+	struct adsr aeg;
 };
 
 struct p_state {
-	float bend;		// pitch bend
+	float bend;
+	float modulator_level;
+	float modulator_factor;
 };
 
 _Static_assert(sizeof(struct v_state) <= VOICE_STATE_SIZE, "sizeof(struct v_state) > VOICE_STATE_SIZE");
@@ -36,7 +37,8 @@ static void ctrl_frequency(struct voice *v) {
 	struct v_state *vs = (struct v_state *)v->state;
 	struct p_state *ps = (struct p_state *)v->patch->state;
 	float freq = midi_to_frequency((float)v->note + ps->bend);
-	sin_ctrl_frequency(&vs->sin, freq);
+	sin_ctrl_frequency(&vs->modulator, ps->modulator_factor * freq);
+	sin_ctrl_frequency(&vs->carrier, freq);
 }
 
 //-----------------------------------------------------------------------------
@@ -45,47 +47,64 @@ static void ctrl_frequency(struct voice *v) {
 // start the patch
 static void start(struct voice *v) {
 	struct v_state *vs = (struct v_state *)v->state;
-	DBG("p0 start (%d %d %d)\r\n", v->idx, v->channel, v->note);
+	DBG("p5 start v%d c%d n%d\r\n", v->idx, v->channel, v->note);
 	memset(vs, 0, sizeof(struct v_state));
-	sin_init(&vs->sin);
-	adsr_init(&vs->adsr, 0.05f, 0.2f, 0.5f, 0.5f);
+	sin_init(&vs->modulator);
+	sin_init(&vs->carrier);
+	adsr_init(&vs->aeg, 0.05f, 0.2f, 0.5f, 0.5f);
 	ctrl_frequency(v);
 }
 
 // stop the patch
 static void stop(struct voice *v) {
-	DBG("p0 stop (%d %d %d)\r\n", v->idx, v->channel, v->note);
+	DBG("p5 stop v%d c%d n%d\r\n", v->idx, v->channel, v->note);
 }
 
 // note on
 static void note_on(struct voice *v, uint8_t vel) {
-	DBG("p0 note on (%d %d %d)\r\n", v->idx, v->channel, v->note);
+	DBG("p5 note on v%d c%d n%d\r\n", v->idx, v->channel, v->note);
 	struct v_state *vs = (struct v_state *)v->state;
-	adsr_attack(&vs->adsr);
+	adsr_attack(&vs->aeg);
 }
 
 // note off
 static void note_off(struct voice *v, uint8_t vel) {
-	DBG("p0 note off (%d %d %d)\r\n", v->idx, v->channel, v->note);
+	DBG("p5 note off v%d c%d n%d\r\n", v->idx, v->channel, v->note);
 	struct v_state *vs = (struct v_state *)v->state;
-	adsr_release(&vs->adsr);
+	adsr_release(&vs->aeg);
 }
 
 // return !=0 if the patch is active
 static int active(struct voice *v) {
 	struct v_state *vs = (struct v_state *)v->state;
-	return adsr_is_active(&vs->adsr);
+	return adsr_is_active(&vs->aeg);
 }
 
 // generate samples
 static void generate(struct voice *v, float *out_l, float *out_r, size_t n) {
-	float *am = out_r;
 	struct v_state *vs = (struct v_state *)v->state;
-	adsr_gen(&vs->adsr, am, n);
-	sin_gen(&vs->sin, out_l, NULL, n);
-	block_mul_k(am, 0.3f, n);
+	struct p_state *ps = (struct p_state *)v->patch->state;
+
+	float am[n];
+	float fm[n];
+
+	// generate the modulator
+	sin_gen(&vs->modulator, fm, NULL, n);
+	block_mul_k(fm, ps->modulator_level, n);
+
+	// generate the carrier
+	sin_gen(&vs->carrier, out_l, fm, n);
+
+	// generate the output envelope
+	adsr_gen(&vs->aeg, am, n);
+	block_mul_k(am, 0.5f, n);
+
+	// apply the envelope
 	block_mul(out_l, am, n);
+
+	// copy to the right channel
 	block_copy(out_r, out_l, n);
+
 }
 
 //-----------------------------------------------------------------------------
@@ -94,15 +113,42 @@ static void generate(struct voice *v, float *out_l, float *out_r, size_t n) {
 static void init(struct patch *p) {
 	struct p_state *ps = (struct p_state *)p->state;
 	memset(ps, 0, sizeof(struct p_state));
+	ps->modulator_level = 1.0;
+	ps->modulator_factor = 1.0;
 }
 
 static void control_change(struct patch *p, uint8_t ctrl, uint8_t val) {
-	DBG("p0 ctrl %d val %d\r\n", ctrl, val);
+	struct p_state *ps = (struct p_state *)p->state;
+	int update = 0;
+
+	DBG("p5 ctrl %d val %d\r\n", ctrl, val);
+
+	switch (ctrl) {
+	case 1:
+		ps->modulator_level = midi_map(val, 0.f, 400.f);
+		break;
+	case 2:
+		ps->modulator_factor = midi_map(val, 1.0f, 32.f);
+		update = 1;
+		break;
+	default:
+		break;
+	}
+
+	if (update) {
+		// update each voice using this patch
+		for (int i = 0; i < NUM_VOICES; i++) {
+			struct voice *v = &p->ggm->voices[i];
+			if (v->patch == p) {
+				ctrl_frequency(v);
+			}
+		}
+	}
 }
 
 static void pitch_wheel(struct patch *p, uint16_t val) {
 	struct p_state *ps = (struct p_state *)p->state;
-	DBG("p0 pitch %d\r\n", val);
+	DBG("p5 pitch %d\r\n", val);
 	ps->bend = midi_pitch_bend(val);
 	// update each voice using this patch
 	for (int i = 0; i < NUM_VOICES; i++) {
@@ -115,7 +161,7 @@ static void pitch_wheel(struct patch *p, uint16_t val) {
 
 //-----------------------------------------------------------------------------
 
-const struct patch_ops patch0 = {
+const struct patch_ops patch5 = {
 	.start = start,
 	.stop = stop,
 	.note_on = note_on,

@@ -60,7 +60,7 @@ struct sin {
 float sin_eval(float x);
 float cos_eval(float x);
 
-void sin_init(struct sin *osc, float freq);
+void sin_init(struct sin *osc);
 void sin_ctrl_frequency(struct sin *osc, float freq);
 void sin_gen(struct sin *osc, float *out, float *fm, size_t n);
 
@@ -234,6 +234,7 @@ extern const struct patch_ops patch1;
 extern const struct patch_ops patch2;
 extern const struct patch_ops patch3;
 extern const struct patch_ops patch4;
+extern const struct patch_ops patch5;
 
 //-----------------------------------------------------------------------------
 

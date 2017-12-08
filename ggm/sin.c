@@ -105,8 +105,8 @@ void sin_ctrl_frequency(struct sin *osc, float freq) {
 	osc->xstep = (uint32_t) (osc->freq * FREQ_SCALE);
 }
 
-void sin_init(struct sin *osc, float freq) {
-	sin_ctrl_frequency(osc, freq);
+void sin_init(struct sin *osc) {
+	// do nothing
 }
 
 //-----------------------------------------------------------------------------
