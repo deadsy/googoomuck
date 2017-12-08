@@ -24,6 +24,7 @@ struct v_state {
 };
 
 struct p_state {
+	float bend;		// pitch bend
 	float duty;		// duty cycle for gwave (0..1)
 	float slope;		// slope for gwave (0..1)
 };
@@ -36,12 +37,12 @@ _Static_assert(sizeof(struct p_state) <= PATCH_STATE_SIZE, "sizeof(struct p_stat
 
 // start the patch
 static void start(struct voice *v) {
-	DBG("patch1 start (%d %d %d)\r\n", v->idx, v->channel, v->note);
+	DBG("p1 start (%d %d %d)\r\n", v->idx, v->channel, v->note);
 	struct v_state *vs = (struct v_state *)v->state;
 	struct p_state *ps = (struct p_state *)v->patch->state;
 	memset(vs, 0, sizeof(struct v_state));
 	// setup the gwave
-	gwave_init(&vs->gwave, midi_to_frequency(v->note));
+	gwave_init(&vs->gwave, midi_to_frequency((float)v->note + ps->bend));
 	gwave_ctrl_shape(&vs->gwave, ps->duty, ps->slope);
 	// setup the adsr
 	adsr_init(&vs->adsr, 0.05f, 0.2f, 0.5f, 0.5f);
@@ -49,19 +50,19 @@ static void start(struct voice *v) {
 
 // stop the patch
 static void stop(struct voice *v) {
-	DBG("patch1 stop (%d %d %d)\r\n", v->idx, v->channel, v->note);
+	DBG("p1 stop (%d %d %d)\r\n", v->idx, v->channel, v->note);
 }
 
 // note on
 static void note_on(struct voice *v, uint8_t vel) {
-	DBG("patch1 note on (%d %d %d)\r\n", v->idx, v->channel, v->note);
+	DBG("p1 note on (%d %d %d)\r\n", v->idx, v->channel, v->note);
 	struct v_state *vs = (struct v_state *)v->state;
 	adsr_attack(&vs->adsr);
 }
 
 // note off
 static void note_off(struct voice *v, uint8_t vel) {
-	DBG("patch1 note off (%d %d %d)\r\n", v->idx, v->channel, v->note);
+	DBG("p1 note off (%d %d %d)\r\n", v->idx, v->channel, v->note);
 	struct v_state *vs = (struct v_state *)v->state;
 	adsr_release(&vs->adsr);
 }
@@ -96,7 +97,7 @@ static void control_change(struct patch *p, uint8_t ctrl, uint8_t val) {
 	struct p_state *ps = (struct p_state *)p->state;
 	int update = 0;
 
-	DBG("patch1 ctrl %d val %d\r\n", ctrl, val);
+	DBG("p1 ctrl %d val %d\r\n", ctrl, val);
 
 	switch (ctrl) {
 	case 1:
@@ -123,7 +124,17 @@ static void control_change(struct patch *p, uint8_t ctrl, uint8_t val) {
 }
 
 static void pitch_wheel(struct patch *p, uint16_t val) {
-	DBG("patch1 pitch %d\r\n", val);
+	struct p_state *ps = (struct p_state *)p->state;
+	DBG("p1 pitch %d\r\n", val);
+	ps->bend = midi_pitch_bend(val);
+	// update each voice using this patch
+	for (int i = 0; i < NUM_VOICES; i++) {
+		struct voice *v = &p->ggm->voices[i];
+		if (v->patch == p) {
+			struct v_state *vs = (struct v_state *)v->state;
+			gwave_ctrl_frequency(&vs->gwave, midi_to_frequency((float)v->note + ps->bend));
+		}
+	}
 }
 
 //-----------------------------------------------------------------------------

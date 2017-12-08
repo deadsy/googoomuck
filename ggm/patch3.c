@@ -42,6 +42,7 @@ enum {
 };
 
 struct p_state {
+	float bend;		// pitch bend
 	// oscillator 0
 	float o0_duty, o0_slope;	// oscillator 0 duty cycle and slope
 	// oscillator 1
@@ -250,7 +251,17 @@ static void control_change(struct patch *p, uint8_t ctrl, uint8_t val) {
 }
 
 static void pitch_wheel(struct patch *p, uint16_t val) {
-	DBG("pX pitch %d\r\n", val);
+	struct p_state *ps = (struct p_state *)p->state;
+	DBG("p3 pitch %d\r\n", val);
+	ps->bend = midi_pitch_bend(val);
+	// update each voice using this patch
+	for (int i = 0; i < NUM_VOICES; i++) {
+		struct voice *v = &p->ggm->voices[i];
+		if (v->patch == p) {
+			//struct v_state *vs = (struct v_state *)v->state;
+			// ....
+		}
+	}
 }
 
 //-----------------------------------------------------------------------------

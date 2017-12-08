@@ -166,9 +166,9 @@ int ggm_init(struct ggm *s, struct audio_drv *audio, struct usart_drv *serial) {
 		goto exit;
 	}
 	// setup the patch operations
-	s->patches[0].ops = &patch0;
-	s->patches[1].ops = &patch1;
-	s->patches[2].ops = &patch2;
+	s->patches[0].ops = &patch2;
+	s->patches[1].ops = &patch0;
+	s->patches[2].ops = &patch1;
 	s->patches[3].ops = &patch3;
 	s->patches[4].ops = &patch4;
 

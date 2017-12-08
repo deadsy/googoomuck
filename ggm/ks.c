@@ -72,14 +72,18 @@ void ks_pluck(struct ks *osc) {
 
 //-----------------------------------------------------------------------------
 
-void ks_attenuate(struct ks *osc, float attenuate) {
+void ks_ctrl_attenuate(struct ks *osc, float attenuate) {
 	osc->k = 0.5f * attenuate;
 }
 
-void ks_init(struct ks *osc, float freq, float attenuate) {
+void ks_ctrl_frequency(struct ks *osc, float freq) {
 	osc->freq = freq;
 	osc->xstep = (uint32_t) (osc->freq * KS_FSCALE);
-	ks_attenuate(osc, attenuate);
+}
+
+void ks_init(struct ks *osc, float freq, float attenuate) {
+	ks_ctrl_frequency(osc, freq);
+	ks_ctrl_attenuate(osc, attenuate);
 }
 
 //-----------------------------------------------------------------------------

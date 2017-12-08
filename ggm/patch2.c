@@ -23,6 +23,7 @@ struct v_state {
 };
 
 struct p_state {
+	float bend;		// pitch bend
 	float attenuate;
 };
 
@@ -34,22 +35,22 @@ _Static_assert(sizeof(struct p_state) <= PATCH_STATE_SIZE, "sizeof(struct p_stat
 
 // start the patch
 static void start(struct voice *v) {
-	DBG("patch2 start v%d c%d n%d\r\n", v->idx, v->channel, v->note);
+	DBG("p2 start v%d c%d n%d\r\n", v->idx, v->channel, v->note);
 	struct v_state *vs = (struct v_state *)v->state;
 	struct p_state *ps = (struct p_state *)v->patch->state;
 	memset(vs, 0, sizeof(struct v_state));
 	// setup the ks
-	ks_init(&vs->ks, midi_to_frequency(v->note), ps->attenuate);
+	ks_init(&vs->ks, midi_to_frequency((float)v->note + ps->bend), ps->attenuate);
 }
 
 // stop the patch
 static void stop(struct voice *v) {
-	DBG("patch2 stop v%d c%d n%d\r\n", v->idx, v->channel, v->note);
+	DBG("p2 stop v%d c%d n%d\r\n", v->idx, v->channel, v->note);
 }
 
 // note on
 static void note_on(struct voice *v, uint8_t vel) {
-	DBG("patch2 note on v%d c%d n%d\r\n", v->idx, v->channel, v->note);
+	DBG("p2 note on v%d c%d n%d\r\n", v->idx, v->channel, v->note);
 	struct v_state *vs = (struct v_state *)v->state;
 	ks_pluck(&vs->ks);
 }
@@ -83,7 +84,7 @@ static void control_change(struct patch *p, uint8_t ctrl, uint8_t val) {
 	struct p_state *ps = (struct p_state *)p->state;
 	int update = 0;
 
-	DBG("patch2 ctrl %d val %d\r\n", ctrl, val);
+	DBG("p2 ctrl %d val %d\r\n", ctrl, val);
 
 	switch (ctrl) {
 	case 1:
@@ -99,13 +100,24 @@ static void control_change(struct patch *p, uint8_t ctrl, uint8_t val) {
 			struct voice *v = &p->ggm->voices[i];
 			if (v->patch == p) {
 				struct v_state *vs = (struct v_state *)v->state;
-				ks_attenuate(&vs->ks, ps->attenuate);
+				ks_ctrl_attenuate(&vs->ks, ps->attenuate);
 			}
 		}
 	}
 }
 
 static void pitch_wheel(struct patch *p, uint16_t val) {
+	struct p_state *ps = (struct p_state *)p->state;
+	DBG("p2 pitch %d\r\n", val);
+	ps->bend = midi_pitch_bend(val);
+	// update each voice using this patch
+	for (int i = 0; i < NUM_VOICES; i++) {
+		struct voice *v = &p->ggm->voices[i];
+		if (v->patch == p) {
+			struct v_state *vs = (struct v_state *)v->state;
+			ks_ctrl_frequency(&vs->ks, midi_to_frequency((float)v->note + ps->bend));
+		}
+	}
 }
 
 //-----------------------------------------------------------------------------

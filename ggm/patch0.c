@@ -24,6 +24,7 @@ struct v_state {
 };
 
 struct p_state {
+	float bend;		// pitch bend
 };
 
 _Static_assert(sizeof(struct v_state) <= VOICE_STATE_SIZE, "sizeof(struct v_state) > VOICE_STATE_SIZE");
@@ -34,28 +35,29 @@ _Static_assert(sizeof(struct p_state) <= PATCH_STATE_SIZE, "sizeof(struct p_stat
 
 // start the patch
 static void start(struct voice *v) {
-	DBG("patch0 start (%d %d %d)\r\n", v->idx, v->channel, v->note);
 	struct v_state *vs = (struct v_state *)v->state;
+	struct p_state *ps = (struct p_state *)v->patch->state;
+	DBG("p0 start (%d %d %d)\r\n", v->idx, v->channel, v->note);
 	memset(vs, 0, sizeof(struct v_state));
-	sin_init(&vs->sin, midi_to_frequency(v->note));
+	sin_init(&vs->sin, midi_to_frequency((float)v->note + ps->bend));
 	adsr_init(&vs->adsr, 0.05f, 0.2f, 0.5f, 0.5f);
 }
 
 // stop the patch
 static void stop(struct voice *v) {
-	DBG("patch0 stop (%d %d %d)\r\n", v->idx, v->channel, v->note);
+	DBG("p0 stop (%d %d %d)\r\n", v->idx, v->channel, v->note);
 }
 
 // note on
 static void note_on(struct voice *v, uint8_t vel) {
-	DBG("patch0 note on (%d %d %d)\r\n", v->idx, v->channel, v->note);
+	DBG("p0 note on (%d %d %d)\r\n", v->idx, v->channel, v->note);
 	struct v_state *vs = (struct v_state *)v->state;
 	adsr_attack(&vs->adsr);
 }
 
 // note off
 static void note_off(struct voice *v, uint8_t vel) {
-	DBG("patch0 note off (%d %d %d)\r\n", v->idx, v->channel, v->note);
+	DBG("p0 note off (%d %d %d)\r\n", v->idx, v->channel, v->note);
 	struct v_state *vs = (struct v_state *)v->state;
 	adsr_release(&vs->adsr);
 }
@@ -86,11 +88,21 @@ static void init(struct patch *p) {
 }
 
 static void control_change(struct patch *p, uint8_t ctrl, uint8_t val) {
-	DBG("patch0 ctrl %d val %d\r\n", ctrl, val);
+	DBG("p0 ctrl %d val %d\r\n", ctrl, val);
 }
 
 static void pitch_wheel(struct patch *p, uint16_t val) {
-	DBG("patch0 pitch %d\r\n", val);
+	struct p_state *ps = (struct p_state *)p->state;
+	DBG("p0 pitch %d\r\n", val);
+	ps->bend = midi_pitch_bend(val);
+	// update each voice using this patch
+	for (int i = 0; i < NUM_VOICES; i++) {
+		struct voice *v = &p->ggm->voices[i];
+		if (v->patch == p) {
+			struct v_state *vs = (struct v_state *)v->state;
+			sin_ctrl_frequency(&vs->sin, midi_to_frequency((float)v->note + ps->bend));
+		}
+	}
 }
 
 //-----------------------------------------------------------------------------
