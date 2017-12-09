@@ -37,7 +37,8 @@ void block_mul(float *out, float *buf, size_t n);
 void block_mul_k(float *out, float k, size_t n);
 void block_add(float *out, float *buf, size_t n);
 void block_add_k(float *out, float k, size_t n);
-void block_copy(float *dst, float *src, size_t n);
+void block_copy(float *dst, const float *src, size_t n);
+void block_copy_mul_k(float *dst, const float *src, float k, size_t n);
 
 //-----------------------------------------------------------------------------
 // power functions
@@ -46,6 +47,17 @@ float pow2_int(int x);
 float pow2_frac(float x);
 float pow2(float x);
 float powe(float x);
+
+//-----------------------------------------------------------------------------
+// Panning
+
+struct pan {
+	float vol_l;		// stereo left volume
+	float vol_r;		// stereo right volume
+};
+
+void pan_init(struct pan *pan);
+void pan_gen(struct pan *pan, float *out_l, float *out_r, const float *in, size_t n);
 
 //-----------------------------------------------------------------------------
 // sine wave oscillators
@@ -201,6 +213,7 @@ struct voice {
 
 struct voice *voice_lookup(struct ggm *s, uint8_t channel, uint8_t note);
 struct voice *voice_alloc(struct ggm *s, uint8_t channel, uint8_t note);
+void update_voices(struct patch *p, void (*func) (struct voice *));
 
 //-----------------------------------------------------------------------------
 // patches

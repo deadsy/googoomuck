@@ -51,8 +51,17 @@ struct voice *voice_alloc(struct ggm *s, uint8_t channel, uint8_t note) {
 	v->channel = channel;
 	v->patch = &s->patches[channel];
 	v->patch->ops->start(v);
-
 	return v;
+}
+
+// run an update function for each voice using the patch
+void update_voices(struct patch *p, void (*func) (struct voice *)) {
+	for (int i = 0; i < NUM_VOICES; i++) {
+		struct voice *v = &p->ggm->voices[i];
+		if (v->patch == p) {
+			func(v);
+		}
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -166,7 +175,7 @@ int ggm_init(struct ggm *s, struct audio_drv *audio, struct usart_drv *serial) {
 		goto exit;
 	}
 	// setup the patch operations
-	s->patches[0].ops = &patch5;
+	s->patches[0].ops = &patch0;
 	s->patches[1].ops = &patch0;
 	s->patches[2].ops = &patch1;
 	s->patches[3].ops = &patch3;

@@ -47,6 +47,7 @@ SRC += $(GGM_DIR)/sin.c \
 	$(GGM_DIR)/ggm.c \
 	$(GGM_DIR)/event.c \
 	$(GGM_DIR)/adsr.c \
+	$(GGM_DIR)/pan.c \
 	$(GGM_DIR)/ks.c \
 	$(GGM_DIR)/lpf.c \
 	$(GGM_DIR)/block.c \

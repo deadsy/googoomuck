@@ -94,13 +94,27 @@ void block_copy(float *dst, float *src, size_t n) {
 #endif
 
 // copy a block (0.6uS for n=128)
-void block_copy(float *dst, float *src, size_t n) {
+void block_copy(float *dst, const float *src, size_t n) {
 	// unroll x4
 	while (n > 0) {
 		dst[0] = src[0];
 		dst[1] = src[1];
 		dst[2] = src[2];
 		dst[3] = src[3];
+		src += 4;
+		dst += 4;
+		n -= 4;
+	}
+}
+
+// copy a block and multiply by k
+void block_copy_mul_k(float *dst, const float *src, float k, size_t n) {
+	// unroll x4
+	while (n > 0) {
+		dst[0] = src[0] * k;
+		dst[1] = src[1] * k;
+		dst[2] = src[2] * k;
+		dst[3] = src[3] * k;
 		src += 4;
 		dst += 4;
 		n -= 4;
