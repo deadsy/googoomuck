@@ -136,7 +136,7 @@ struct ks {
 	uint32_t xstep;		// phase step per sample
 };
 
-void ks_init(struct ks *osc, float freq, float attenuate);
+void ks_init(struct ks *osc);
 void ks_ctrl_frequency(struct ks *osc, float freq);
 void ks_ctrl_attenuate(struct ks *osc, float attenuate);
 void ks_pluck(struct ks *osc);

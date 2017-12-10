@@ -81,9 +81,8 @@ void ks_ctrl_frequency(struct ks *osc, float freq) {
 	osc->xstep = (uint32_t) (osc->freq * KS_FSCALE);
 }
 
-void ks_init(struct ks *osc, float freq, float attenuate) {
-	ks_ctrl_frequency(osc, freq);
-	ks_ctrl_attenuate(osc, attenuate);
+void ks_init(struct ks *osc) {
+	// do nothing
 }
 
 //-----------------------------------------------------------------------------

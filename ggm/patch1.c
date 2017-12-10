@@ -36,6 +36,7 @@ _Static_assert(sizeof(struct v_state) <= VOICE_STATE_SIZE, "sizeof(struct v_stat
 _Static_assert(sizeof(struct p_state) <= PATCH_STATE_SIZE, "sizeof(struct p_state) > PATCH_STATE_SIZE");
 
 //-----------------------------------------------------------------------------
+// control functions
 
 static void ctrl_frequency(struct voice *v) {
 	struct v_state *vs = (struct v_state *)v->state;
