@@ -152,8 +152,10 @@ struct svf {
 	float lp;		// low pass state variable
 };
 
-void svf_init(struct svf *f, float cutoff, float resonance);
-void svf_gen(struct svf *f, float *out, float *in, float *x, size_t n);
+void svf_ctrl_cutoff(struct svf *f, float cutoff);
+void svf_ctrl_resonance(struct svf *f, float resonance);
+void svf_init(struct svf *f);
+void svf_gen(struct svf *f, float *out, const float *in, size_t n);
 
 //-----------------------------------------------------------------------------
 // midi

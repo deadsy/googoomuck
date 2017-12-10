@@ -94,6 +94,13 @@ static void ctrl_shape_o1(struct voice *v) {
 	gwave_ctrl_shape(&vs->o1, ps->o1_duty, ps->o1_slope);
 }
 
+static void ctrl_lpf(struct voice *v) {
+	struct v_state *vs = (struct v_state *)v->state;
+	struct p_state *ps = (struct p_state *)v->patch->state;
+	svf_ctrl_cutoff(&vs->lpf, ps->cutoff);
+	svf_ctrl_resonance(&vs->lpf, ps->resonance);
+}
+
 static void ctrl_pan(struct voice *v) {
 	struct v_state *vs = (struct v_state *)v->state;
 	struct p_state *ps = (struct p_state *)v->patch->state;
@@ -106,7 +113,6 @@ static void ctrl_pan(struct voice *v) {
 // start the patch
 static void start(struct voice *v) {
 	struct v_state *vs = (struct v_state *)v->state;
-	struct p_state *ps = (struct p_state *)v->patch->state;
 	DBG("p3 start v%d c%d n%d\r\n", v->idx, v->channel, v->note);
 	memset(vs, 0, sizeof(struct v_state));
 
@@ -121,7 +127,8 @@ static void start(struct voice *v) {
 	ctrl_shape_o1(v);
 
 	// setup the filter
-	svf_init(&vs->lpf, ps->cutoff, ps->resonance);
+	svf_init(&vs->lpf);
+	ctrl_lpf(v);
 }
 
 // stop the patch
@@ -200,7 +207,8 @@ static void generate(struct voice *v, float *out_l, float *out_r, size_t n) {
 	adsr_gen(&vs->feg, buf1, n);
 	block_mul_k(buf1, vs->velocity * ps->sensitivity, n);
 	block_add_k(buf1, ps->cutoff, n);
-	svf_gen(&vs->lpf, out, buf0, buf1, n);
+	// TODO use buf1 for the RT cutoff
+	svf_gen(&vs->lpf, out, buf0, n);
 	// out has the filter output
 
 	// generate the envelope
