@@ -56,8 +56,9 @@ struct pan {
 	float vol_r;		// stereo right volume
 };
 
-void pan_init(struct pan *pan);
-void pan_gen(struct pan *pan, float *out_l, float *out_r, const float *in, size_t n);
+void pan_init(struct pan *p);
+void pan_ctrl(struct pan *p, float vol, float pan);
+void pan_gen(struct pan *p, float *out_l, float *out_r, const float *in, size_t n);
 
 //-----------------------------------------------------------------------------
 // sine wave oscillators
@@ -86,7 +87,7 @@ struct gwave {
 	uint32_t xstep;		// phase step per sample
 };
 
-void gwave_init(struct gwave *osc, float freq);
+void gwave_init(struct gwave *osc);
 void gwave_ctrl_frequency(struct gwave *osc, float freq);
 void gwave_ctrl_shape(struct gwave *osc, float duty, float slope);
 void gwave_gen(struct gwave *osc, float *out, float *fm, size_t n);

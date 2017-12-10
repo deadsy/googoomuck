@@ -44,8 +44,9 @@ static void ctrl_frequency(struct voice *v) {
 }
 
 static void ctrl_pan(struct voice *v) {
-	//struct v_state *vs = (struct v_state *)v->state;
-	//struct p_state *ps = (struct p_state *)v->patch->state;
+	struct v_state *vs = (struct v_state *)v->state;
+	struct p_state *ps = (struct p_state *)v->patch->state;
+	pan_ctrl(&vs->pan, ps->vol, ps->pan);
 }
 
 //-----------------------------------------------------------------------------
@@ -56,9 +57,11 @@ static void start(struct voice *v) {
 	struct v_state *vs = (struct v_state *)v->state;
 	DBG("p0 start (%d %d %d)\r\n", v->idx, v->channel, v->note);
 	memset(vs, 0, sizeof(struct v_state));
+
 	adsr_init(&vs->adsr, 0.05f, 0.2f, 0.5f, 0.5f);
 	sin_init(&vs->sin);
 	pan_init(&vs->pan);
+
 	ctrl_frequency(v);
 	ctrl_pan(v);
 }
@@ -109,6 +112,8 @@ static void generate(struct voice *v, float *out_l, float *out_r, size_t n) {
 static void init(struct patch *p) {
 	struct p_state *ps = (struct p_state *)p->state;
 	memset(ps, 0, sizeof(struct p_state));
+	ps->vol = 1.f;
+	ps->pan = 0.5f;
 }
 
 static void control_change(struct patch *p, uint8_t ctrl, uint8_t val) {
@@ -119,7 +124,7 @@ static void control_change(struct patch *p, uint8_t ctrl, uint8_t val) {
 
 	switch (ctrl) {
 	case 1:		// volume
-		ps->vol = midi_map(val, 0.f, 1.f);
+		ps->vol = midi_map(val, 0.f, 1.5f);
 		update = 1;
 		break;
 	case 2:		// left/right pan
@@ -129,11 +134,9 @@ static void control_change(struct patch *p, uint8_t ctrl, uint8_t val) {
 	default:
 		break;
 	}
-
 	if (update) {
 		update_voices(p, ctrl_pan);
 	}
-
 }
 
 static void pitch_wheel(struct patch *p, uint16_t val) {

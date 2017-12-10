@@ -32,6 +32,7 @@ struct v_state {
 	struct adsr feg;	// filter envelope generator
 	struct adsr aeg;	// amplitude envelope generator
 	struct svf lpf;		// output low pass filter
+	struct pan pan;		// output volume and panning
 	float velocity;		// note velocity 0..1
 };
 
@@ -42,6 +43,8 @@ enum {
 };
 
 struct p_state {
+	float vol;		// volume
+	float pan;		// left/right pan
 	float bend;		// pitch bend
 	// oscillator 0
 	float o0_duty, o0_slope;	// oscillator 0 duty cycle and slope
@@ -57,11 +60,45 @@ struct p_state {
 	float sensitivity, cutoff, resonance;	// filter controls
 	// output
 	float aeg_a, aeg_d, aeg_s, aeg_r;	// amplitude envelope generator adsr parameters
-	float volume, pan;
 };
 
 _Static_assert(sizeof(struct v_state) <= VOICE_STATE_SIZE, "sizeof(struct v_state) > VOICE_STATE_SIZE");
 _Static_assert(sizeof(struct p_state) <= PATCH_STATE_SIZE, "sizeof(struct p_state) > PATCH_STATE_SIZE");
+
+//-----------------------------------------------------------------------------
+// control functions
+
+static void ctrl_frequency_o0(struct voice *v) {
+	struct v_state *vs = (struct v_state *)v->state;
+	struct p_state *ps = (struct p_state *)v->patch->state;
+	gwave_ctrl_frequency(&vs->o0, midi_to_frequency((float)v->note + ps->bend));
+}
+
+static void ctrl_shape_o0(struct voice *v) {
+	struct v_state *vs = (struct v_state *)v->state;
+	struct p_state *ps = (struct p_state *)v->patch->state;
+	gwave_ctrl_shape(&vs->o0, ps->o0_duty, ps->o0_slope);
+}
+
+static void ctrl_frequency_o1(struct voice *v) {
+	struct v_state *vs = (struct v_state *)v->state;
+	struct p_state *ps = (struct p_state *)v->patch->state;
+	float note = (ps->f_mode) ? ps->f_mode : v->note;
+	// TODO tuning
+	gwave_ctrl_frequency(&vs->o1, midi_to_frequency((float)note + ps->bend));
+}
+
+static void ctrl_shape_o1(struct voice *v) {
+	struct v_state *vs = (struct v_state *)v->state;
+	struct p_state *ps = (struct p_state *)v->patch->state;
+	gwave_ctrl_shape(&vs->o1, ps->o1_duty, ps->o1_slope);
+}
+
+static void ctrl_pan(struct voice *v) {
+	struct v_state *vs = (struct v_state *)v->state;
+	struct p_state *ps = (struct p_state *)v->patch->state;
+	pan_ctrl(&vs->pan, ps->vol, ps->pan);
+}
 
 //-----------------------------------------------------------------------------
 // voice operations
@@ -70,19 +107,18 @@ _Static_assert(sizeof(struct p_state) <= PATCH_STATE_SIZE, "sizeof(struct p_stat
 static void start(struct voice *v) {
 	struct v_state *vs = (struct v_state *)v->state;
 	struct p_state *ps = (struct p_state *)v->patch->state;
-
 	DBG("p3 start v%d c%d n%d\r\n", v->idx, v->channel, v->note);
 	memset(vs, 0, sizeof(struct v_state));
 
 	// setup oscillator 0
-	gwave_init(&vs->o0, midi_to_frequency(v->note));
-	gwave_ctrl_shape(&vs->o0, ps->o0_duty, ps->o0_slope);
+	gwave_init(&vs->o0);
+	ctrl_frequency_o0(v);
+	ctrl_shape_o0(v);
 
 	// setup oscillator 1
-	uint8_t n = (ps->f_mode) ? ps->f_mode : v->note;
-	// TODO tuning
-	gwave_init(&vs->o1, midi_to_frequency(n));
-	gwave_ctrl_shape(&vs->o1, ps->o0_duty, ps->o0_slope);
+	gwave_init(&vs->o1);
+	ctrl_frequency_o1(v);
+	ctrl_shape_o1(v);
 
 	// setup the filter
 	svf_init(&vs->lpf, ps->cutoff, ps->resonance);
@@ -134,6 +170,7 @@ static void generate(struct voice *v, float *out_l, float *out_r, size_t n) {
 
 	float buf0[n];
 	float buf1[n];
+	float out[n];
 
 	// oscillator 1
 	if (ps->o_mode == OMODE_FM_FB) {
@@ -163,17 +200,18 @@ static void generate(struct voice *v, float *out_l, float *out_r, size_t n) {
 	adsr_gen(&vs->feg, buf1, n);
 	block_mul_k(buf1, vs->velocity * ps->sensitivity, n);
 	block_add_k(buf1, ps->cutoff, n);
-	svf_gen(&vs->lpf, out_l, buf0, buf1, n);
+	svf_gen(&vs->lpf, out, buf0, buf1, n);
 	// out has the filter output
 
-	// output
+	// generate the envelope
 	adsr_gen(&vs->aeg, buf0, n);
 	block_mul_k(buf0, vs->velocity, n);
-	block_mul(out_l, buf0, n);
 
-	block_mul_k(out_l, ps->volume, n);
-	// TODO pan
-	block_copy(out_r, out_l, n);
+	// apply the envelope
+	block_mul(out, buf0, n);
+
+	// pan to left/right channels
+	pan_gen(&vs->pan, out_l, out_r, out, n);
 }
 
 //-----------------------------------------------------------------------------
@@ -182,6 +220,10 @@ static void generate(struct voice *v, float *out_l, float *out_r, size_t n) {
 static void init(struct patch *p) {
 	struct p_state *ps = (struct p_state *)p->state;
 	memset(ps, 0, sizeof(struct p_state));
+
+	ps->bend = 0.f;
+	ps->vol = 0.3f;
+	ps->pan = 0.5f;
 
 	// oscillator 0
 	ps->o0_duty = 0.3f;
@@ -212,42 +254,40 @@ static void init(struct patch *p) {
 	ps->aeg_d = 0.2f;
 	ps->aeg_s = 0.5f;
 	ps->aeg_r = 0.5f;
-	ps->volume = 0.3f;
-	ps->pan = 0.f;
+
 }
 
 static void control_change(struct patch *p, uint8_t ctrl, uint8_t val) {
 	struct p_state *ps = (struct p_state *)p->state;
-	//int update = 0;
+	int update = 0;
 
 	DBG("p3 ctrl %d val %d\r\n", ctrl, val);
 
 	switch (ctrl) {
-	case 1:
+	case 1:		// volume
+		ps->vol = midi_map(val, 0.f, 1.5f);
+		update = 1;
+		break;
+	case 2:		// left/right pan
+		ps->pan = midi_map(val, 0.f, 1.f);
+		update = 1;
+		break;
+	case 5:
 		ps->o1_level = midi_map(val, 5.f, 40.f);
 		break;
-	case 2:
+	case 6:
 		ps->eg_a = midi_map(val, 0.01f, 1.f);
 		break;
-	case 3:
+	case 7:
 		ps->eg_d = midi_map(val, 0.05f, 5.f);
 		break;
 	default:
 		break;
 	}
 
-#if 0
-	if (update) {
-		// update each voice using this patch
-		for (int i = 0; i < NUM_VOICES; i++) {
-			struct voice *v = &p->ggm->voices[i];
-			if (v->patch == p) {
-				// ....
-			}
-		}
+	if (update == 1) {
+		update_voices(p, ctrl_pan);
 	}
-#endif
-
 }
 
 static void pitch_wheel(struct patch *p, uint16_t val) {
@@ -255,13 +295,7 @@ static void pitch_wheel(struct patch *p, uint16_t val) {
 	DBG("p3 pitch %d\r\n", val);
 	ps->bend = midi_pitch_bend(val);
 	// update each voice using this patch
-	for (int i = 0; i < NUM_VOICES; i++) {
-		struct voice *v = &p->ggm->voices[i];
-		if (v->patch == p) {
-			//struct v_state *vs = (struct v_state *)v->state;
-			// ....
-		}
-	}
+	//,,,
 }
 
 //-----------------------------------------------------------------------------

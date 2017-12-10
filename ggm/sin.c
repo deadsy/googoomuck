@@ -187,8 +187,8 @@ void gwave_ctrl_frequency(struct gwave *osc, float freq) {
 	osc->xstep = (uint32_t) (osc->freq * FREQ_SCALE);
 }
 
-void gwave_init(struct gwave *osc, float freq) {
-	gwave_ctrl_frequency(osc, freq);
+void gwave_init(struct gwave *osc) {
+	// do nothing
 }
 
 //-----------------------------------------------------------------------------
