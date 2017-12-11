@@ -86,6 +86,10 @@ float sin_eval(float x) {
 	return cos_lookup(xi);
 }
 
+float tan_eval(float x) {
+	return sin_eval(x) / cos_eval(x);
+}
+
 //-----------------------------------------------------------------------------
 
 void sin_gen(struct sin *osc, float *out, float *fm, size_t n) {

@@ -72,6 +72,7 @@ struct sin {
 
 float sin_eval(float x);
 float cos_eval(float x);
+float tan_eval(float x);
 
 void sin_init(struct sin *osc);
 void sin_ctrl_frequency(struct sin *osc, float freq);
@@ -156,6 +157,18 @@ void svf_ctrl_cutoff(struct svf *f, float cutoff);
 void svf_ctrl_resonance(struct svf *f, float resonance);
 void svf_init(struct svf *f);
 void svf_gen(struct svf *f, float *out, const float *in, size_t n);
+
+struct svf2 {
+	float ic1eq, ic2eq;	// state variables
+	float g;		// cutoff
+	float k;		// resonance
+	float a1, a2, a3;	// derived from g,k
+};
+
+void svf2_ctrl_cutoff(struct svf2 *f, float cutoff);
+void svf2_ctrl_resonance(struct svf2 *f, float resonance);
+void svf2_init(struct svf2 *f);
+void svf2_gen(struct svf2 *f, float *out, const float *in, size_t n);
 
 //-----------------------------------------------------------------------------
 // midi
