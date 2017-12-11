@@ -147,7 +147,7 @@ static void init(struct patch *p) {
 	ps->bend = 0.f;
 
 	ps->cutoff = 5.f;
-	ps->resonance = 1.0;
+	ps->resonance = 0.5f;
 
 	ps->modulator_level = 1.f;
 	ps->modulator_factor = 1.f;
@@ -184,7 +184,7 @@ static void control_change(struct patch *p, uint8_t ctrl, uint8_t val) {
 		update = 3;
 		break;
 	case 8:
-		ps->resonance = midi_map(val, 0.5f, 20.f);
+		ps->resonance = midi_map(val, 0.f, 1.f);
 		update = 3;
 		break;
 	default:
