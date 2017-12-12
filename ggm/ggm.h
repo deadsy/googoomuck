@@ -160,9 +160,8 @@ void svf_gen(struct svf *f, float *out, const float *in, size_t n);
 
 struct svf2 {
 	float ic1eq, ic2eq;	// state variables
-	float g;		// cutoff
-	float k;		// resonance
-	float a1, a2, a3;	// derived from g,k
+	float g;		// constant for cutoff frequency
+	float k;		// constant for filter resonance
 };
 
 void svf2_ctrl_cutoff(struct svf2 *f, float cutoff);

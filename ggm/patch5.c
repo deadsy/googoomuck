@@ -19,7 +19,7 @@ Patch 5 - FM Synthesis
 struct v_state {
 	struct sin modulator;
 	struct sin carrier;
-	struct svf lpf;
+	struct svf2 lpf;
 	struct adsr aeg;
 	struct pan pan;
 };
@@ -52,8 +52,8 @@ static void ctrl_lpf(struct voice *v) {
 	struct v_state *vs = (struct v_state *)v->state;
 	struct p_state *ps = (struct p_state *)v->patch->state;
 	float freq = midi_to_frequency((float)v->note + ps->bend);
-	svf_ctrl_cutoff(&vs->lpf, ps->cutoff * freq);
-	svf_ctrl_resonance(&vs->lpf, ps->resonance);
+	svf2_ctrl_cutoff(&vs->lpf, ps->cutoff * freq);
+	svf2_ctrl_resonance(&vs->lpf, ps->resonance);
 }
 
 static void ctrl_pan(struct voice *v) {
@@ -72,7 +72,7 @@ static void start(struct voice *v) {
 	memset(vs, 0, sizeof(struct v_state));
 	sin_init(&vs->modulator);
 	sin_init(&vs->carrier);
-	svf_init(&vs->lpf);
+	svf2_init(&vs->lpf);
 	adsr_init(&vs->aeg, 0.05f, 0.2f, 0.5f, 0.5f);
 	pan_init(&vs->pan);
 	ctrl_lpf(v);
@@ -125,7 +125,7 @@ static void generate(struct voice *v, float *out_l, float *out_r, size_t n) {
 	sin_gen(&vs->carrier, cout, fm, n);
 
 	// low pass filter
-	svf_gen(&vs->lpf, out, cout, n);
+	svf2_gen(&vs->lpf, out, cout, n);
 
 	// apply the output envelope
 	adsr_gen(&vs->aeg, am, n);

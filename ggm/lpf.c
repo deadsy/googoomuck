@@ -18,22 +18,30 @@ Low Pass Filters
 void svf_gen(struct svf *f, float *out, const float *in, size_t n) {
 	float lp = f->lp;
 	float bp = f->bp;
+	float kf = f->kf;
+	float kq = f->kq;
+
 	for (size_t i = 0; i < n; i++) {
-		lp += f->kf * bp;
-		float hp = in[i] - lp - (f->kq * bp);
-		bp += f->kf * hp;
+		lp += kf * bp;
+		float hp = in[i] - lp - (kq * bp);
+		bp += kf * hp;
 		out[i] = lp;
 	}
+
 	// update the state variables
 	f->lp = lp;
 	f->bp = bp;
 }
 
+// set the cutoff frequency
 void svf_ctrl_cutoff(struct svf *f, float cutoff) {
+	cutoff = clampf(cutoff, 0.f, 0.5f * AUDIO_FS);
 	f->kf = 2.f * sin_eval(PI * cutoff / AUDIO_FS);
 }
 
+// set the resonance (0..1)
 void svf_ctrl_resonance(struct svf *f, float resonance) {
+	resonance = clampf(resonance, 0.f, 1.f);
 	f->kq = 2.f - 2.f * resonance;
 }
 
@@ -48,9 +56,10 @@ void svf_init(struct svf *f) {
 void svf2_gen(struct svf2 *f, float *out, const float *in, size_t n) {
 	float ic1eq = f->ic1eq;
 	float ic2eq = f->ic2eq;
-	float a1 = f->a1;
-	float a2 = f->a2;
-	float a3 = f->a3;
+	float a1 = 1.f / (1.f + (f->g * (f->g + f->k)));
+	float a2 = f->g * a1;
+	float a3 = f->g * a2;
+
 	for (size_t i = 0; i < n; i++) {
 		float v0, v1, v2, v3;
 		v0 = in[i];
@@ -67,24 +76,22 @@ void svf2_gen(struct svf2 *f, float *out, const float *in, size_t n) {
 		// peak = v0 - (f->k * v1) - (2.f * v2);
 		// all = v0 - (2.f * f->k * v1);
 	}
+
+	// update the state variables
 	f->ic1eq = ic1eq;
 	f->ic2eq = ic2eq;
 }
 
-static void svf_ctrl_update(struct svf2 *f) {
-	f->a1 = 1.f / (1.f + (f->g * (f->g + f->k)));
-	f->a2 = f->g * f->a1;
-	f->a3 = f->g * f->a2;
-}
-
+// set the cutoff frequency
 void svf2_ctrl_cutoff(struct svf2 *f, float cutoff) {
+	cutoff = clampf(cutoff, 0.f, 0.5f * AUDIO_FS);
 	f->g = tan_eval(PI * cutoff / AUDIO_FS);
-	svf_ctrl_update(f);
 }
 
+// set the resonance (0..1)
 void svf2_ctrl_resonance(struct svf2 *f, float resonance) {
+	resonance = clampf(resonance, 0.f, 1.f);
 	f->k = 2.f - 2.f * resonance;
-	svf_ctrl_update(f);
 }
 
 void svf2_init(struct svf2 *f) {
