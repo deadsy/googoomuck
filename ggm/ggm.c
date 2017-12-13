@@ -187,6 +187,7 @@ int ggm_init(struct ggm *s, struct audio_drv *audio, struct usart_drv *serial) {
 		// call init for each patch
 		if (p->ops) {
 			p->ggm = s;
+			memset(p->state, 0, PATCH_STATE_SIZE);
 			p->ops->init(p);
 		}
 	}

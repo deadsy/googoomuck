@@ -63,8 +63,7 @@ static void generate(struct voice *v, float *out_l, float *out_r, size_t n) {
 // global operations
 
 static void init(struct patch *p) {
-	struct p_state *ps = (struct p_state *)p->state;
-	memset(ps, 0, sizeof(struct p_state));
+	//struct p_state *ps = (struct p_state *)p->state;
 }
 
 static void control_change(struct patch *p, uint8_t ctrl, uint8_t val) {

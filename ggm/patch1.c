@@ -119,7 +119,6 @@ static void generate(struct voice *v, float *out_l, float *out_r, size_t n) {
 
 static void init(struct patch *p) {
 	struct p_state *ps = (struct p_state *)p->state;
-	memset(ps, 0, sizeof(struct p_state));
 	ps->vol = 1.f;
 	ps->pan = 0.5f;
 	ps->duty = 0.5f;

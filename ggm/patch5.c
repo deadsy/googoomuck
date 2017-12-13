@@ -16,22 +16,32 @@ Patch 5 - FM Synthesis
 
 //-----------------------------------------------------------------------------
 
+#define NOTE_LO 12.f		// fixed lo frequency note
+#define NOTE_HI 36.f		// fixed hi frequency note
+
+//-----------------------------------------------------------------------------
+
 struct v_state {
 	struct sin modulator;
 	struct sin carrier;
 	struct svf2 lpf;
 	struct adsr aeg;
 	struct pan pan;
+	float fm_level;		// modulator amplitude
 };
 
 struct p_state {
 	float vol;		// volume
 	float pan;		// left/right pan
 	float bend;		// pitch bend
+
+	float f_mode;		// modulator frequency mode (hi,lo,note)
+	float fm_tune;		// tuning factor for modulator frequency
+	float fm_level;		// modulator amplitude
+
 	float cutoff;		// lpf frequency cutoff
 	float resonance;	// lpf resonance
-	float modulator_level;
-	float modulator_factor;
+
 };
 
 _Static_assert(sizeof(struct v_state) <= VOICE_STATE_SIZE, "sizeof(struct v_state) > VOICE_STATE_SIZE");
@@ -43,8 +53,17 @@ _Static_assert(sizeof(struct p_state) <= PATCH_STATE_SIZE, "sizeof(struct p_stat
 static void ctrl_frequency(struct voice *v) {
 	struct v_state *vs = (struct v_state *)v->state;
 	struct p_state *ps = (struct p_state *)v->patch->state;
-	float freq = midi_to_frequency((float)v->note + ps->bend);
-	sin_ctrl_frequency(&vs->modulator, ps->modulator_factor * freq);
+	float freq;
+
+	// set the modulator frequency
+	float fm_note = (ps->f_mode) ? ps->f_mode : (float)v->note + ps->bend;
+	fm_note *= ps->fm_tune;
+	freq = midi_to_frequency(fm_note);
+	sin_ctrl_frequency(&vs->modulator, freq);
+	vs->fm_level = freq * ps->fm_level;
+
+	// set the carrier frequency
+	freq = midi_to_frequency((float)v->note + ps->bend);
 	sin_ctrl_frequency(&vs->carrier, freq);
 }
 
@@ -108,7 +127,7 @@ static int active(struct voice *v) {
 // generate samples
 static void generate(struct voice *v, float *out_l, float *out_r, size_t n) {
 	struct v_state *vs = (struct v_state *)v->state;
-	struct p_state *ps = (struct p_state *)v->patch->state;
+	//struct p_state *ps = (struct p_state *)v->patch->state;
 
 	float buf0[n];
 	float buf1[n];
@@ -119,13 +138,14 @@ static void generate(struct voice *v, float *out_l, float *out_r, size_t n) {
 
 	// generate the modulator
 	sin_gen(&vs->modulator, fm, NULL, n);
-	block_mul_k(fm, ps->modulator_level, n);
+	block_mul_k(fm, vs->fm_level, n);
 
 	// generate the carrier
 	sin_gen(&vs->carrier, cout, fm, n);
 
 	// low pass filter
-	svf2_gen(&vs->lpf, out, cout, n);
+	//svf2_gen(&vs->lpf, out, cout, n);
+	block_copy(out, cout, n);
 
 	// apply the output envelope
 	adsr_gen(&vs->aeg, am, n);
@@ -140,17 +160,17 @@ static void generate(struct voice *v, float *out_l, float *out_r, size_t n) {
 
 static void init(struct patch *p) {
 	struct p_state *ps = (struct p_state *)p->state;
-	memset(ps, 0, sizeof(struct p_state));
 
-	ps->vol = 1.f;
-	ps->pan = 0.5f;
-	ps->bend = 0.f;
+	ps->vol = 1.f;		// volume
+	ps->pan = 0.5f;		// left/right pan
+	ps->bend = 0.f;		// pitch bend
 
-	ps->cutoff = 5.f;
-	ps->resonance = 0.5f;
+	ps->f_mode = NOTE_HI;	//0.f; // modulator frequency mode (hi,lo,note)
+	ps->fm_tune = 1.f;	// tuning factor for modulator frequency
+	ps->fm_level = 0.1f;	// modulation level
 
-	ps->modulator_level = 1.f;
-	ps->modulator_factor = 1.f;
+	ps->cutoff = 5.f;	// lpf frequency cutoff
+	ps->resonance = 0.5f;	// lpf resonance
 }
 
 static void control_change(struct patch *p, uint8_t ctrl, uint8_t val) {
@@ -160,6 +180,7 @@ static void control_change(struct patch *p, uint8_t ctrl, uint8_t val) {
 	DBG("p5 ctrl %d val %d\r\n", ctrl, val);
 
 	switch (ctrl) {
+
 		// Output
 	case 1:		// volume
 		ps->vol = midi_map(val, 0.f, 1.5f);
@@ -169,15 +190,17 @@ static void control_change(struct patch *p, uint8_t ctrl, uint8_t val) {
 		ps->pan = midi_map(val, 0.f, 1.f);
 		update = 1;
 		break;
+
 		// FM modulation
 	case 5:
-		ps->modulator_level = midi_map(val, 0.f, 400.f);
+		ps->fm_tune = midi_map(val, 0.3f, 1.f / 0.3f);
 		update = 2;
 		break;
 	case 6:
-		ps->modulator_factor = midi_map(val, 1.0f, 32.f);
+		ps->fm_level = midi_map(val, 0.00f, 5.f);
 		update = 2;
 		break;
+
 		// LPF response
 	case 7:
 		ps->cutoff = midi_map(val, 0.5f, 10.f);
