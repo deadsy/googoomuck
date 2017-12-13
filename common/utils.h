@@ -62,6 +62,14 @@ static inline float randf_range(float a, float b) {
 	return ((b - a) * ((float)rand() / RAND_MAX)) + a;
 }
 
+// return a float from -1..1
+static inline float randf(void) {
+	uint32_t i = rand();
+	i |= (i << 1) & 0x80000000;
+	i = (i & 0x807fffff) | (126 << 23);
+	return *(float *)&i;
+}
+
 //-----------------------------------------------------------------------------
 
 static inline void reg_rmw(volatile uint32_t * reg, uint32_t mask, uint32_t val) {
