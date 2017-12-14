@@ -64,10 +64,10 @@ void noise_gen_pink1(struct noise *ns, float *out, size_t n) {
 	float b2 = ns->b2;
 	for (size_t i = 0; i < n; i++) {
 		float white = rand_float();
-		b0 = 0.99765 * b0 + white * 0.0990460;
-		b1 = 0.96300 * b1 + white * 0.2965164;
-		b2 = 0.57000 * b2 + white * 1.0526913;
-		float pink = b0 + b1 + b2 + white * 0.1848;
+		b0 = 0.99765f * b0 + white * 0.0990460f;
+		b1 = 0.96300f * b1 + white * 0.2965164f;
+		b2 = 0.57000f * b2 + white * 1.0526913f;
+		float pink = b0 + b1 + b2 + white * 0.1848f;
 		out[i] = pink * (1.f / 10.4f);
 	}
 	ns->b0 = b0;
@@ -86,14 +86,14 @@ void noise_gen_pink2(struct noise *ns, float *out, size_t n) {
 	float b6 = ns->b6;
 	for (size_t i = 0; i < n; i++) {
 		float white = rand_float();
-		b0 = 0.99886 * b0 + white * 0.0555179;
-		b1 = 0.99332 * b1 + white * 0.0750759;
-		b2 = 0.96900 * b2 + white * 0.1538520;
-		b3 = 0.86650 * b3 + white * 0.3104856;
-		b4 = 0.55000 * b4 + white * 0.5329522;
-		b5 = -0.7616 * b5 - white * 0.0168980;
-		float pink = b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362;
-		b6 = white * 0.115926;
+		b0 = 0.99886f * b0 + white * 0.0555179f;
+		b1 = 0.99332f * b1 + white * 0.0750759f;
+		b2 = 0.96900f * b2 + white * 0.1538520f;
+		b3 = 0.86650f * b3 + white * 0.3104856f;
+		b4 = 0.55000f * b4 + white * 0.5329522f;
+		b5 = -0.7616f * b5 - white * 0.0168980f;
+		float pink = b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362f;
+		b6 = white * 0.115926f;
 		out[i] = pink * (1.f / 10.2f);
 	}
 	ns->b0 = b0;
