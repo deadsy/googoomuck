@@ -11,7 +11,7 @@ Common Utility Functions/Macros
 
 //-----------------------------------------------------------------------------
 
-#include <stdlib.h>
+#include <inttypes.h>
 
 //-----------------------------------------------------------------------------
 
@@ -57,14 +57,20 @@ static inline float mapf(float x, float a, float b) {
 
 //-----------------------------------------------------------------------------
 
-// return a float between a..b
-static inline float randf_range(float a, float b) {
-	return ((b - a) * ((float)rand() / RAND_MAX)) + a;
+extern uint32_t rand_state;
+
+// seed the PRNG
+void rand_init(uint32_t seed);
+
+// return a random uint32_t
+static inline uint32_t rand_uint32(void) {
+	rand_state = ((rand_state * 1103515245) + 12345) & 0x7fffffff;
+	return rand_state;
 }
 
 // return a float from -1..1
-static inline float randf(void) {
-	uint32_t i = rand();
+static inline float rand_float(void) {
+	uint32_t i = rand_uint32();
 	i |= (i << 1) & 0x80000000;
 	i = (i & 0x807fffff) | (126 << 23);
 	return *(float *)&i;

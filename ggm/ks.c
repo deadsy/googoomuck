@@ -59,7 +59,7 @@ void ks_pluck(struct ks *osc) {
 	// will make all values fall to zero.
 	float sum = 0.f;
 	for (unsigned int i = 0; i < KS_DELAY_SIZE - 1; i++) {
-		float val = randf();
+		float val = rand_float();
 		float x = sum + val;
 		if (x > 1.f || x < -1.f) {
 			val = -val;

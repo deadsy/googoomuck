@@ -6,13 +6,12 @@ MB997C Board
 */
 //-----------------------------------------------------------------------------
 
-#include <stdlib.h>
-
 #include "stm32f4_soc.h"
 #include "audio.h"
 #include "led.h"
 #include "debounce.h"
 #include "ggm.h"
+#include "utils.h"
 
 #define DEBUG
 #include "logging.h"
@@ -277,7 +276,7 @@ int main(void) {
 	// seed the PRNG
 	rc = rng_rd(&ggm_rng, 1, &val);
 	if (rc == 0) {
-		srand(val);
+		rand_init(val);
 	} else {
 		DBG("rng_rd failed %d\r\n", rc);
 		goto exit;
