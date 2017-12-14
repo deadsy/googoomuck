@@ -61,6 +61,21 @@ void pan_ctrl(struct pan *p, float vol, float pan);
 void pan_gen(struct pan *p, float *out_l, float *out_r, const float *in, size_t n);
 
 //-----------------------------------------------------------------------------
+// noise
+
+struct noise {
+	float b0, b1, b2, b3, b4, b5, b6;
+	//float max;
+	//uint32_t count;
+};
+
+void noise_init(struct noise *ns);
+void noise_gen_white(struct noise *ns, float *out, size_t n);
+void noise_gen_pink1(struct noise *ns, float *out, size_t n);
+void noise_gen_pink2(struct noise *ns, float *out, size_t n);
+void noise_gen_brown(struct noise *ns, float *out, size_t n);
+
+//-----------------------------------------------------------------------------
 // sine wave oscillators
 
 // Sin Oscillator
@@ -263,6 +278,7 @@ extern const struct patch_ops patch2;
 extern const struct patch_ops patch3;
 extern const struct patch_ops patch4;
 extern const struct patch_ops patch5;
+extern const struct patch_ops patch6;
 
 //-----------------------------------------------------------------------------
 

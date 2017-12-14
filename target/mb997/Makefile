@@ -51,6 +51,7 @@ SRC += $(GGM_DIR)/sin.c \
 	$(GGM_DIR)/pan.c \
 	$(GGM_DIR)/ks.c \
 	$(GGM_DIR)/lpf.c \
+	$(GGM_DIR)/noise.c \
 	$(GGM_DIR)/block.c \
 	$(GGM_DIR)/pow.c \
 	$(GGM_DIR)/bmark.c \
@@ -60,6 +61,7 @@ SRC += $(GGM_DIR)/sin.c \
 	$(GGM_DIR)/patch3.c \
 	$(GGM_DIR)/patch4.c \
 	$(GGM_DIR)/patch5.c \
+	$(GGM_DIR)/patch6.c \
 
 OBJ = $(patsubst %.c, %.o, $(SRC))
 OBJ += $(TARGET_DIR)/start.o
