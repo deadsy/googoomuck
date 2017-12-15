@@ -41,6 +41,7 @@ SRC += $(COMMON_DIR)/logging.c \
 # drivers
 DRIVERS_DIR = $(TOP)/drivers
 SRC += $(DRIVERS_DIR)/cs43l22.c \
+	$(DRIVERS_DIR)/ili9341.c \
 
 # googoomuck
 GGM_DIR = $(TOP)/ggm
