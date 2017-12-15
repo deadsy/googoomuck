@@ -120,11 +120,6 @@ uint32_t i2s_get_fsclk(struct i2s_drv * i2s) {
 
 //-----------------------------------------------------------------------------
 
-// define the non-reserved register bits
-#define I2SCFGR_MASK (0xfbfU)
-#define I2SPR_MASK (0x3ffU)
-#define CR2_MASK (0xf7U)
-
 int i2s_init(struct i2s_drv *i2s, struct i2s_cfg *cfg) {
 	uint32_t val;
 	const struct i2s_clk_cfg *clk_cfg = i2s_clk_lookup(cfg->fs);

@@ -22,6 +22,7 @@ SRC += $(LIB_DIR)/gpio.c \
 	$(LIB_DIR)/adc.c \
 	$(LIB_DIR)/usart.c \
 	$(LIB_DIR)/rng.c \
+	$(LIB_DIR)/spi.c \
 
 # target sources
 TARGET_DIR = $(TOP)/target/mb997

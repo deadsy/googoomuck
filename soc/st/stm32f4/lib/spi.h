@@ -1,13 +1,13 @@
 //-----------------------------------------------------------------------------
 /*
 
-I2S Driver
+SPI/I2S Driver
 
 */
 //-----------------------------------------------------------------------------
 
-#ifndef I2S_H
-#define I2S_H
+#ifndef SPI_H
+#define SPI_H
 
 //-----------------------------------------------------------------------------
 
@@ -16,6 +16,7 @@ I2S Driver
 #endif
 
 //-----------------------------------------------------------------------------
+// I2S Defines
 
 // operating modes (I2SCFG)
 #define I2S_MODE_SLAVE_TX (0U << 8)
@@ -52,6 +53,20 @@ I2S Driver
 
 //-----------------------------------------------------------------------------
 
+// define non-reserved register bits
+#define CR1_MASK (0xffffU)
+#define CR2_MASK (0xf7U)
+#define SR_MASK (0x1ffU)
+#define DR_MASK (0xffffU)
+#define CRCPR_MASK (0xffffU)
+#define RXCRCR_MASK (0xffffU)
+#define TXCRCR_MASK (0xffffU)
+#define I2SCFGR_MASK (0xfbfU)
+#define I2SPR_MASK (0x3ffU)
+
+//-----------------------------------------------------------------------------
+// I2S Driver API
+
 struct i2s_cfg {
 	int idx;		// i2s device to use
 	uint32_t mode;		// operating mode
@@ -68,8 +83,6 @@ struct i2s_drv {
 	SPI_TypeDef *regs;	// SPI/I2S peripheral registers
 };
 
-//-----------------------------------------------------------------------------
-
 static inline void i2s_enable(struct i2s_drv *i2s) {
 	i2s->regs->I2SCFGR |= (1 << 10);	// I2SE
 }
@@ -77,8 +90,6 @@ static inline void i2s_enable(struct i2s_drv *i2s) {
 static inline void i2s_disable(struct i2s_drv *i2s) {
 	i2s->regs->I2SCFGR &= ~(1 << 10);	// I2SE
 }
-
-//-----------------------------------------------------------------------------
 
 int i2s_init(struct i2s_drv *i2s, struct i2s_cfg *cfg);
 int i2s_wr(struct i2s_drv *i2s, int16_t val);
@@ -88,7 +99,20 @@ int set_i2sclk(uint32_t fs);
 uint32_t get_i2sclk(void);
 
 //-----------------------------------------------------------------------------
+// SPI Driver API
 
-#endif				// I2S_H
+struct spi_cfg {
+	uint32_t base;		// base address of spi peripheral
+};
+
+struct spi_drv {
+	SPI_TypeDef *regs;	// SPI/I2S peripheral registers
+};
+
+int spi_init(struct spi_drv *spi, struct spi_cfg *cfg);
+
+//-----------------------------------------------------------------------------
+
+#endif				// SPI_H
 
 //-----------------------------------------------------------------------------
