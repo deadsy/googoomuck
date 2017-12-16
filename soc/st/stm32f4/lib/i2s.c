@@ -7,41 +7,12 @@ I2S Driver
 //-----------------------------------------------------------------------------
 
 #include <string.h>
-#include <assert.h>
 
 #include "stm32f4_soc.h"
 #include "utils.h"
 
 #define DEBUG
 #include "logging.h"
-
-//-----------------------------------------------------------------------------
-
-// return a pointer to the spi registers (1,2,3)
-static inline SPI_TypeDef *spi_base(int n) {
-	static const uint32_t base[] = { 0, SPI1_BASE, SPI2_BASE, SPI3_BASE };
-	return (SPI_TypeDef *) base[n];
-}
-
-// return a point to the i2sext registers (2,3)
-static inline SPI_TypeDef *i2sext_base(int n) {
-	static const uint32_t base[] = { 0, 0, I2S2ext_BASE, I2S3ext_BASE };
-	return (SPI_TypeDef *) base[n];
-}
-
-//-----------------------------------------------------------------------------
-
-// enable the clock to the spi module
-static void spi_enable(struct i2s_drv *i2s) {
-	int idx = i2s->cfg.idx;
-	if (idx == 1) {
-		RCC->APB2ENR |= (1 << 12 /*SPI1 clock enable */ );
-	} else if (idx == 2) {
-		RCC->APB1ENR |= (1 << 14 /*SPI2 clock enable */ );
-	} else if (idx == 3) {
-		RCC->APB1ENR |= (1 << 15 /*SPI3 clock enable */ );
-	}
-}
 
 //-----------------------------------------------------------------------------
 // i2s clock configuration
@@ -128,10 +99,10 @@ int i2s_init(struct i2s_drv *i2s, struct i2s_cfg *cfg) {
 	}
 	memset(i2s, 0, sizeof(struct i2s_drv));
 	i2s->cfg = *cfg;
-	i2s->regs = spi_base(i2s->cfg.idx);
+	i2s->regs = (SPI_TypeDef *) cfg->base;
 
 	// enable the spi module
-	spi_enable(i2s);
+	spi_enable(cfg->base);
 
 	// clear I2SCFGR (allow configuration)
 	i2s->regs->I2SCFGR &= ~I2SCFGR_MASK;
@@ -158,6 +129,7 @@ int i2s_init(struct i2s_drv *i2s, struct i2s_cfg *cfg) {
 
 //-----------------------------------------------------------------------------
 
+#if 0
 static inline int i2s_tx_empty(struct i2s_drv *i2s) {
 	return i2s->regs->SR & (1 << 1 /*TXE*/);
 }
@@ -176,5 +148,6 @@ int i2s_wr(struct i2s_drv *i2s, int16_t val) {
 	}
 	return rc;
 }
+#endif
 
 //-----------------------------------------------------------------------------

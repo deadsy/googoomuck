@@ -65,10 +65,15 @@ SPI/I2S Driver
 #define I2SPR_MASK (0x3ffU)
 
 //-----------------------------------------------------------------------------
+// General
+
+void spi_enable(uint32_t base);
+
+//-----------------------------------------------------------------------------
 // I2S Driver API
 
 struct i2s_cfg {
-	int idx;		// i2s device to use
+	uint32_t base;		// base address of spi/i2s peripheral
 	uint32_t mode;		// operating mode
 	uint32_t standard;	// standard used
 	uint32_t data_format;	// data format
@@ -92,8 +97,8 @@ static inline void i2s_disable(struct i2s_drv *i2s) {
 }
 
 int i2s_init(struct i2s_drv *i2s, struct i2s_cfg *cfg);
-int i2s_wr(struct i2s_drv *i2s, int16_t val);
 uint32_t i2s_get_fsclk(struct i2s_drv *i2s);
+//int i2s_wr(struct i2s_drv *i2s, int16_t val);
 
 int set_i2sclk(uint32_t fs);
 uint32_t get_i2sclk(void);
@@ -110,6 +115,10 @@ struct spi_drv {
 };
 
 int spi_init(struct spi_drv *spi, struct spi_cfg *cfg);
+int spi_rd(struct spi_drv *spi, uint16_t * data);
+void spi_rd_block(struct spi_drv *spi, uint16_t * data);
+int spi_wr(struct spi_drv *spi, uint16_t data);
+void spi_wr_block(struct spi_drv *spi, uint16_t data);
 
 //-----------------------------------------------------------------------------
 

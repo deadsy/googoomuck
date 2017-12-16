@@ -98,7 +98,7 @@ void DMA1_Stream7_IRQHandler(void) {
 
 // I2S setup
 static struct i2s_cfg audio_i2s_cfg = {
-	.idx = 3,
+	.base = SPI3_BASE,
 	.mode = I2S_MODE_MASTER_TX,
 	.standard = I2S_STANDARD_PHILIPS,
 	.data_format = I2S_DATAFORMAT_16B,
