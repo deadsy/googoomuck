@@ -93,10 +93,12 @@ uint32_t i2s_get_fsclk(struct i2s_drv * i2s) {
 
 int i2s_init(struct i2s_drv *i2s, struct i2s_cfg *cfg) {
 	uint32_t val;
+
 	const struct i2s_clk_cfg *clk_cfg = i2s_clk_lookup(cfg->fs);
 	if (clk_cfg == NULL) {
 		return -1;
 	}
+
 	memset(i2s, 0, sizeof(struct i2s_drv));
 	i2s->cfg = *cfg;
 	i2s->regs = (SPI_TypeDef *) cfg->base;

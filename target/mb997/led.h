@@ -16,10 +16,10 @@ LED Control for the STM32F4 Discovery Board
 //-----------------------------------------------------------------------------
 
 // leds
-#define LED_GREEN       GPIO_NUM(PORTD, 12)
-#define LED_AMBER       GPIO_NUM(PORTD, 13)
-#define LED_RED         GPIO_NUM(PORTD, 14)
-#define LED_BLUE        GPIO_NUM(PORTD, 15)
+#define LED_GREEN GPIO_NUM(PORTD, 12)
+#define LED_AMBER GPIO_NUM(PORTD, 13)
+#define LED_RED   GPIO_NUM(PORTD, 14)
+#define LED_BLUE  GPIO_NUM(PORTD, 15)
 
 static inline void led_on(int x) {
 	gpio_set(x);

@@ -83,7 +83,7 @@ int spi_init(struct spi_drv *spi, struct spi_cfg *cfg) {
 	uint32_t val;
 
 	memset(spi, 0, sizeof(struct spi_drv));
-
+	spi->cfg = *cfg;
 	spi->regs = (SPI_TypeDef *) cfg->base;
 
 	// enable the spi module
@@ -101,7 +101,7 @@ int spi_init(struct spi_drv *spi, struct spi_cfg *cfg) {
 	val |= (0 << 8 /*SSI*/);	// Internal slave select
 	val |= (0 << 7 /*LSBFIRST*/);	// Frame format
 	val |= (0 << 6 /*SPE*/);	// SPI enable
-	val |= (0 << 3 /*BR*/);	// Baud rate control
+	val |= spi->cfg.baud_div;	// Baud rate control
 	val |= (0 << 2 /*MSTR*/);	// Master selection
 	val |= (0 << 1 /*CPOL*/);	// Clock polarity
 	val |= (0 << 0 /*CPHA*/);	// Clock phase

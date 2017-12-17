@@ -52,6 +52,19 @@ SPI/I2S Driver
 #define I2S_DMA_RXTX ((1U << 1) | (1U << 0))
 
 //-----------------------------------------------------------------------------
+// SPI Defines
+
+// baud rate divisors (F_PCLK/N)
+#define SPI_BAUD_DIV2   (0U << 3)
+#define SPI_BAUD_DIV4   (1U << 3)
+#define SPI_BAUD_DIV8   (2U << 3)
+#define SPI_BAUD_DIV16  (3U << 3)
+#define SPI_BAUD_DIV32  (4U << 3)
+#define SPI_BAUD_DIV64  (5U << 3)
+#define SPI_BAUD_DIV128 (6U << 3)
+#define SPI_BAUD_DIV256 (7U << 3)
+
+//-----------------------------------------------------------------------------
 
 // define non-reserved register bits
 #define CR1_MASK (0xffffU)
@@ -108,9 +121,11 @@ uint32_t get_i2sclk(void);
 
 struct spi_cfg {
 	uint32_t base;		// base address of spi peripheral
+	uint32_t baud_div;	// baud rate divisor
 };
 
 struct spi_drv {
+	struct spi_cfg cfg;	// configuration values
 	SPI_TypeDef *regs;	// SPI/I2S peripheral registers
 };
 

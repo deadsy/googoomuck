@@ -3,6 +3,19 @@
 
 ILI9341 LCD Driver
 
+This is for a 4 wire SPI interface.
+
+Pins are:
+
+SDO (SPI MISO)
+SCK (SPI Clock)
+SDI (SPI MOSI)
+D/C (data/command)
+RESET (reset line)
+CS (chip select)
+GND
+VCC
+
 */
 //-----------------------------------------------------------------------------
 
@@ -83,6 +96,8 @@ ILI9341 LCD Driver
 #define CMD_POWER_CTRL_2            0xc1
 #define CMD_VCOM_CTRL_1             0xc5
 #define CMD_VCOM_CTRL_2             0xc7
+#define CMD_PWR_CTRL_A              0xcb
+#define CMD_PWR_CTRL_B              0xcf
 #define CMD_NV_MEM_WRITE            0xd0
 #define CMD_NV_MEM_PROTECTION_KEY   0xd1
 #define CMD_NV_MEM_STATUS_RD        0xd2
@@ -91,13 +106,19 @@ ILI9341 LCD Driver
 #define CMD_NEG_GAMMA_CORRECTION    0xe1
 #define CMD_DIGITAL_GAMMA_CTRL_1    0xe2
 #define CMD_DIGITAL_GAMMA_CTRL_2    0xe3
+#define CMD_DRIVER_TIMING_CTRL_A    0xe8
+#define CMD_DRIVER_TIMING_CTRL_B    0xea
+#define CMD_PWR_ON_SEQUENCE_CTRL    0xed
+#define CMD_ENABLE_3G               0xf2
 #define CMD_ITF_CTRL                0xf6
+#define CMD_PUMP_RATIO_CTRL         0xf7
 
 //-----------------------------------------------------------------------------
 
 static void wr_cmd(struct ili9341_drv *drv, uint8_t cmd) {
-	// TODO set command/data selector
+	gpio_set(drv->cfg.dc);
 	spi_wr_block(drv->cfg.spi, cmd);
+	gpio_clr(drv->cfg.dc);
 }
 
 static void wr_data8(struct ili9341_drv *drv, uint8_t data) {
@@ -118,15 +139,15 @@ static void wr_data32(struct ili9341_drv *drv, uint32_t data) {
 
 //-----------------------------------------------------------------------------
 
-// length, command, command_data
+// length, command, command data
 static const uint8_t init_table[] = {
-	5, 0xef, 0x03, 0x80, 0x02,
-	5, 0xcf, 0x00, 0xc1, 0x30,
-	6, 0xed, 0x64, 0x03, 0x12, 0x81,
-	5, 0xe8, 0x85, 0x00, 0x78,
-	7, 0xcb, 0x39, 0x2c, 0x00, 0x34, 0x02,
-	3, 0xf7, 0x20,
-	4, 0xea, 0x00, 0x00,
+	5, 0xef, 0x03, 0x80, 0x02,	// ??
+	7, CMD_PWR_CTRL_A, 0x39, 0x2c, 0x00, 0x34, 0x02,
+	5, CMD_PWR_CTRL_B, 0x00, 0xc1, 0x30,
+	5, CMD_DRIVER_TIMING_CTRL_A, 0x85, 0x00, 0x78,
+	4, CMD_DRIVER_TIMING_CTRL_B, 0x00, 0x00,
+	6, CMD_PWR_ON_SEQUENCE_CTRL, 0x64, 0x03, 0x12, 0x81,
+	3, CMD_PUMP_RATIO_CTRL, 0x20,
 	3, CMD_POWER_CTRL_1, 0x23,
 	3, CMD_POWER_CTRL_2, 0x10,
 	4, CMD_VCOM_CTRL_1, 0x3e, 0x28,
@@ -136,7 +157,7 @@ static const uint8_t init_table[] = {
 	3, CMD_PIXEL_FMT_SET, 0x55,
 	4, CMD_FRAME_CTRL_NORMAL, 0x00, 0x18,
 	5, CMD_DISP_FUNC_CTRL, 0x08, 0x82, 0x27,
-	3, 0xf2, 0x00,		// 3Gamma Function Disable
+	3, CMD_ENABLE_3G, 0x00,
 	3, CMD_GAMMA_SET, 0x01,
 	17, CMD_POS_GAMMA_CORRECTION, 0x0f, 0x31, 0x2b, 0x0c, 0x0e, 0x08, 0x4e, 0xf1, 0x37, 0x07, 0x10, 0x03, 0x0e, 0x09, 0x00,
 	17, CMD_NEG_GAMMA_CORRECTION, 0x00, 0x0e, 0x14, 0x03, 0x11, 0x07, 0x31, 0xc1, 0x48, 0x08, 0x0f, 0x0c, 0x31, 0x36, 0x0f,
@@ -146,6 +167,19 @@ static const uint8_t init_table[] = {
 int ili9341_init(struct ili9341_drv *drv, struct ili9341_cfg *cfg) {
 	memset(drv, 0, sizeof(struct ili9341_drv));
 	drv->cfg = *cfg;
+
+	// reset the chip
+	mdelay(5);
+	gpio_clr(drv->cfg.rst);
+	mdelay(5);
+	gpio_set(drv->cfg.rst);
+	mdelay(20);
+
+	// assert chip select
+	gpio_set(drv->cfg.cs);
+
+	wr_cmd(drv, CMD_SLEEP_OUT);
+	mdelay(60);
 
 	// apply the initialisation table commands
 	const uint8_t *ptr = init_table;
@@ -157,6 +191,12 @@ int ili9341_init(struct ili9341_drv *drv, struct ili9341_cfg *cfg) {
 		ptr += ptr[0];
 	}
 
+	wr_cmd(drv, CMD_SLEEP_OUT);
+	mdelay(120);
+	wr_cmd(drv, CMD_DISP_ON);
+
+	// de-assert chip select
+	gpio_clr(drv->cfg.cs);
 	return 0;
 }
 

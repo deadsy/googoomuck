@@ -28,6 +28,7 @@ SRC += $(LIB_DIR)/gpio.c \
 TARGET_DIR = $(TOP)/target/mb997
 SRC += $(TARGET_DIR)/main.c \
 	$(TARGET_DIR)/audio.c \
+	$(TARGET_DIR)/display.c \
 
 # common
 COMMON_DIR = $(TOP)/common

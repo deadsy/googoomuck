@@ -13,6 +13,10 @@ ILI9341 LCD Driver
 
 struct ili9341_cfg {
 	struct spi_drv *spi;	// spi bus
+	int rst;		// gpio for reset pin
+	int dc;			// gpio for d/c line
+	int cs;			// gpio for chip select
+	int led;		// gpio for led backlight control
 };
 
 struct ili9341_drv {
