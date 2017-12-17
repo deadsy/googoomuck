@@ -10,6 +10,7 @@ Audio Control for the STM32F4 Discovery Board
 
 #include "audio.h"
 #include "ggm.h"
+#include "io.h"
 
 #define DEBUG
 #include "logging.h"
@@ -17,27 +18,6 @@ Audio Control for the STM32F4 Discovery Board
 //-----------------------------------------------------------------------------
 
 struct audio_drv ggm_audio;
-
-//-----------------------------------------------------------------------------
-// IO configuration
-
-#define AUDIO_I2C_SCL   GPIO_NUM(PORTB, 6)
-#define AUDIO_I2C_SDA   GPIO_NUM(PORTB, 9)
-#define AUDIO_RESET     GPIO_NUM(PORTD, 4)
-#define AUDIO_I2S_MCK   GPIO_NUM(PORTC, 7)
-#define AUDIO_I2S_SCK   GPIO_NUM(PORTC, 10)
-#define AUDIO_I2S_SD    GPIO_NUM(PORTC, 12)
-#define AUDIO_I2S_WS    GPIO_NUM(PORTA, 4)
-
-static const struct gpio_info gpios[] = {
-	{AUDIO_RESET, GPIO_MODER_OUT, GPIO_OTYPER_PP, GPIO_OSPEEDR_LO, GPIO_PUPD_NONE, GPIO_AF0, 0},
-	{AUDIO_I2C_SCL, GPIO_MODER_IN, GPIO_OTYPER_PP, GPIO_OSPEEDR_LO, GPIO_PUPD_NONE, GPIO_AF0, 0},
-	{AUDIO_I2C_SDA, GPIO_MODER_IN, GPIO_OTYPER_PP, GPIO_OSPEEDR_LO, GPIO_PUPD_NONE, GPIO_AF0, 0},
-	{AUDIO_I2S_MCK, GPIO_MODER_AF, GPIO_OTYPER_PP, GPIO_OSPEEDR_FAST, GPIO_PUPD_NONE, GPIO_AF6, 0},
-	{AUDIO_I2S_SCK, GPIO_MODER_AF, GPIO_OTYPER_PP, GPIO_OSPEEDR_FAST, GPIO_PUPD_NONE, GPIO_AF6, 0},
-	{AUDIO_I2S_SD, GPIO_MODER_AF, GPIO_OTYPER_PP, GPIO_OSPEEDR_FAST, GPIO_PUPD_NONE, GPIO_AF6, 0},
-	{AUDIO_I2S_WS, GPIO_MODER_AF, GPIO_OTYPER_PP, GPIO_OSPEEDR_FAST, GPIO_PUPD_NONE, GPIO_AF6, 0},
-};
 
 //-----------------------------------------------------------------------------
 // DMA setup
@@ -112,8 +92,8 @@ static struct i2s_cfg audio_i2s_cfg = {
 
 // I2C setup
 static struct i2c_cfg audio_i2c_cfg = {
-	.scl = AUDIO_I2C_SCL,
-	.sda = AUDIO_I2C_SDA,
+	.scl = IO_AUDIO_I2C_SCL,
+	.sda = IO_AUDIO_I2C_SDA,
 	.delay = 20,
 };
 
@@ -122,7 +102,7 @@ static struct i2c_cfg audio_i2c_cfg = {
 // cs43l22 DAC setup
 static struct cs4x_cfg audio_dac_cfg = {
 	.adr = 0x94,
-	.rst = AUDIO_RESET,
+	.rst = IO_AUDIO_RESET,
 	.out = DAC_OUTPUT_AUTO,
 };
 
@@ -131,12 +111,6 @@ static struct cs4x_cfg audio_dac_cfg = {
 int audio_init(struct audio_drv *audio) {
 	int rc = 0;
 
-	// setup the io pins
-	rc = gpio_init(gpios, sizeof(gpios) / sizeof(struct gpio_info));
-	if (rc != 0) {
-		DBG("gpio_init failed %d\r\n", rc);
-		goto exit;
-	}
 	// setup the dma to feed the i2s
 	rc = dma_init(&audio->dma, &audio_dma_cfg);
 	if (rc != 0) {

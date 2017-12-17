@@ -15,6 +15,7 @@ GooGooMuck Synthesizer
 #include <stddef.h>
 
 #include "audio.h"
+#include "io.h"
 
 //-----------------------------------------------------------------------------
 
