@@ -16,7 +16,25 @@ SPI/I2S Driver
 #endif
 
 //-----------------------------------------------------------------------------
-// I2S Defines
+
+// define non-reserved register bits
+#define CR1_MASK (0xffffU)
+#define CR2_MASK (0xf7U)
+#define SR_MASK (0x1ffU)
+#define DR_MASK (0xffffU)
+#define CRCPR_MASK (0xffffU)
+#define RXCRCR_MASK (0xffffU)
+#define TXCRCR_MASK (0xffffU)
+#define I2SCFGR_MASK (0xfbfU)
+#define I2SPR_MASK (0x3ffU)
+
+//-----------------------------------------------------------------------------
+// General
+
+void spi_enable(uint32_t base);
+
+//-----------------------------------------------------------------------------
+// I2S Driver API
 
 // operating modes (I2SCFG)
 #define I2S_MODE_SLAVE_TX (0U << 8)
@@ -50,40 +68,6 @@ SPI/I2S Driver
 #define I2S_DMA_TX ((1U << 1) | (0U << 0))
 #define I2S_DMA_RX ((0U << 1) | (1U << 0))
 #define I2S_DMA_RXTX ((1U << 1) | (1U << 0))
-
-//-----------------------------------------------------------------------------
-// SPI Defines
-
-// baud rate divisors (F_PCLK/N)
-#define SPI_BAUD_DIV2   (0U << 3)
-#define SPI_BAUD_DIV4   (1U << 3)
-#define SPI_BAUD_DIV8   (2U << 3)
-#define SPI_BAUD_DIV16  (3U << 3)
-#define SPI_BAUD_DIV32  (4U << 3)
-#define SPI_BAUD_DIV64  (5U << 3)
-#define SPI_BAUD_DIV128 (6U << 3)
-#define SPI_BAUD_DIV256 (7U << 3)
-
-//-----------------------------------------------------------------------------
-
-// define non-reserved register bits
-#define CR1_MASK (0xffffU)
-#define CR2_MASK (0xf7U)
-#define SR_MASK (0x1ffU)
-#define DR_MASK (0xffffU)
-#define CRCPR_MASK (0xffffU)
-#define RXCRCR_MASK (0xffffU)
-#define TXCRCR_MASK (0xffffU)
-#define I2SCFGR_MASK (0xfbfU)
-#define I2SPR_MASK (0x3ffU)
-
-//-----------------------------------------------------------------------------
-// General
-
-void spi_enable(uint32_t base);
-
-//-----------------------------------------------------------------------------
-// I2S Driver API
 
 struct i2s_cfg {
 	uint32_t base;		// base address of spi/i2s peripheral
@@ -119,9 +103,41 @@ uint32_t get_i2sclk(void);
 //-----------------------------------------------------------------------------
 // SPI Driver API
 
+// spi modes
+#define SPI_MODE_SLV (0U << 2)
+#define SPI_MODE_MST (1U << 2)
+
+// clock polarity
+#define SPI_CPOL_LO (0U << 1)
+#define SPI_CPOL_HI (1U << 1)
+
+// clock phase
+#define SPI_CPHA_CLK1 (0U << 0)
+#define SPI_CPHA_CLK2 (1U << 0)
+
+// data frame format
+#define SPI_FF_8B_MSB ((0U << 11) | (0U << 7))	// 8 bit msb first
+#define SPI_FF_8B_LSB ((0U << 11) | (1U << 7))	// 8 bit lsb first
+#define SPI_FF_16B_MSB ((1U << 11) | (0U << 7))	// 8 bit msb first
+#define SPI_FF_16B_LSB ((1U << 11) | (1U << 7))	// 8 bit lsb first
+
+// baud rate divisors (F_PCLK/N)
+#define SPI_BAUD_DIV2   (0U << 3)
+#define SPI_BAUD_DIV4   (1U << 3)
+#define SPI_BAUD_DIV8   (2U << 3)
+#define SPI_BAUD_DIV16  (3U << 3)
+#define SPI_BAUD_DIV32  (4U << 3)
+#define SPI_BAUD_DIV64  (5U << 3)
+#define SPI_BAUD_DIV128 (6U << 3)
+#define SPI_BAUD_DIV256 (7U << 3)
+
 struct spi_cfg {
 	uint32_t base;		// base address of spi peripheral
-	uint32_t baud_div;	// baud rate divisor
+	uint32_t mode;		// master/slave mode
+	uint32_t cpol;		// clock polarity
+	uint32_t cpha;		// clock phase
+	uint32_t ff;		// data frame format
+	uint32_t div;		// baud rate divisor
 };
 
 struct spi_drv {

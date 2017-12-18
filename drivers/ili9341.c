@@ -109,7 +109,7 @@ VCC
 #define CMD_DRIVER_TIMING_CTRL_A    0xe8
 #define CMD_DRIVER_TIMING_CTRL_B    0xea
 #define CMD_PWR_ON_SEQUENCE_CTRL    0xed
-#define CMD_ENABLE_3G               0xf2
+#define CMD_ENABLE_3GAMMA           0xf2
 #define CMD_ITF_CTRL                0xf6
 #define CMD_PUMP_RATIO_CTRL         0xf7
 
@@ -139,6 +139,36 @@ static void wr_data32(struct ili9341_drv *drv, uint32_t data) {
 
 //-----------------------------------------------------------------------------
 
+// turn the led backlight on
+static void lcd_backlight_on(struct ili9341_drv *drv) {
+	gpio_set(drv->cfg.led);
+}
+
+#if 0
+// turn the led backlight off
+static void lcd_backlight_off(struct ili9341_drv *drv) {
+	gpio_clr(drv->cfg.led);
+}
+#endif
+
+// reset the ili9341 chip
+static void lcd_reset(struct ili9341_drv *drv) {
+	gpio_clr(drv->cfg.rst);
+	mdelay(10);
+	gpio_set(drv->cfg.rst);
+	mdelay(50);
+}
+
+static void lcd_cs_assert(struct ili9341_drv *drv) {
+	gpio_set(drv->cfg.cs);
+}
+
+static void lcd_cs_deassert(struct ili9341_drv *drv) {
+	gpio_clr(drv->cfg.cs);
+}
+
+//-----------------------------------------------------------------------------
+
 // length, command, command data
 static const uint8_t init_table[] = {
 	5, 0xef, 0x03, 0x80, 0x02,	// ??
@@ -157,7 +187,7 @@ static const uint8_t init_table[] = {
 	3, CMD_PIXEL_FMT_SET, 0x55,
 	4, CMD_FRAME_CTRL_NORMAL, 0x00, 0x18,
 	5, CMD_DISP_FUNC_CTRL, 0x08, 0x82, 0x27,
-	3, CMD_ENABLE_3G, 0x00,
+	3, CMD_ENABLE_3GAMMA, 0x00,
 	3, CMD_GAMMA_SET, 0x01,
 	17, CMD_POS_GAMMA_CORRECTION, 0x0f, 0x31, 0x2b, 0x0c, 0x0e, 0x08, 0x4e, 0xf1, 0x37, 0x07, 0x10, 0x03, 0x0e, 0x09, 0x00,
 	17, CMD_NEG_GAMMA_CORRECTION, 0x00, 0x0e, 0x14, 0x03, 0x11, 0x07, 0x31, 0xc1, 0x48, 0x08, 0x0f, 0x0c, 0x31, 0x36, 0x0f,
@@ -168,15 +198,12 @@ int ili9341_init(struct ili9341_drv *drv, struct ili9341_cfg *cfg) {
 	memset(drv, 0, sizeof(struct ili9341_drv));
 	drv->cfg = *cfg;
 
-	// reset the chip
-	mdelay(5);
-	gpio_clr(drv->cfg.rst);
-	mdelay(5);
-	gpio_set(drv->cfg.rst);
-	mdelay(20);
+	lcd_reset(drv);
+	lcd_backlight_on(drv);
 
-	// assert chip select
-	gpio_set(drv->cfg.cs);
+	return 0;
+
+	lcd_cs_assert(drv);
 
 	wr_cmd(drv, CMD_SLEEP_OUT);
 	mdelay(60);
@@ -195,8 +222,7 @@ int ili9341_init(struct ili9341_drv *drv, struct ili9341_cfg *cfg) {
 	mdelay(120);
 	wr_cmd(drv, CMD_DISP_ON);
 
-	// de-assert chip select
-	gpio_clr(drv->cfg.cs);
+	lcd_cs_deassert(drv);
 	return 0;
 }
 

@@ -8,7 +8,7 @@ MB997C Board
 
 #include "stm32f4_soc.h"
 #include "audio.h"
-//#include "led.h"
+#include "display.h"
 #include "debounce.h"
 #include "ggm.h"
 #include "utils.h"
@@ -38,7 +38,7 @@ static const struct gpio_info gpios[] = {
 	{IO_LCD_DATA_CMD, GPIO_MODER_OUT, GPIO_OTYPER_PP, GPIO_OSPEEDR_FAST, GPIO_PUPD_NONE, GPIO_AF0, 0},
 	{IO_LCD_RESET, GPIO_MODER_OUT, GPIO_OTYPER_PP, GPIO_OSPEEDR_LO, GPIO_PUPD_NONE, GPIO_AF0, 0},
 	{IO_LCD_CS, GPIO_MODER_OUT, GPIO_OTYPER_PP, GPIO_OSPEEDR_FAST, GPIO_PUPD_NONE, GPIO_AF0, 0},
-	{IO_LCD_LED, GPIO_MODER_OUT, GPIO_OTYPER_PP, GPIO_OSPEEDR_FAST, GPIO_PUPD_NONE, GPIO_AF0, 0},
+	{IO_LCD_LED, GPIO_MODER_OUT, GPIO_OTYPER_PP, GPIO_OSPEEDR_LO, GPIO_PUPD_NONE, GPIO_AF0, 0},
 	// audio
 	{IO_AUDIO_RESET, GPIO_MODER_OUT, GPIO_OTYPER_PP, GPIO_OSPEEDR_LO, GPIO_PUPD_NONE, GPIO_AF0, 0},
 	{IO_AUDIO_I2C_SCL, GPIO_MODER_IN, GPIO_OTYPER_PP, GPIO_OSPEEDR_LO, GPIO_PUPD_NONE, GPIO_AF0, 0},
@@ -269,6 +269,12 @@ int main(void) {
 	rc = audio_init(&ggm_audio);
 	if (rc != 0) {
 		DBG("audio_init failed %d\r\n", rc);
+		goto exit;
+	}
+
+	rc = display_init(&ggm_display);
+	if (rc != 0) {
+		DBG("display_init failed %d\r\n", rc);
 		goto exit;
 	}
 

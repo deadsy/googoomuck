@@ -95,16 +95,15 @@ int spi_init(struct spi_drv *spi, struct spi_cfg *cfg) {
 	val |= (0 << 14 /*BIDIOE*/);	// Output enable in bidirectional mode
 	val |= (0 << 13 /*CRCEN*/);	// Hardware CRC calculation enable
 	val |= (0 << 12 /*CRCNEXT*/);	// CRC transfer next
-	val |= (0 << 11 /*DFF*/);	// Data frame format
 	val |= (0 << 10 /*RXONLY*/);	// Receive only
 	val |= (0 << 9 /*SSM*/);	// Software slave management
 	val |= (0 << 8 /*SSI*/);	// Internal slave select
-	val |= (0 << 7 /*LSBFIRST*/);	// Frame format
 	val |= (0 << 6 /*SPE*/);	// SPI enable
-	val |= spi->cfg.baud_div;	// Baud rate control
-	val |= (0 << 2 /*MSTR*/);	// Master selection
-	val |= (0 << 1 /*CPOL*/);	// Clock polarity
-	val |= (0 << 0 /*CPHA*/);	// Clock phase
+	val |= spi->cfg.ff;	// Data frame format and MSB/LSB
+	val |= spi->cfg.div;	// Baud rate control
+	val |= spi->cfg.mode;	// Master selection
+	val |= spi->cfg.cpol;	// Clock polarity
+	val |= spi->cfg.cpha;	// Clock phase
 	reg_rmw(&spi->regs->CR1, CR1_MASK, val);
 
 	// setup CR2
