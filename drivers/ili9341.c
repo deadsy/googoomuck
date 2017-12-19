@@ -7,14 +7,15 @@ This is for a 4 wire SPI interface.
 
 Pins are:
 
-SDO (SPI MISO)
-SCK (SPI Clock)
-SDI (SPI MOSI)
-D/C (data/command)
-RESET (reset line)
-CS (chip select)
-GND
-VCC
+SDO (SPI MISO)      IO_LCD_SDO, function
+SCK (SPI Clock)     IO_LCD_SCK, function
+SDI (SPI MOSI)      IO_LCD_SDI, function
+D/C (data/command)  IO_LCD_DATA_CMD, gpio, data=1, command=0
+RESET (reset line)  IO_LCD_RESET, gpio, reset=0, normal=1
+CS (chip select)    IO_LCD_CS, gpio, assert=0, deassert=1
+LED                 IO_LCD_LED, gpio, on=1, off=0
+GND                 Ground
+VCC                 3.3v
 
 */
 //-----------------------------------------------------------------------------
@@ -23,6 +24,9 @@ VCC
 
 #include "ili9341.h"
 #include "stm32f4_soc.h"
+
+#define DEBUG
+#include "logging.h"
 
 //-----------------------------------------------------------------------------
 // Command Set
@@ -115,41 +119,30 @@ VCC
 
 //-----------------------------------------------------------------------------
 
-static void wr_cmd(struct ili9341_drv *drv, uint8_t cmd) {
-	gpio_set(drv->cfg.dc);
-	spi_wr_block(drv->cfg.spi, cmd);
-	gpio_clr(drv->cfg.dc);
-}
-
-static void wr_data8(struct ili9341_drv *drv, uint8_t data) {
-	spi_wr_block(drv->cfg.spi, data);
-}
-
-#if 0
-static void wr_data16(struct ili9341_drv *drv, uint16_t data) {
-	wr_data8(drv, data >> 8);
-	wr_data8(drv, data);
-}
-
-static void wr_data32(struct ili9341_drv *drv, uint32_t data) {
-	wr_data16(drv, data >> 16);
-	wr_data16(drv, data);
-}
-#endif
-
-//-----------------------------------------------------------------------------
-
 // turn the led backlight on
 static void lcd_backlight_on(struct ili9341_drv *drv) {
 	gpio_set(drv->cfg.led);
 }
 
-#if 0
-// turn the led backlight off
-static void lcd_backlight_off(struct ili9341_drv *drv) {
-	gpio_clr(drv->cfg.led);
+// assert chip select
+static void lcd_cs_assert(struct ili9341_drv *drv) {
+	gpio_clr(drv->cfg.cs);
 }
-#endif
+
+//deassert chip select
+static void lcd_cs_deassert(struct ili9341_drv *drv) {
+	gpio_set(drv->cfg.cs);
+}
+
+// set the interface to data mode
+static void lcd_data_mode(struct ili9341_drv *drv) {
+	gpio_set(drv->cfg.dc);
+}
+
+// set the interface to command mode
+static void lcd_cmd_mode(struct ili9341_drv *drv) {
+	gpio_clr(drv->cfg.dc);
+}
 
 // reset the ili9341 chip
 static void lcd_reset(struct ili9341_drv *drv) {
@@ -159,19 +152,25 @@ static void lcd_reset(struct ili9341_drv *drv) {
 	mdelay(50);
 }
 
-static void lcd_cs_assert(struct ili9341_drv *drv) {
-	gpio_set(drv->cfg.cs);
+//-----------------------------------------------------------------------------
+
+// write an 8 bit command to the ili9341
+static void wr_cmd(struct ili9341_drv *drv, uint8_t cmd) {
+	lcd_cmd_mode(drv);
+	spi_wr_block(drv->cfg.spi, cmd);
+	lcd_data_mode(drv);
 }
 
-static void lcd_cs_deassert(struct ili9341_drv *drv) {
-	gpio_clr(drv->cfg.cs);
+// write 8 bits of data to the ili9341
+static void wr_data8(struct ili9341_drv *drv, uint8_t data) {
+	spi_wr_block(drv->cfg.spi, data);
 }
 
 //-----------------------------------------------------------------------------
 
 // length, command, command data
 static const uint8_t init_table[] = {
-	5, 0xef, 0x03, 0x80, 0x02,	// ??
+	//5, 0xef, 0x03, 0x80, 0x02,    // ??
 	7, CMD_PWR_CTRL_A, 0x39, 0x2c, 0x00, 0x34, 0x02,
 	5, CMD_PWR_CTRL_B, 0x00, 0xc1, 0x30,
 	5, CMD_DRIVER_TIMING_CTRL_A, 0x85, 0x00, 0x78,
@@ -201,9 +200,8 @@ int ili9341_init(struct ili9341_drv *drv, struct ili9341_cfg *cfg) {
 	lcd_reset(drv);
 	lcd_backlight_on(drv);
 
-	return 0;
-
 	lcd_cs_assert(drv);
+	return 0;
 
 	wr_cmd(drv, CMD_SLEEP_OUT);
 	mdelay(60);

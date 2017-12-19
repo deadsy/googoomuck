@@ -89,6 +89,9 @@ int spi_init(struct spi_drv *spi, struct spi_cfg *cfg) {
 	// enable the spi module
 	spi_enable(cfg->base);
 
+	// turn off the peripheral for configuration
+	reg_clr(&spi->regs->CR1, (1U << 6 /*SPE*/));
+
 	// setup CR1
 	val = 0;
 	val |= (0 << 15 /*BIDIMODE*/);	// Bidirectional data mode enable
@@ -96,9 +99,8 @@ int spi_init(struct spi_drv *spi, struct spi_cfg *cfg) {
 	val |= (0 << 13 /*CRCEN*/);	// Hardware CRC calculation enable
 	val |= (0 << 12 /*CRCNEXT*/);	// CRC transfer next
 	val |= (0 << 10 /*RXONLY*/);	// Receive only
-	val |= (0 << 9 /*SSM*/);	// Software slave management
+	val |= (1 << 9 /*SSM*/);	// Software slave management
 	val |= (0 << 8 /*SSI*/);	// Internal slave select
-	val |= (0 << 6 /*SPE*/);	// SPI enable
 	val |= spi->cfg.ff;	// Data frame format and MSB/LSB
 	val |= spi->cfg.div;	// Baud rate control
 	val |= spi->cfg.mode;	// Master selection
@@ -125,6 +127,8 @@ int spi_init(struct spi_drv *spi, struct spi_cfg *cfg) {
 	// setup I2SCFGR (make sure we are in SPI mode)
 	reg_clr(&spi->regs->I2SCFGR, (1 << 11 /*I2SMODE */ ));
 
+	// turn on the peripheral
+	reg_set(&spi->regs->CR1, (1U << 6 /*SPE*/));
 	return 0;
 }
 

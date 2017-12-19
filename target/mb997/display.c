@@ -25,7 +25,7 @@ static struct spi_cfg lcd_spi_cfg = {
 	.cpol = SPI_CPOL_HI,
 	.cpha = SPI_CPHA_CLK2,
 	.ff = SPI_FF_8B_MSB,
-	.div = SPI_BAUD_DIV2,
+	.div = SPI_BAUD_DIV64,
 };
 
 //-----------------------------------------------------------------------------
