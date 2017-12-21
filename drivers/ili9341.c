@@ -201,7 +201,6 @@ int ili9341_init(struct ili9341_drv *drv, struct ili9341_cfg *cfg) {
 	lcd_backlight_on(drv);
 
 	lcd_cs_assert(drv);
-	return 0;
 
 	wr_cmd(drv, CMD_SLEEP_OUT);
 	mdelay(60);

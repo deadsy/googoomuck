@@ -20,11 +20,11 @@ struct display_drv ggm_display;
 // SPI Setup
 
 static struct spi_cfg lcd_spi_cfg = {
-	.base = SPI1_BASE,
-	.mode = SPI_MODE_MST,
+	.base = SPI2_BASE,
+	.mode = SPI_MODE_MASTER,
 	.cpol = SPI_CPOL_HI,
 	.cpha = SPI_CPHA_CLK2,
-	.ff = SPI_FF_8B_MSB,
+	.ff = SPI_FF_8BIT_MSB,
 	.div = SPI_BAUD_DIV64,
 };
 

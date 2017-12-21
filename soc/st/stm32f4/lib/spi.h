@@ -104,8 +104,8 @@ uint32_t get_i2sclk(void);
 // SPI Driver API
 
 // spi modes
-#define SPI_MODE_SLV (0U << 2)
-#define SPI_MODE_MST (1U << 2)
+#define SPI_MODE_SLAVE (0U << 2)
+#define SPI_MODE_MASTER (1U << 2)
 
 // clock polarity
 #define SPI_CPOL_LO (0U << 1)
@@ -116,10 +116,10 @@ uint32_t get_i2sclk(void);
 #define SPI_CPHA_CLK2 (1U << 0)
 
 // data frame format
-#define SPI_FF_8B_MSB ((0U << 11) | (0U << 7))	// 8 bit msb first
-#define SPI_FF_8B_LSB ((0U << 11) | (1U << 7))	// 8 bit lsb first
-#define SPI_FF_16B_MSB ((1U << 11) | (0U << 7))	// 8 bit msb first
-#define SPI_FF_16B_LSB ((1U << 11) | (1U << 7))	// 8 bit lsb first
+#define SPI_FF_8BIT_MSB  ((0U << 11) | (0U << 7))	// 8 bit msb first
+#define SPI_FF_8BIT_LSB  ((0U << 11) | (1U << 7))	// 8 bit lsb first
+#define SPI_FF_16BIT_MSB ((1U << 11) | (0U << 7))	// 16 bit msb first
+#define SPI_FF_16BIT_LSB ((1U << 11) | (1U << 7))	// 16 bit lsb first
 
 // baud rate divisors (F_PCLK/N)
 #define SPI_BAUD_DIV2   (0U << 3)

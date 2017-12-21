@@ -99,8 +99,9 @@ int spi_init(struct spi_drv *spi, struct spi_cfg *cfg) {
 	val |= (0 << 13 /*CRCEN*/);	// Hardware CRC calculation enable
 	val |= (0 << 12 /*CRCNEXT*/);	// CRC transfer next
 	val |= (0 << 10 /*RXONLY*/);	// Receive only
+	// note: software drives the slave chip select as a normal GPIO
 	val |= (1 << 9 /*SSM*/);	// Software slave management
-	val |= (0 << 8 /*SSI*/);	// Internal slave select
+	val |= (1 << 8 /*SSI*/);	// Internal slave select
 	val |= spi->cfg.ff;	// Data frame format and MSB/LSB
 	val |= spi->cfg.div;	// Baud rate control
 	val |= spi->cfg.mode;	// Master selection
@@ -114,7 +115,8 @@ int spi_init(struct spi_drv *spi, struct spi_cfg *cfg) {
 	val |= (0 << 6 /*RXNEIE*/);	// RX buffer not empty interrupt enable
 	val |= (0 << 5 /*ERRIE*/);	// Error interrupt enable
 	val |= (0 << 4 /*FRF*/);	// Frame format
-	val |= (0 << 2 /*SSOE*/);	// SS output enable
+	// note: set the SSOE bit to stop the SPI immediately giving a MODF error
+	val |= (1 << 2 /*SSOE*/);	// SS output enable
 	val |= (0 << 1 /*TXDMAEN*/);	// Tx buffer DMA enable
 	val |= (0 << 0 /*RXDMAEN*/);	// Rx buffer DMA enable
 	reg_rmw(&spi->regs->CR2, CR2_MASK, val);
