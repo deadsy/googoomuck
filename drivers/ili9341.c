@@ -157,13 +157,13 @@ static void lcd_reset(struct ili9341_drv *drv) {
 // write an 8 bit command to the ili9341
 static void wr_cmd(struct ili9341_drv *drv, uint8_t cmd) {
 	lcd_cmd_mode(drv);
-	spi_wr_block(drv->cfg.spi, cmd);
+	spi_txrx(drv->cfg.spi, cmd, NULL);
 	lcd_data_mode(drv);
 }
 
 // write 8 bits of data to the ili9341
 static void wr_data8(struct ili9341_drv *drv, uint8_t data) {
-	spi_wr_block(drv->cfg.spi, data);
+	spi_txrx(drv->cfg.spi, data, NULL);
 }
 
 //-----------------------------------------------------------------------------

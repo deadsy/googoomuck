@@ -19,14 +19,34 @@ struct display_drv ggm_display;
 //-----------------------------------------------------------------------------
 // SPI Setup
 
+#if defined(SPI_DRIVER_HW)
+
 static struct spi_cfg lcd_spi_cfg = {
 	.base = SPI2_BASE,
 	.mode = SPI_MODE_MASTER,
-	.cpol = SPI_CPOL_HI,
-	.cpha = SPI_CPHA_CLK2,
-	.ff = SPI_FF_8BIT_MSB,
-	.div = SPI_BAUD_DIV64,
+	.cpol = SPI_CPOL_LO,	// clock is normally low
+	.cpha = SPI_CPHA_CLK2,	// latch MISO on falling clock edge
+	.bits = SPI_DFF_8BITS,	// 8 bits per data frame
+	.lsb = SPI_MSB_FIRST,	// ms bit first
+	.div = SPI_BAUD_DIV256,
 };
+
+#elif defined(SPI_DRIVER_BITBANG)
+
+static struct spi_cfg lcd_spi_cfg = {
+	.clk = IO_LCD_SCK,
+	.mosi = IO_LCD_SDI,
+	.miso = IO_LCD_SDO,
+	.cpol = 0,		// clock is normally low
+	.cpha = 1,		// latch MISO on falling clock edge
+	.bits = 8,		// 8 bits per data frame
+	.lsb = 0,		// ms bit first
+	.delay = 5,
+};
+
+#else
+#error "what kind of SPI driver are we building?"
+#endif
 
 //-----------------------------------------------------------------------------
 

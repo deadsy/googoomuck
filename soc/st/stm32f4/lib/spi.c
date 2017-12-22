@@ -28,53 +28,28 @@ void spi_enable(uint32_t base) {
 }
 
 //-----------------------------------------------------------------------------
+#if defined(SPI_DRIVER_HW)
 
 // tx buffer empty
-static inline int spi_txe(struct spi_drv *spi) {
+static inline int spi_tx_empty(struct spi_drv *spi) {
 	return spi->regs->SR & (1 << 1 /*TXE*/);
 }
 
 // rx buffer not empty
-static inline int spi_rxne(struct spi_drv *spi) {
+static inline int spi_rx_not_empty(struct spi_drv *spi) {
 	return spi->regs->SR & (1 << 0 /*RXNE*/);
 }
 
-// read the spi data register (non-blocking)
-int spi_rd(struct spi_drv *spi, uint16_t * data) {
-	if (spi_rxne(spi)) {
-		*data = spi->regs->DR;
-		return 0;
-	}
-	return -1;
-}
-
-// read the spi data register (blocking)
-void spi_rd_block(struct spi_drv *spi, uint16_t * data) {
-	while (1) {
-		if (spi_rd(spi, data) == 0) {
-			return;
-		}
+int spi_txrx(struct spi_drv *spi, uint32_t tx, uint32_t * rx) {
+	while (!spi_tx_empty(spi)) {
 		udelay(5);
 	}
-}
-
-// write the spi data register (non-blocking)
-int spi_wr(struct spi_drv *spi, uint16_t data) {
-	if (spi_txe(spi)) {
-		spi->regs->DR = data;
-		return 0;
+	spi->regs->DR = tx;
+	uint16_t data = spi->regs->DR;
+	if (rx) {
+		*rx = data;
 	}
-	return -1;
-}
-
-// write the spi data register (blocking)
-void spi_wr_block(struct spi_drv *spi, uint16_t data) {
-	while (1) {
-		if (spi_wr(spi, data) == 0) {
-			return;
-		}
-		udelay(5);
-	}
+	return 0;
 }
 
 //-----------------------------------------------------------------------------
@@ -102,7 +77,8 @@ int spi_init(struct spi_drv *spi, struct spi_cfg *cfg) {
 	// note: software drives the slave chip select as a normal GPIO
 	val |= (1 << 9 /*SSM*/);	// Software slave management
 	val |= (1 << 8 /*SSI*/);	// Internal slave select
-	val |= spi->cfg.ff;	// Data frame format and MSB/LSB
+	val |= spi->cfg.bits;	// 8/16 bits per frame
+	val |= spi->cfg.lsb;	// msb/lsb first
 	val |= spi->cfg.div;	// Baud rate control
 	val |= spi->cfg.mode;	// Master selection
 	val |= spi->cfg.cpol;	// Clock polarity
@@ -133,5 +109,81 @@ int spi_init(struct spi_drv *spi, struct spi_cfg *cfg) {
 	reg_set(&spi->regs->CR1, (1U << 6 /*SPE*/));
 	return 0;
 }
+
+//-----------------------------------------------------------------------------
+#elif defined(SPI_DRIVER_BITBANG)
+
+// set or clear the MOSI line
+static inline void spi_mosi(struct spi_drv *spi, uint32_t x) {
+	x ? gpio_set(spi->cfg.mosi) : gpio_clr(spi->cfg.mosi);
+}
+
+// set or clear the clock line
+static inline void spi_clk(struct spi_drv *spi, uint32_t x) {
+	x ? gpio_set(spi->cfg.clk) : gpio_clr(spi->cfg.clk);
+}
+
+// pulse the clock line and read the MISO line
+static int spi_clk_pulse(struct spi_drv *spi) {
+	int rc = 0;
+	// 1st clock edge
+	gpio_toggle(spi->cfg.clk);
+	udelay(spi->cfg.delay);
+	if (!spi->cfg.cpha) {
+		rc = gpio_rd(spi->cfg.miso);
+	}
+	// 2nd clock edge
+	gpio_toggle(spi->cfg.clk);
+	udelay(spi->cfg.delay);
+	if (spi->cfg.cpha) {
+		rc = gpio_rd(spi->cfg.miso);
+	}
+	return rc;
+}
+
+// Tx and Rx N bits.
+int spi_txrx(struct spi_drv *spi, uint32_t tx, uint32_t * rx) {
+	uint32_t rx_data = 0;
+	int n = spi->cfg.bits - 1;
+
+	if (spi->cfg.lsb) {
+		// least significant bit first
+		uint32_t mask = 1;
+		for (int i = 0; i <= n; i++) {
+			spi_mosi(spi, tx & mask);
+			rx_data >>= 1;
+			rx_data |= spi_clk_pulse(spi) << n;
+			mask <<= 1;
+		}
+	} else {
+		// most significant bit first
+		uint32_t mask = 1U << n;
+		for (int i = 0; i <= n; i++) {
+			spi_mosi(spi, tx & mask);
+			rx_data <<= 1;
+			rx_data |= spi_clk_pulse(spi);
+			mask >>= 1;
+		}
+	}
+
+	if (rx) {
+		*rx = rx_data;
+	}
+	return 0;
+}
+
+int spi_init(struct spi_drv *spi, struct spi_cfg *cfg) {
+	memset(spi, 0, sizeof(struct spi_drv));
+	spi->cfg = *cfg;
+	// set the clock line per polarity
+	spi_clk(spi, spi->cfg.cpol);
+	return 0;
+}
+
+//-----------------------------------------------------------------------------
+
+#else
+#error "what kind of SPI driver are we building?"
+#endif
 
 //-----------------------------------------------------------------------------

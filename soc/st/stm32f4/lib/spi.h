@@ -17,6 +17,13 @@ SPI/I2S Driver
 
 //-----------------------------------------------------------------------------
 
+// For test/debug puposes we implement a bit-banged SPI driver.
+// Don't use this normally - it's inefficient.
+//#define SPI_DRIVER_BITBANG
+#define SPI_DRIVER_HW
+
+//-----------------------------------------------------------------------------
+
 // define non-reserved register bits
 #define CR1_MASK (0xffffU)
 #define CR2_MASK (0xf7U)
@@ -103,6 +110,8 @@ uint32_t get_i2sclk(void);
 //-----------------------------------------------------------------------------
 // SPI Driver API
 
+#if defined(SPI_DRIVER_HW)
+
 // spi modes
 #define SPI_MODE_SLAVE (0U << 2)
 #define SPI_MODE_MASTER (1U << 2)
@@ -116,10 +125,12 @@ uint32_t get_i2sclk(void);
 #define SPI_CPHA_CLK2 (1U << 0)
 
 // data frame format
-#define SPI_FF_8BIT_MSB  ((0U << 11) | (0U << 7))	// 8 bit msb first
-#define SPI_FF_8BIT_LSB  ((0U << 11) | (1U << 7))	// 8 bit lsb first
-#define SPI_FF_16BIT_MSB ((1U << 11) | (0U << 7))	// 16 bit msb first
-#define SPI_FF_16BIT_LSB ((1U << 11) | (1U << 7))	// 16 bit lsb first
+#define SPI_DFF_8BITS (0U << 11)
+#define SPI_DFF_16BITS (1U << 11)
+
+// msb/lsb first
+#define SPI_MSB_FIRST (0U << 7)
+#define SPI_LSB_FIRST (1U << 7)
 
 // baud rate divisors (F_PCLK/N)
 #define SPI_BAUD_DIV2   (0U << 3)
@@ -136,7 +147,8 @@ struct spi_cfg {
 	uint32_t mode;		// master/slave mode
 	uint32_t cpol;		// clock polarity
 	uint32_t cpha;		// clock phase
-	uint32_t ff;		// data frame format
+	uint32_t bits;		// 8/16 bits per frame
+	uint32_t lsb;		// msb/lsb first
 	uint32_t div;		// baud rate divisor
 };
 
@@ -145,11 +157,29 @@ struct spi_drv {
 	SPI_TypeDef *regs;	// SPI/I2S peripheral registers
 };
 
+#elif defined(SPI_DRIVER_BITBANG)
+
+struct spi_cfg {
+	int clk;		// clock gpio
+	int mosi;		// mosi gpio
+	int miso;		// miso gpio
+	int cpol;		// clock polarity, 0 = normally low, 1 = normally high
+	int cpha;		// clock edge to capture miso on, 0 = 1st edge, 1 = 2nd edge
+	int bits;		// number of bits per frame
+	int lsb;		// least significant bit first
+	int delay;		// clock delay in usecs
+};
+
+struct spi_drv {
+	struct spi_cfg cfg;
+};
+
+#else
+#error "what kind of SPI driver are we building?"
+#endif
+
 int spi_init(struct spi_drv *spi, struct spi_cfg *cfg);
-int spi_rd(struct spi_drv *spi, uint16_t * data);
-void spi_rd_block(struct spi_drv *spi, uint16_t * data);
-int spi_wr(struct spi_drv *spi, uint16_t data);
-void spi_wr_block(struct spi_drv *spi, uint16_t data);
+int spi_txrx(struct spi_drv *spi, uint32_t tx, uint32_t * rx);
 
 //-----------------------------------------------------------------------------
 
