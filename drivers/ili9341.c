@@ -7,13 +7,13 @@ This is for a 4 wire SPI interface.
 
 Pins are:
 
-SDO (SPI MISO)      IO_LCD_SDO, function
-SCK (SPI Clock)     IO_LCD_SCK, function
-SDI (SPI MOSI)      IO_LCD_SDI, function
-D/C (data/command)  IO_LCD_DATA_CMD, gpio, data=1, command=0
-RESET (reset line)  IO_LCD_RESET, gpio, reset=0, normal=1
-CS (chip select)    IO_LCD_CS, gpio, assert=0, deassert=1
-LED                 IO_LCD_LED, gpio, on=1, off=0
+SDO (SPI MISO)      IO_LCD_SDO
+SCK (SPI Clock)     IO_LCD_SCK
+SDI (SPI MOSI)      IO_LCD_SDI
+D/C (data/command)  IO_LCD_DATA_CMD, data=1, command=0
+RESET (reset line)  IO_LCD_RESET, reset=0, normal=1
+CS (chip select)    IO_LCD_CS, assert=0, deassert=1
+LED                 IO_LCD_LED, on=1, off=0
 GND                 Ground
 VCC                 3.3v
 
@@ -144,26 +144,32 @@ static void lcd_cmd_mode(struct ili9341_drv *drv) {
 	gpio_clr(drv->cfg.dc);
 }
 
-// reset the ili9341 chip
-static void lcd_reset(struct ili9341_drv *drv) {
-	gpio_clr(drv->cfg.rst);
-	mdelay(10);
-	gpio_set(drv->cfg.rst);
-	mdelay(50);
-}
-
 //-----------------------------------------------------------------------------
 
-// write an 8 bit command to the ili9341
-static void wr_cmd(struct ili9341_drv *drv, uint8_t cmd) {
+// Read command to the device - read N bytes of data from the device.
+static void rd_command(struct ili9341_drv *drv, uint8_t cmd, uint8_t * buf, size_t n) {
+	lcd_cs_assert(drv);
 	lcd_cmd_mode(drv);
 	spi_txrx(drv->cfg.spi, cmd, NULL);
 	lcd_data_mode(drv);
+	for (size_t i = 0; i < n; i++) {
+		uint32_t data;
+		spi_txrx(drv->cfg.spi, 0, &data);
+		buf[i] = data;
+	}
+	lcd_cs_deassert(drv);
 }
 
-// write 8 bits of data to the ili9341
-static void wr_data8(struct ili9341_drv *drv, uint8_t data) {
-	spi_txrx(drv->cfg.spi, data, NULL);
+// Write command to the device - write N bytes of data to the device.
+static void wr_command(struct ili9341_drv *drv, uint8_t cmd, const uint8_t * buf, size_t n) {
+	lcd_cs_assert(drv);
+	lcd_cmd_mode(drv);
+	spi_txrx(drv->cfg.spi, cmd, NULL);
+	lcd_data_mode(drv);
+	for (size_t i = 0; i < n; i++) {
+		spi_txrx(drv->cfg.spi, buf[i], NULL);
+	}
+	lcd_cs_deassert(drv);
 }
 
 //-----------------------------------------------------------------------------
@@ -193,33 +199,82 @@ static const uint8_t init_table[] = {
 	0,			// end of list
 };
 
+// configure the ili9341 chip
+static void lcd_configure(struct ili9341_drv *drv) {
+	const uint8_t *ptr = init_table;
+	while (ptr[0] != 0) {
+		wr_command(drv, ptr[1], &ptr[2], ptr[0] - 2);
+		ptr += ptr[0];
+	}
+}
+
+// reset the ili9341 chip
+static void lcd_reset(struct ili9341_drv *drv) {
+	gpio_clr(drv->cfg.rst);
+	mdelay(10);
+	gpio_set(drv->cfg.rst);
+	mdelay(50);
+}
+
+//-----------------------------------------------------------------------------
+
+static uint32_t rd_display_id(struct ili9341_drv *drv) {
+	uint8_t buf[4];
+	rd_command(drv, CMD_RD_DISP_ID, buf, sizeof(buf));
+	return (buf[1] << 16) | (buf[2] << 8) | buf[3];
+}
+
+static uint32_t rd_id1(struct ili9341_drv *drv) {
+	uint8_t buf[2];
+	rd_command(drv, CMD_RD_ID1, buf, sizeof(buf));
+	return buf[1];
+}
+
+static uint32_t rd_id2(struct ili9341_drv *drv) {
+	uint8_t buf[2];
+	rd_command(drv, CMD_RD_ID2, buf, sizeof(buf));
+	return buf[1];
+}
+
+static uint32_t rd_id3(struct ili9341_drv *drv) {
+	uint8_t buf[2];
+	rd_command(drv, CMD_RD_ID3, buf, sizeof(buf));
+	return buf[1];
+}
+
+static uint32_t rd_id4(struct ili9341_drv *drv) {
+	uint8_t buf[4];
+	rd_command(drv, CMD_RD_ID4, buf, sizeof(buf));
+	return (buf[1] << 16) | (buf[2] << 8) | buf[3];
+}
+
+//-----------------------------------------------------------------------------
+
 int ili9341_init(struct ili9341_drv *drv, struct ili9341_cfg *cfg) {
+
 	memset(drv, 0, sizeof(struct ili9341_drv));
 	drv->cfg = *cfg;
 
 	lcd_reset(drv);
 	lcd_backlight_on(drv);
 
-	lcd_cs_assert(drv);
+	DBG("display id: %08x\r\n", rd_display_id(drv));
+	DBG("id1: %08x\r\n", rd_id1(drv));
+	DBG("id2: %08x\r\n", rd_id2(drv));
+	DBG("id3: %08x\r\n", rd_id3(drv));
+	DBG("id4: %08x\r\n", rd_id4(drv));
 
-	wr_cmd(drv, CMD_SLEEP_OUT);
+	return 0;
+
+	wr_command(drv, CMD_SLEEP_OUT, NULL, 0);
 	mdelay(60);
 
-	// apply the initialisation table commands
-	const uint8_t *ptr = init_table;
-	while (ptr[0] != 0) {
-		wr_cmd(drv, ptr[1]);
-		for (int i = 0; i < ptr[0] - 2; i++) {
-			wr_data8(drv, ptr[2 + i]);
-		}
-		ptr += ptr[0];
-	}
+	lcd_configure(drv);
 
-	wr_cmd(drv, CMD_SLEEP_OUT);
+	wr_command(drv, CMD_SLEEP_OUT, NULL, 0);
 	mdelay(120);
-	wr_cmd(drv, CMD_DISP_ON);
+	wr_command(drv, CMD_DISP_ON, NULL, 0);
 
-	lcd_cs_deassert(drv);
 	return 0;
 }
 

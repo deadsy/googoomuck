@@ -19,8 +19,8 @@ SPI/I2S Driver
 
 // For test/debug puposes we implement a bit-banged SPI driver.
 // Don't use this normally - it's inefficient.
-//#define SPI_DRIVER_BITBANG
-#define SPI_DRIVER_HW
+#define SPI_DRIVER_BITBANG
+//#define SPI_DRIVER_HW
 
 //-----------------------------------------------------------------------------
 
