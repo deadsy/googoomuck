@@ -144,31 +144,28 @@ static void lcd_cmd_mode(struct ili9341_drv *drv) {
 	gpio_clr(drv->cfg.dc);
 }
 
+// write a command byte
+static void wr_cmd(struct ili9341_drv *drv, uint8_t cmd) {
+	lcd_cmd_mode(drv);
+	spi_tx8(drv->cfg.spi, cmd);
+	lcd_data_mode(drv);
+}
+
 //-----------------------------------------------------------------------------
 
 // Read command to the device - read N bytes of data from the device.
 static void rd_command(struct ili9341_drv *drv, uint8_t cmd, uint8_t * buf, size_t n) {
 	lcd_cs_assert(drv);
-	lcd_cmd_mode(drv);
-	spi_txrx(drv->cfg.spi, cmd, NULL);
-	lcd_data_mode(drv);
-	for (size_t i = 0; i < n; i++) {
-		uint32_t data;
-		spi_txrx(drv->cfg.spi, 0, &data);
-		buf[i] = data;
-	}
+	wr_cmd(drv, cmd);
+	spi_rxbuf8(drv->cfg.spi, buf, n);
 	lcd_cs_deassert(drv);
 }
 
 // Write command to the device - write N bytes of data to the device.
 static void wr_command(struct ili9341_drv *drv, uint8_t cmd, const uint8_t * buf, size_t n) {
 	lcd_cs_assert(drv);
-	lcd_cmd_mode(drv);
-	spi_txrx(drv->cfg.spi, cmd, NULL);
-	lcd_data_mode(drv);
-	for (size_t i = 0; i < n; i++) {
-		spi_txrx(drv->cfg.spi, buf[i], NULL);
-	}
+	wr_cmd(drv, cmd);
+	spi_txbuf8(drv->cfg.spi, buf, n);
 	lcd_cs_deassert(drv);
 }
 
@@ -176,7 +173,6 @@ static void wr_command(struct ili9341_drv *drv, uint8_t cmd, const uint8_t * buf
 
 // length, command, command data
 static const uint8_t init_table[] = {
-	//5, 0xef, 0x03, 0x80, 0x02,    // ??
 	7, CMD_PWR_CTRL_A, 0x39, 0x2c, 0x00, 0x34, 0x02,
 	5, CMD_PWR_CTRL_B, 0x00, 0xc1, 0x30,
 	5, CMD_DRIVER_TIMING_CTRL_A, 0x85, 0x00, 0x78,
@@ -250,6 +246,29 @@ static uint32_t rd_id4(struct ili9341_drv *drv) {
 
 //-----------------------------------------------------------------------------
 
+static void set_mem_region(struct ili9341_drv *drv, uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
+	lcd_cs_assert(drv);
+	wr_cmd(drv, CMD_COLUMN_ADDR_SET);
+	spi_tx16(drv->cfg.spi, x);
+	spi_tx16(drv->cfg.spi, x + w);
+	wr_cmd(drv, CMD_PAGE_ADDR_SET);
+	spi_tx16(drv->cfg.spi, y);
+	spi_tx16(drv->cfg.spi, y + h);
+	lcd_cs_deassert(drv);
+}
+
+void lcd_fill_rect(struct ili9341_drv *drv, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color) {
+	set_mem_region(drv, x, y, w, h);
+	lcd_cs_assert(drv);
+	wr_cmd(drv, CMD_MEM_WR);
+	for (size_t i = 0; i < w * h; i++) {
+		spi_tx16(drv->cfg.spi, color);
+	}
+	lcd_cs_deassert(drv);
+}
+
+//-----------------------------------------------------------------------------
+
 int ili9341_init(struct ili9341_drv *drv, struct ili9341_cfg *cfg) {
 
 	memset(drv, 0, sizeof(struct ili9341_drv));
@@ -258,14 +277,6 @@ int ili9341_init(struct ili9341_drv *drv, struct ili9341_cfg *cfg) {
 	lcd_reset(drv);
 	lcd_backlight_on(drv);
 
-	DBG("display id: %08x\r\n", rd_display_id(drv));
-	DBG("id1: %08x\r\n", rd_id1(drv));
-	DBG("id2: %08x\r\n", rd_id2(drv));
-	DBG("id3: %08x\r\n", rd_id3(drv));
-	DBG("id4: %08x\r\n", rd_id4(drv));
-
-	return 0;
-
 	wr_command(drv, CMD_SLEEP_OUT, NULL, 0);
 	mdelay(60);
 
@@ -273,7 +284,16 @@ int ili9341_init(struct ili9341_drv *drv, struct ili9341_cfg *cfg) {
 
 	wr_command(drv, CMD_SLEEP_OUT, NULL, 0);
 	mdelay(120);
+
 	wr_command(drv, CMD_DISP_ON, NULL, 0);
+
+	DBG("display id: %08x\r\n", rd_display_id(drv));
+	DBG("id1: %08x\r\n", rd_id1(drv));
+	DBG("id2: %08x\r\n", rd_id2(drv));
+	DBG("id3: %08x\r\n", rd_id3(drv));
+	DBG("id4: %08x\r\n", rd_id4(drv));
+
+	lcd_fill_rect(drv, 20, 0, 100, 100, 0x07E0);
 
 	return 0;
 }

@@ -41,7 +41,7 @@ static struct spi_cfg lcd_spi_cfg = {
 	.cpha = 1,		// latch MISO on falling clock edge
 	.bits = 8,		// 8 bits per data frame
 	.lsb = 0,		// ms bit first
-	.delay = 5,
+	.delay = 0,
 };
 
 #else
