@@ -21,6 +21,8 @@ struct ili9341_cfg {
 
 struct ili9341_drv {
 	struct ili9341_cfg cfg;
+	int width;		// width in pixels
+	int height;		// height in pixels
 };
 
 //-----------------------------------------------------------------------------

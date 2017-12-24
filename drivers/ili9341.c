@@ -117,6 +117,18 @@ VCC                 3.3v
 #define CMD_ITF_CTRL                0xf6
 #define CMD_PUMP_RATIO_CTRL         0xf7
 
+// memory access control
+#define MAC_MY    (1U << 7)
+#define MAC_MX    (1U << 6)
+#define MAC_MV    (1U << 5)
+#define MAC_ML    (1U << 4)
+#define MAC_BGR   (1U << 3)
+#define MAC_MH    (1U << 2)
+
+// display dimensions
+#define ILI9341_TFTWIDTH   240
+#define ILI9341_TFTHEIGHT  320
+
 //-----------------------------------------------------------------------------
 
 // turn the led backlight on
@@ -246,6 +258,39 @@ static uint32_t rd_id4(struct ili9341_drv *drv) {
 
 //-----------------------------------------------------------------------------
 
+// set the rotation of the screen
+void lcd_set_rotation(struct ili9341_drv *drv, int mode) {
+	uint32_t mac;
+	switch (mode & 3) {
+	case 0:
+		mac = (MAC_MX | MAC_BGR);
+		drv->width = ILI9341_TFTWIDTH;
+		drv->height = ILI9341_TFTHEIGHT;
+		break;
+	case 1:
+		mac = (MAC_MV | MAC_BGR);
+		drv->width = ILI9341_TFTHEIGHT;
+		drv->height = ILI9341_TFTWIDTH;
+		break;
+	case 2:
+		mac = (MAC_MY | MAC_BGR);
+		drv->width = ILI9341_TFTWIDTH;
+		drv->height = ILI9341_TFTHEIGHT;
+		break;
+	case 3:
+		mac = (MAC_MX | MAC_MY | MAC_MV | MAC_BGR);
+		drv->width = ILI9341_TFTHEIGHT;
+		drv->height = ILI9341_TFTWIDTH;
+		break;
+	}
+	lcd_cs_assert(drv);
+	wr_cmd(drv, CMD_MEM_ACCESS_CTRL);
+	spi_tx8(drv->cfg.spi, mac);
+	lcd_cs_deassert(drv);
+}
+
+//-----------------------------------------------------------------------------
+
 static void set_mem_region(struct ili9341_drv *drv, uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
 	lcd_cs_assert(drv);
 	wr_cmd(drv, CMD_COLUMN_ADDR_SET);
@@ -287,13 +332,17 @@ int ili9341_init(struct ili9341_drv *drv, struct ili9341_cfg *cfg) {
 
 	wr_command(drv, CMD_DISP_ON, NULL, 0);
 
+	drv->width = ILI9341_TFTWIDTH;
+	drv->height = ILI9341_TFTHEIGHT;
+
 	DBG("display id: %08x\r\n", rd_display_id(drv));
 	DBG("id1: %08x\r\n", rd_id1(drv));
 	DBG("id2: %08x\r\n", rd_id2(drv));
 	DBG("id3: %08x\r\n", rd_id3(drv));
 	DBG("id4: %08x\r\n", rd_id4(drv));
 
-	lcd_fill_rect(drv, 20, 0, 100, 100, 0x07E0);
+	lcd_set_rotation(drv, 3);
+	lcd_fill_rect(drv, 10, 10, 100, 100, 0x07E0);
 
 	return 0;
 }
