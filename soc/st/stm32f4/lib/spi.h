@@ -179,10 +179,13 @@ struct spi_drv {
 #endif
 
 int spi_init(struct spi_drv *spi, struct spi_cfg *cfg);
+
 int spi_tx8(struct spi_drv *spi, uint8_t data);
 int spi_tx16(struct spi_drv *spi, uint16_t data);
 int spi_txbuf8(struct spi_drv *spi, const uint8_t * buf, size_t n);
 int spi_txbuf16(struct spi_drv *spi, const uint16_t * buf, size_t n);
+
+int spi_rx8(struct spi_drv *spi, uint8_t * data);
 int spi_rxbuf8(struct spi_drv *spi, uint8_t * buf, size_t n);
 
 //-----------------------------------------------------------------------------

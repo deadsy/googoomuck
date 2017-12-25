@@ -141,44 +141,16 @@ static void lcd_cs_assert(struct ili9341_drv *drv) {
 	gpio_clr(drv->cfg.cs);
 }
 
-//deassert chip select
+// deassert chip select
 static void lcd_cs_deassert(struct ili9341_drv *drv) {
 	gpio_set(drv->cfg.cs);
 }
 
-// set the interface to data mode
-static void lcd_data_mode(struct ili9341_drv *drv) {
-	gpio_set(drv->cfg.dc);
-}
-
-// set the interface to command mode
-static void lcd_cmd_mode(struct ili9341_drv *drv) {
-	gpio_clr(drv->cfg.dc);
-}
-
 // write a command byte
 static void wr_cmd(struct ili9341_drv *drv, uint8_t cmd) {
-	lcd_cmd_mode(drv);
+	gpio_clr(drv->cfg.dc);	// 0 = command mode
 	spi_tx8(drv->cfg.spi, cmd);
-	lcd_data_mode(drv);
-}
-
-//-----------------------------------------------------------------------------
-
-// Read command to the device - read N bytes of data from the device.
-static void rd_command(struct ili9341_drv *drv, uint8_t cmd, uint8_t * buf, size_t n) {
-	lcd_cs_assert(drv);
-	wr_cmd(drv, cmd);
-	spi_rxbuf8(drv->cfg.spi, buf, n);
-	lcd_cs_deassert(drv);
-}
-
-// Write command to the device - write N bytes of data to the device.
-static void wr_command(struct ili9341_drv *drv, uint8_t cmd, const uint8_t * buf, size_t n) {
-	lcd_cs_assert(drv);
-	wr_cmd(drv, cmd);
-	spi_txbuf8(drv->cfg.spi, buf, n);
-	lcd_cs_deassert(drv);
+	gpio_set(drv->cfg.dc);	// 1 = data mode
 }
 
 //-----------------------------------------------------------------------------
@@ -210,10 +182,13 @@ static const uint8_t init_table[] = {
 // configure the ili9341 chip
 static void lcd_configure(struct ili9341_drv *drv) {
 	const uint8_t *ptr = init_table;
+	lcd_cs_assert(drv);
 	while (ptr[0] != 0) {
-		wr_command(drv, ptr[1], &ptr[2], ptr[0] - 2);
+		wr_cmd(drv, ptr[1]);
+		spi_txbuf8(drv->cfg.spi, &ptr[2], ptr[0] - 2);
 		ptr += ptr[0];
 	}
+	lcd_cs_deassert(drv);
 }
 
 // reset the ili9341 chip
@@ -224,37 +199,30 @@ static void lcd_reset(struct ili9341_drv *drv) {
 	mdelay(50);
 }
 
+static void lcd_exit_standby(struct ili9341_drv *drv) {
+	lcd_cs_assert(drv);
+	wr_cmd(drv, CMD_SLEEP_OUT);
+	mdelay(120);
+	wr_cmd(drv, CMD_DISP_ON);
+	lcd_cs_deassert(drv);
+}
+
 //-----------------------------------------------------------------------------
 
-static uint32_t rd_display_id(struct ili9341_drv *drv) {
-	uint8_t buf[4];
-	rd_command(drv, CMD_RD_DISP_ID, buf, sizeof(buf));
-	return (buf[1] << 16) | (buf[2] << 8) | buf[3];
+#if 0
+// Reading back from this chip is a bit of a mystery.
+// Here's some code I found - but it's not obvious from the data sheet.
+static uint8_t rd_cmd8(struct ili9341_drv *drv, uint8_t cmd, uint8_t index) {
+	uint8_t data;
+	lcd_cs_assert(drv);
+	wr_cmd(drv, 0xD9);	// secret command?
+	spi_tx8(drv->cfg.spi, 0x10 + index);
+	wr_cmd(drv, cmd);
+	spi_rx8(drv->cfg.spi, &data);
+	lcd_cs_deassert(drv);
+	return data;
 }
-
-static uint32_t rd_id1(struct ili9341_drv *drv) {
-	uint8_t buf[2];
-	rd_command(drv, CMD_RD_ID1, buf, sizeof(buf));
-	return buf[1];
-}
-
-static uint32_t rd_id2(struct ili9341_drv *drv) {
-	uint8_t buf[2];
-	rd_command(drv, CMD_RD_ID2, buf, sizeof(buf));
-	return buf[1];
-}
-
-static uint32_t rd_id3(struct ili9341_drv *drv) {
-	uint8_t buf[2];
-	rd_command(drv, CMD_RD_ID3, buf, sizeof(buf));
-	return buf[1];
-}
-
-static uint32_t rd_id4(struct ili9341_drv *drv) {
-	uint8_t buf[4];
-	rd_command(drv, CMD_RD_ID4, buf, sizeof(buf));
-	return (buf[1] << 16) | (buf[2] << 8) | buf[3];
-}
+#endif
 
 //-----------------------------------------------------------------------------
 
@@ -314,35 +282,48 @@ void lcd_fill_rect(struct ili9341_drv *drv, uint16_t x, uint16_t y, uint16_t w, 
 
 //-----------------------------------------------------------------------------
 
-int ili9341_init(struct ili9341_drv *drv, struct ili9341_cfg *cfg) {
+#define TOFS 10
+#define TSIZE 100
 
+void lcd_test(struct ili9341_drv *drv) {
+
+	uint16_t x, y;
+
+	// top left
+	x = TOFS;
+	y = TOFS;
+	lcd_fill_rect(drv, x, y, TSIZE, TSIZE, ILI9341_RED);
+
+	// top right
+	x = drv->width - TOFS - TSIZE;
+	y = TOFS;
+	lcd_fill_rect(drv, x, y, TSIZE, TSIZE, ILI9341_GREEN);
+
+	// bottom right
+	x = drv->width - TOFS - TSIZE;
+	y = drv->height - TOFS - TSIZE;
+	lcd_fill_rect(drv, x, y, TSIZE, TSIZE, ILI9341_WHITE);
+
+	// bottom left
+	x = TOFS;
+	y = drv->height - TOFS - TSIZE;
+	lcd_fill_rect(drv, x, y, TSIZE, TSIZE, ILI9341_BLUE);
+
+}
+
+//-----------------------------------------------------------------------------
+
+int ili9341_init(struct ili9341_drv *drv, struct ili9341_cfg *cfg) {
 	memset(drv, 0, sizeof(struct ili9341_drv));
 	drv->cfg = *cfg;
 
 	lcd_reset(drv);
 	lcd_backlight_on(drv);
-
-	wr_command(drv, CMD_SLEEP_OUT, NULL, 0);
-	mdelay(60);
-
 	lcd_configure(drv);
-
-	wr_command(drv, CMD_SLEEP_OUT, NULL, 0);
-	mdelay(120);
-
-	wr_command(drv, CMD_DISP_ON, NULL, 0);
-
-	drv->width = ILI9341_TFTWIDTH;
-	drv->height = ILI9341_TFTHEIGHT;
-
-	DBG("display id: %08x\r\n", rd_display_id(drv));
-	DBG("id1: %08x\r\n", rd_id1(drv));
-	DBG("id2: %08x\r\n", rd_id2(drv));
-	DBG("id3: %08x\r\n", rd_id3(drv));
-	DBG("id4: %08x\r\n", rd_id4(drv));
-
+	lcd_exit_standby(drv);
 	lcd_set_rotation(drv, 3);
-	lcd_fill_rect(drv, 10, 10, 100, 100, 0x07E0);
+
+	lcd_test(drv);
 
 	return 0;
 }

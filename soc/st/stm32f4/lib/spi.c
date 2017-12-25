@@ -202,10 +202,16 @@ int spi_txbuf16(struct spi_drv *spi, const uint16_t * buf, size_t n) {
 //-----------------------------------------------------------------------------
 // Rx
 
+// Rx 8 bits
+int spi_rx8(struct spi_drv *spi, uint8_t * data) {
+	*data = spi_txrx_n(spi, 0xff, 8);
+	return 0;
+}
+
 // Rx an 8 bit buffer
 int spi_rxbuf8(struct spi_drv *spi, uint8_t * buf, size_t n) {
 	for (size_t i = 0; i < n; i++) {
-		buf[i] = spi_txrx_n(spi, 0, 8);
+		buf[i] = spi_txrx_n(spi, 0xff, 8);
 	}
 	return 0;
 }
