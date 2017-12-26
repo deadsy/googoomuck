@@ -143,6 +143,7 @@ static void lcd_cs_assert(struct ili9341_drv *drv) {
 
 // deassert chip select
 static void lcd_cs_deassert(struct ili9341_drv *drv) {
+	spi_wait4_done(drv->cfg.spi);
 	gpio_set(drv->cfg.cs);
 }
 
@@ -150,6 +151,7 @@ static void lcd_cs_deassert(struct ili9341_drv *drv) {
 static void wr_cmd(struct ili9341_drv *drv, uint8_t cmd) {
 	gpio_clr(drv->cfg.dc);	// 0 = command mode
 	spi_tx8(drv->cfg.spi, cmd);
+	spi_wait4_done(drv->cfg.spi);
 	gpio_set(drv->cfg.dc);	// 1 = data mode
 }
 
@@ -308,7 +310,6 @@ void lcd_test(struct ili9341_drv *drv) {
 	x = TOFS;
 	y = drv->height - TOFS - TSIZE;
 	lcd_fill_rect(drv, x, y, TSIZE, TSIZE, ILI9341_BLUE);
-
 }
 
 //-----------------------------------------------------------------------------
@@ -319,12 +320,22 @@ int ili9341_init(struct ili9341_drv *drv, struct ili9341_cfg *cfg) {
 
 	lcd_reset(drv);
 	lcd_backlight_on(drv);
+
+#if 0
+	while (1) {
+		lcd_cs_assert(drv);
+		wr_cmd(drv, 0x82);
+		spi_tx8(drv->cfg.spi, 0x80);
+		lcd_cs_deassert(drv);
+		udelay(50);
+	}
+#endif
+
 	lcd_configure(drv);
 	lcd_exit_standby(drv);
 	lcd_set_rotation(drv, 3);
 
-	lcd_test(drv);
-
+	//lcd_test(drv);
 	return 0;
 }
 
