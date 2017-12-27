@@ -10,6 +10,10 @@ ILI9341 LCD Driver
 #define ILI9341_H
 
 //-----------------------------------------------------------------------------
+
+#include <inttypes.h>
+
+//-----------------------------------------------------------------------------
 // colors
 
 #define ILI9341_BLACK       0x0000	/*   0,   0,   0 */
@@ -51,6 +55,13 @@ struct ili9341_drv {
 //-----------------------------------------------------------------------------
 
 int ili9341_init(struct ili9341_drv *lcd, struct ili9341_cfg *cfg);
+
+void lcd_fill_rect(struct ili9341_drv *drv, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color);
+void lcd_set_pixel(struct ili9341_drv *drv, uint16_t x, uint16_t y, uint16_t color);
+void lcd_fill_screen(struct ili9341_drv *drv, uint16_t color);
+void lcd_draw_vline(struct ili9341_drv *drv, uint16_t x, uint16_t y, uint16_t h, uint16_t color);
+void lcd_draw_hline(struct ili9341_drv *drv, uint16_t x, uint16_t y, uint16_t w, uint16_t color);
+void lcd_draw_rect(struct ili9341_drv *drv, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color);
 
 //-----------------------------------------------------------------------------
 

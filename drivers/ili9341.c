@@ -262,6 +262,7 @@ void lcd_set_rotation(struct ili9341_drv *drv, int mode) {
 
 //-----------------------------------------------------------------------------
 
+// set the region of the graphics ram to write to
 static void set_wr_region(struct ili9341_drv *drv, uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
 	wr_cmd(drv, CMD_COLUMN_ADDR_SET);
 	spi_tx16(drv->cfg.spi, x);
@@ -270,44 +271,6 @@ static void set_wr_region(struct ili9341_drv *drv, uint16_t x, uint16_t y, uint1
 	spi_tx16(drv->cfg.spi, y);
 	spi_tx16(drv->cfg.spi, y + h);
 	wr_cmd(drv, CMD_MEM_WR);
-}
-
-void lcd_fill_rect(struct ili9341_drv *drv, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color) {
-	lcd_cs_assert(drv);
-	set_wr_region(drv, x, y, w, h);
-	for (size_t i = 0; i < w * h; i++) {
-		spi_tx16(drv->cfg.spi, color);
-	}
-	lcd_cs_deassert(drv);
-}
-
-//-----------------------------------------------------------------------------
-
-#define TOFS 10
-#define TSIZE 100
-
-void lcd_test(struct ili9341_drv *drv) {
-	uint16_t x, y;
-
-	// top left
-	x = TOFS;
-	y = TOFS;
-	lcd_fill_rect(drv, x, y, TSIZE, TSIZE, ILI9341_RED);
-
-	// top right
-	x = drv->width - TOFS - TSIZE;
-	y = TOFS;
-	lcd_fill_rect(drv, x, y, TSIZE, TSIZE, ILI9341_GREEN);
-
-	// bottom right
-	x = drv->width - TOFS - TSIZE;
-	y = drv->height - TOFS - TSIZE;
-	lcd_fill_rect(drv, x, y, TSIZE, TSIZE, ILI9341_WHITE);
-
-	// bottom left
-	x = TOFS;
-	y = drv->height - TOFS - TSIZE;
-	lcd_fill_rect(drv, x, y, TSIZE, TSIZE, ILI9341_BLUE);
 }
 
 //-----------------------------------------------------------------------------
@@ -323,8 +286,62 @@ int ili9341_init(struct ili9341_drv *drv, struct ili9341_cfg *cfg) {
 	lcd_exit_standby(drv);
 	lcd_set_rotation(drv, 3);
 
-	lcd_test(drv);
 	return 0;
+}
+
+//-----------------------------------------------------------------------------
+// graphics operations
+
+// fill a rectangle with a color
+void lcd_fill_rect(struct ili9341_drv *drv, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color) {
+	lcd_cs_assert(drv);
+	set_wr_region(drv, x, y, w, h);
+	for (size_t i = 0; i < w * h; i++) {
+		spi_tx16(drv->cfg.spi, color);
+	}
+	lcd_cs_deassert(drv);
+}
+
+// set a pixel value
+void lcd_set_pixel(struct ili9341_drv *drv, uint16_t x, uint16_t y, uint16_t color) {
+	lcd_cs_assert(drv);
+	set_wr_region(drv, x, y, 1, 1);
+	spi_tx16(drv->cfg.spi, color);
+	lcd_cs_deassert(drv);
+}
+
+// fill the screen with a color
+void lcd_fill_screen(struct ili9341_drv *drv, uint16_t color) {
+	lcd_fill_rect(drv, 0, 0, drv->width, drv->height, color);
+}
+
+// draw a vertical line
+void lcd_draw_vline(struct ili9341_drv *drv, uint16_t x, uint16_t y, uint16_t h, uint16_t color) {
+	lcd_fill_rect(drv, x, y, 1, h, color);
+}
+
+// draw a horizontal line
+void lcd_draw_hline(struct ili9341_drv *drv, uint16_t x, uint16_t y, uint16_t w, uint16_t color) {
+	lcd_fill_rect(drv, x, y, w, 1, color);
+}
+
+// draw a rectangle
+void lcd_draw_rect(struct ili9341_drv *drv, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color) {
+	if (w == 0 || h == 0) {
+		return;
+	}
+	if (w == 1) {
+		lcd_draw_vline(drv, x, y, h, color);
+		return;
+	}
+	if (h == 1) {
+		lcd_draw_hline(drv, x, y, w, color);
+		return;
+	}
+	lcd_draw_hline(drv, x, y, w, color);
+	lcd_draw_hline(drv, x, y + h - 1, w, color);
+	lcd_draw_vline(drv, x, y, h, color);
+	lcd_draw_vline(drv, x + w - 1, y, h, color);
 }
 
 //-----------------------------------------------------------------------------
