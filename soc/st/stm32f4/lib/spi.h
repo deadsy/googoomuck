@@ -19,8 +19,8 @@ SPI/I2S Driver
 
 // For test/debug puposes we implement a bit-banged SPI driver.
 // Don't use this normally - it's inefficient.
-#define SPI_DRIVER_BITBANG
-//#define SPI_DRIVER_HW
+//#define SPI_DRIVER_BITBANG
+#define SPI_DRIVER_HW
 
 //-----------------------------------------------------------------------------
 
@@ -125,8 +125,7 @@ uint32_t get_i2sclk(void);
 #define SPI_CPHA_CLK2 (1U << 0)
 
 // data frame format
-#define SPI_DFF_8BITS (0U << 11)
-#define SPI_DFF_16BITS (1U << 11)
+#define SPI_DFF (1U << 11)
 
 // msb/lsb first
 #define SPI_MSB_FIRST (0U << 7)
@@ -142,12 +141,14 @@ uint32_t get_i2sclk(void);
 #define SPI_BAUD_DIV128 (6U << 3)
 #define SPI_BAUD_DIV256 (7U << 3)
 
+// enable
+#define SPI_SPE (1U << 6)
+
 struct spi_cfg {
 	uint32_t base;		// base address of spi peripheral
 	uint32_t mode;		// master/slave mode
 	uint32_t cpol;		// clock polarity
 	uint32_t cpha;		// clock phase
-	uint32_t bits;		// 8/16 bits per frame
 	uint32_t lsb;		// msb/lsb first
 	uint32_t div;		// baud rate divisor
 };
@@ -155,6 +156,7 @@ struct spi_cfg {
 struct spi_drv {
 	struct spi_cfg cfg;	// configuration values
 	SPI_TypeDef *regs;	// SPI/I2S peripheral registers
+	int bits;		// current 8/16 bit mode
 };
 
 #elif defined(SPI_DRIVER_BITBANG)
@@ -165,7 +167,6 @@ struct spi_cfg {
 	int miso;		// miso gpio
 	int cpol;		// clock polarity, 0 = normally low, 1 = normally high
 	int cpha;		// clock edge to capture miso on, 0 = 1st edge, 1 = 2nd edge
-	int bits;		// number of bits per frame
 	int lsb;		// least significant bit first
 	int delay;		// clock delay in usecs
 };

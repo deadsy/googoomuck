@@ -25,9 +25,8 @@ static struct spi_cfg lcd_spi_cfg = {
 	.mode = SPI_MODE_MASTER,
 	.cpol = SPI_CPOL_LO,	// clock is normally low
 	.cpha = SPI_CPHA_CLK1,	// data valid on 1st clock edge
-	.bits = SPI_DFF_8BITS,	// 8 bits per data frame
 	.lsb = SPI_MSB_FIRST,	// ms bit first
-	.div = SPI_BAUD_DIV32,	// spi_clock = 168 MHz / 4 * divider
+	.div = SPI_BAUD_DIV2,	// spi_clock = 168 MHz / 4 * divider
 };
 #elif defined(SPI_DRIVER_BITBANG)
 static struct spi_cfg lcd_spi_cfg = {
@@ -36,7 +35,6 @@ static struct spi_cfg lcd_spi_cfg = {
 	.miso = IO_LCD_SDO,
 	.cpol = 0,		// clock is normally low
 	.cpha = 1,		// latch MISO on falling clock edge
-	.bits = 8,		// 8 bits per data frame
 	.lsb = 0,		// ms bit first
 	.delay = 0,
 };

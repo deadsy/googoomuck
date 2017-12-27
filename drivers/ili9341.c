@@ -149,6 +149,7 @@ static void lcd_cs_deassert(struct ili9341_drv *drv) {
 
 // write a command byte
 static void wr_cmd(struct ili9341_drv *drv, uint8_t cmd) {
+	spi_wait4_done(drv->cfg.spi);
 	gpio_clr(drv->cfg.dc);	// 0 = command mode
 	spi_tx8(drv->cfg.spi, cmd);
 	spi_wait4_done(drv->cfg.spi);
@@ -261,21 +262,19 @@ void lcd_set_rotation(struct ili9341_drv *drv, int mode) {
 
 //-----------------------------------------------------------------------------
 
-static void set_mem_region(struct ili9341_drv *drv, uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
-	lcd_cs_assert(drv);
+static void set_wr_region(struct ili9341_drv *drv, uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
 	wr_cmd(drv, CMD_COLUMN_ADDR_SET);
 	spi_tx16(drv->cfg.spi, x);
 	spi_tx16(drv->cfg.spi, x + w);
 	wr_cmd(drv, CMD_PAGE_ADDR_SET);
 	spi_tx16(drv->cfg.spi, y);
 	spi_tx16(drv->cfg.spi, y + h);
-	lcd_cs_deassert(drv);
+	wr_cmd(drv, CMD_MEM_WR);
 }
 
 void lcd_fill_rect(struct ili9341_drv *drv, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color) {
-	set_mem_region(drv, x, y, w, h);
 	lcd_cs_assert(drv);
-	wr_cmd(drv, CMD_MEM_WR);
+	set_wr_region(drv, x, y, w, h);
 	for (size_t i = 0; i < w * h; i++) {
 		spi_tx16(drv->cfg.spi, color);
 	}
@@ -288,7 +287,6 @@ void lcd_fill_rect(struct ili9341_drv *drv, uint16_t x, uint16_t y, uint16_t w, 
 #define TSIZE 100
 
 void lcd_test(struct ili9341_drv *drv) {
-
 	uint16_t x, y;
 
 	// top left
@@ -321,21 +319,11 @@ int ili9341_init(struct ili9341_drv *drv, struct ili9341_cfg *cfg) {
 	lcd_reset(drv);
 	lcd_backlight_on(drv);
 
-#if 0
-	while (1) {
-		lcd_cs_assert(drv);
-		wr_cmd(drv, 0x82);
-		spi_tx8(drv->cfg.spi, 0x80);
-		lcd_cs_deassert(drv);
-		udelay(50);
-	}
-#endif
-
 	lcd_configure(drv);
 	lcd_exit_standby(drv);
 	lcd_set_rotation(drv, 3);
 
-	//lcd_test(drv);
+	lcd_test(drv);
 	return 0;
 }
 

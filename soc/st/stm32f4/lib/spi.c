@@ -51,29 +51,68 @@ void spi_wait4_done(struct spi_drv *spi) {
 	while (spi_bsy(spi)) ;
 }
 
+//-----------------------------------------------------------------------------
+
+// disable the spi
+static inline uint32_t disable_spi(struct spi_drv *spi) {
+	uint32_t state = spi->regs->CR1 & SPI_SPE;
+	spi->regs->CR1 &= ~SPI_SPE;
+	return state;
+}
+
+// enable the spi
+static inline void enable_spi(struct spi_drv *spi) {
+	spi->regs->CR1 |= SPI_SPE;
+}
+
+//-----------------------------------------------------------------------------
+
+// set 8/16 bit mode
+static void spi_set_bits(struct spi_drv *spi, int bits) {
+	if (spi->bits == bits) {
+		// no change
+		return;
+	}
+	spi_wait4_done(spi);
+	uint32_t enabled = disable_spi(spi);
+	if (bits == 8) {
+		// 8 bits
+		spi->regs->CR1 &= ~SPI_DFF;
+		spi->bits = 8;
+	} else {
+		// 16 bits
+		spi->regs->CR1 |= SPI_DFF;
+		spi->bits = 16;
+	}
+	// restore the SPE state
+	if (enabled) {
+		enable_spi(spi);
+	}
+}
+
+//-----------------------------------------------------------------------------
+
 // Tx 8 bits
 void spi_tx8(struct spi_drv *spi, uint8_t data) {
-	// wait for the tx buffer to be empty
+	spi_set_bits(spi, 8);
 	while (!spi_txe(spi)) ;
 	spi->regs->DR = data;
 }
 
 // Tx an 8 bit buffer
 void spi_txbuf8(struct spi_drv *spi, const uint8_t * buf, size_t n) {
+	spi_set_bits(spi, 8);
 	for (size_t i = 0; i < n; i++) {
-		spi_tx8(spi, buf[i]);
+		while (!spi_txe(spi)) ;
+		spi->regs->DR = buf[i];
 	}
 }
 
 // Tx 16 bits
 void spi_tx16(struct spi_drv *spi, uint16_t data) {
-	if (spi->cfg.lsb == SPI_LSB_FIRST) {
-		spi_tx8(spi, data);
-		spi_tx8(spi, data >> 8);
-	} else {
-		spi_tx8(spi, data >> 8);
-		spi_tx8(spi, data);
-	}
+	spi_set_bits(spi, 16);
+	while (!spi_txe(spi)) ;
+	spi->regs->DR = data;
 }
 
 //-----------------------------------------------------------------------------
@@ -89,7 +128,7 @@ int spi_init(struct spi_drv *spi, struct spi_cfg *cfg) {
 	spi_enable(cfg->base);
 
 	// turn off the peripheral for configuration
-	reg_clr(&spi->regs->CR1, (1U << 6 /*SPE*/));
+	disable_spi(spi);
 
 	// setup CR1
 	val = 0;
@@ -101,13 +140,14 @@ int spi_init(struct spi_drv *spi, struct spi_cfg *cfg) {
 	// note: software drives the slave chip select as a normal GPIO
 	val |= (1 << 9 /*SSM*/);	// Software slave management
 	val |= (1 << 8 /*SSI*/);	// Internal slave select
-	val |= spi->cfg.bits;	// 8/16 bits per frame
 	val |= spi->cfg.lsb;	// msb/lsb first
 	val |= spi->cfg.div;	// Baud rate control
 	val |= spi->cfg.mode;	// Master selection
 	val |= spi->cfg.cpol;	// Clock polarity
 	val |= spi->cfg.cpha;	// Clock phase
 	reg_rmw(&spi->regs->CR1, CR1_MASK, val);
+	// default to 8 bits per frame
+	spi_set_bits(spi, 8);
 
 	// setup CR2
 	val = 0;
@@ -130,7 +170,7 @@ int spi_init(struct spi_drv *spi, struct spi_cfg *cfg) {
 	reg_clr(&spi->regs->I2SCFGR, (1 << 11 /*I2SMODE */ ));
 
 	// turn on the peripheral
-	reg_set(&spi->regs->CR1, (1U << 6 /*SPE*/));
+	enable_spi(spi);
 	return 0;
 }
 
