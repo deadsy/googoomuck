@@ -38,7 +38,7 @@ ILI9341 LCD Driver
 
 //-----------------------------------------------------------------------------
 
-struct ili9341_cfg {
+struct lcd_cfg {
 	struct spi_drv *spi;	// spi bus
 	int rst;		// gpio for reset pin
 	int dc;			// gpio for d/c line
@@ -46,24 +46,24 @@ struct ili9341_cfg {
 	int led;		// gpio for led backlight control
 };
 
-struct ili9341_drv {
-	struct ili9341_cfg cfg;
+struct lcd_drv {
+	struct lcd_cfg cfg;
 	int width;		// width in pixels
 	int height;		// height in pixels
 };
 
 //-----------------------------------------------------------------------------
 
-int ili9341_init(struct ili9341_drv *lcd, struct ili9341_cfg *cfg);
+int lcd_init(struct lcd_drv *lcd, struct lcd_cfg *cfg);
 
-void lcd_fill_rect(struct ili9341_drv *drv, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color);
-void lcd_set_pixel(struct ili9341_drv *drv, uint16_t x, uint16_t y, uint16_t color);
-void lcd_draw_bitmap(struct ili9341_drv *drv, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color, uint16_t bg, const uint32_t * buf);
+void lcd_fill_rect(struct lcd_drv *drv, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color);
+void lcd_set_pixel(struct lcd_drv *drv, uint16_t x, uint16_t y, uint16_t color);
+void lcd_draw_bitmap(struct lcd_drv *drv, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color, uint16_t bg, const uint32_t * buf);
 
-void lcd_fill_screen(struct ili9341_drv *drv, uint16_t color);
-void lcd_draw_vline(struct ili9341_drv *drv, uint16_t x, uint16_t y, uint16_t h, uint16_t color);
-void lcd_draw_hline(struct ili9341_drv *drv, uint16_t x, uint16_t y, uint16_t w, uint16_t color);
-void lcd_draw_rect(struct ili9341_drv *drv, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color);
+void lcd_fill_screen(struct lcd_drv *drv, uint16_t color);
+void lcd_draw_vline(struct lcd_drv *drv, uint16_t x, uint16_t y, uint16_t h, uint16_t color);
+void lcd_draw_hline(struct lcd_drv *drv, uint16_t x, uint16_t y, uint16_t w, uint16_t color);
+void lcd_draw_rect(struct lcd_drv *drv, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color);
 
 //-----------------------------------------------------------------------------
 

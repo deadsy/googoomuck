@@ -45,7 +45,7 @@ static struct spi_cfg lcd_spi_cfg = {
 
 //-----------------------------------------------------------------------------
 
-static struct ili9341_cfg lcd_cfg = {
+static struct lcd_cfg lcd_cfg = {
 	.rst = IO_LCD_RESET,	// gpio for reset pin
 	.dc = IO_LCD_DATA_CMD,	// gpio for d/c line
 	.cs = IO_LCD_CS,	// gpio for chip select
@@ -56,12 +56,10 @@ static struct ili9341_cfg lcd_cfg = {
 
 #define TOFS 20
 
-static void lcd_test(struct ili9341_drv *drv) {
-
-	const struct glyph *g = &nokia_large.glyphs['J'];
-
+static void lcd_test(struct lcd_drv *drv) {
+	char tmp[40] = "Hello Worl  d  !";
 	lcd_fill_screen(drv, ILI9341_NAVY);
-	lcd_draw_bitmap(drv, 100, 100, g->width, g->height, ILI9341_GREEN, ILI9341_NAVY, g->data);
+	font_draw_string(drv, 100, 150, 0, ILI9341_GREEN, ILI9341_NAVY, tmp);
 	lcd_draw_rect(drv, TOFS, TOFS, drv->width - (2 * TOFS), drv->height - (2 * TOFS), ILI9341_ORANGE);
 }
 
@@ -77,7 +75,7 @@ int display_init(struct display_drv *display) {
 	}
 	// setup the lcd
 	lcd_cfg.spi = &display->spi;
-	rc = ili9341_init(&display->lcd, &lcd_cfg);
+	rc = lcd_init(&display->lcd, &lcd_cfg);
 	if (rc != 0) {
 		DBG("ili9341_init failed %d\r\n", rc);
 		goto exit;

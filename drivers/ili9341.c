@@ -132,23 +132,23 @@ VCC                 3.3v
 //-----------------------------------------------------------------------------
 
 // turn the led backlight on
-static void lcd_backlight_on(struct ili9341_drv *drv) {
+static void lcd_backlight_on(struct lcd_drv *drv) {
 	gpio_set(drv->cfg.led);
 }
 
 // assert chip select
-static void lcd_cs_assert(struct ili9341_drv *drv) {
+static void lcd_cs_assert(struct lcd_drv *drv) {
 	gpio_clr(drv->cfg.cs);
 }
 
 // deassert chip select
-static void lcd_cs_deassert(struct ili9341_drv *drv) {
+static void lcd_cs_deassert(struct lcd_drv *drv) {
 	spi_wait4_done(drv->cfg.spi);
 	gpio_set(drv->cfg.cs);
 }
 
 // write a command byte
-static void wr_cmd(struct ili9341_drv *drv, uint8_t cmd) {
+static void wr_cmd(struct lcd_drv *drv, uint8_t cmd) {
 	spi_wait4_done(drv->cfg.spi);
 	gpio_clr(drv->cfg.dc);	// 0 = command mode
 	spi_tx8(drv->cfg.spi, cmd);
@@ -183,7 +183,7 @@ static const uint8_t init_table[] = {
 };
 
 // configure the ili9341 chip
-static void lcd_configure(struct ili9341_drv *drv) {
+static void lcd_configure(struct lcd_drv *drv) {
 	const uint8_t *ptr = init_table;
 	lcd_cs_assert(drv);
 	while (ptr[0] != 0) {
@@ -195,14 +195,14 @@ static void lcd_configure(struct ili9341_drv *drv) {
 }
 
 // reset the ili9341 chip
-static void lcd_reset(struct ili9341_drv *drv) {
+static void lcd_reset(struct lcd_drv *drv) {
 	gpio_clr(drv->cfg.rst);
 	mdelay(10);
 	gpio_set(drv->cfg.rst);
 	mdelay(50);
 }
 
-static void lcd_exit_standby(struct ili9341_drv *drv) {
+static void lcd_exit_standby(struct lcd_drv *drv) {
 	lcd_cs_assert(drv);
 	wr_cmd(drv, CMD_SLEEP_OUT);
 	mdelay(120);
@@ -215,7 +215,7 @@ static void lcd_exit_standby(struct ili9341_drv *drv) {
 #if 0
 // Reading back from this chip is a bit of a mystery.
 // Here's some code I found - but it's not obvious from the data sheet.
-static uint8_t rd_cmd8(struct ili9341_drv *drv, uint8_t cmd, uint8_t index) {
+static uint8_t rd_cmd8(struct lcd_drv *drv, uint8_t cmd, uint8_t index) {
 	uint8_t data;
 	lcd_cs_assert(drv);
 	wr_cmd(drv, 0xD9);	// secret command?
@@ -230,7 +230,7 @@ static uint8_t rd_cmd8(struct ili9341_drv *drv, uint8_t cmd, uint8_t index) {
 //-----------------------------------------------------------------------------
 
 // set the rotation of the screen
-void lcd_set_rotation(struct ili9341_drv *drv, int mode) {
+void lcd_set_rotation(struct lcd_drv *drv, int mode) {
 	uint32_t mac;
 	switch (mode & 3) {
 	case 0:
@@ -263,7 +263,7 @@ void lcd_set_rotation(struct ili9341_drv *drv, int mode) {
 //-----------------------------------------------------------------------------
 
 // set the region of the graphics ram to write to
-static void set_wr_region(struct ili9341_drv *drv, uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
+static void set_wr_region(struct lcd_drv *drv, uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
 	wr_cmd(drv, CMD_COLUMN_ADDR_SET);
 	spi_tx16(drv->cfg.spi, x);
 	spi_tx16(drv->cfg.spi, x + w - 1);
@@ -275,8 +275,8 @@ static void set_wr_region(struct ili9341_drv *drv, uint16_t x, uint16_t y, uint1
 
 //-----------------------------------------------------------------------------
 
-int ili9341_init(struct ili9341_drv *drv, struct ili9341_cfg *cfg) {
-	memset(drv, 0, sizeof(struct ili9341_drv));
+int lcd_init(struct lcd_drv *drv, struct lcd_cfg *cfg) {
+	memset(drv, 0, sizeof(struct lcd_drv));
 	drv->cfg = *cfg;
 
 	lcd_reset(drv);
@@ -293,7 +293,7 @@ int ili9341_init(struct ili9341_drv *drv, struct ili9341_cfg *cfg) {
 // hw direct graphics operations
 
 // fill a rectangle with a color
-void lcd_fill_rect(struct ili9341_drv *drv, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color) {
+void lcd_fill_rect(struct lcd_drv *drv, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color) {
 	lcd_cs_assert(drv);
 	set_wr_region(drv, x, y, w, h);
 	for (int i = 0; i < w * h; i++) {
@@ -303,14 +303,14 @@ void lcd_fill_rect(struct ili9341_drv *drv, uint16_t x, uint16_t y, uint16_t w, 
 }
 
 // set a pixel value
-void lcd_set_pixel(struct ili9341_drv *drv, uint16_t x, uint16_t y, uint16_t color) {
+void lcd_set_pixel(struct lcd_drv *drv, uint16_t x, uint16_t y, uint16_t color) {
 	lcd_cs_assert(drv);
 	set_wr_region(drv, x, y, 1, 1);
 	spi_tx16(drv->cfg.spi, color);
 	lcd_cs_deassert(drv);
 }
 
-void lcd_draw_bitmap(struct ili9341_drv *drv, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color, uint16_t bg, const uint32_t * buf) {
+void lcd_draw_bitmap(struct lcd_drv *drv, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color, uint16_t bg, const uint32_t * buf) {
 	lcd_cs_assert(drv);
 	set_wr_region(drv, x, y, w, h);
 	uint32_t count = w * h;
@@ -333,22 +333,22 @@ void lcd_draw_bitmap(struct ili9341_drv *drv, uint16_t x, uint16_t y, uint16_t w
 // derived graphics operations
 
 // fill the screen with a color
-void lcd_fill_screen(struct ili9341_drv *drv, uint16_t color) {
+void lcd_fill_screen(struct lcd_drv *drv, uint16_t color) {
 	lcd_fill_rect(drv, 0, 0, drv->width, drv->height, color);
 }
 
 // draw a vertical line
-void lcd_draw_vline(struct ili9341_drv *drv, uint16_t x, uint16_t y, uint16_t h, uint16_t color) {
+void lcd_draw_vline(struct lcd_drv *drv, uint16_t x, uint16_t y, uint16_t h, uint16_t color) {
 	lcd_fill_rect(drv, x, y, 1, h, color);
 }
 
 // draw a horizontal line
-void lcd_draw_hline(struct ili9341_drv *drv, uint16_t x, uint16_t y, uint16_t w, uint16_t color) {
+void lcd_draw_hline(struct lcd_drv *drv, uint16_t x, uint16_t y, uint16_t w, uint16_t color) {
 	lcd_fill_rect(drv, x, y, w, 1, color);
 }
 
 // draw a rectangle
-void lcd_draw_rect(struct ili9341_drv *drv, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color) {
+void lcd_draw_rect(struct lcd_drv *drv, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color) {
 	if (w == 0 || h == 0) {
 		return;
 	}

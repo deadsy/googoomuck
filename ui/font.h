@@ -13,6 +13,8 @@ Font Encoding
 
 #include <inttypes.h>
 
+#include "ili9341.h"
+
 //-----------------------------------------------------------------------------
 
 struct glyph {
@@ -32,7 +34,7 @@ struct font {
 
 //-----------------------------------------------------------------------------
 
-extern const struct font nokia_large;
+void font_draw_string(struct lcd_drv *drv, uint16_t x, uint16_t y, uint8_t font, uint16_t fg, uint16_t bg, char *str);
 
 //-----------------------------------------------------------------------------
 

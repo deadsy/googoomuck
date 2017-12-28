@@ -69,6 +69,7 @@ SRC += $(GGM_DIR)/sin.c \
 # ui
 UI_DIR = $(TOP)/ui
 SRC += $(UI_DIR)/nokia_large.c \
+	$(UI_DIR)/fonts.c \
 
 OBJ = $(patsubst %.c, %.o, $(SRC))
 OBJ += $(TARGET_DIR)/start.o
