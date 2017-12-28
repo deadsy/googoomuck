@@ -266,10 +266,10 @@ void lcd_set_rotation(struct ili9341_drv *drv, int mode) {
 static void set_wr_region(struct ili9341_drv *drv, uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
 	wr_cmd(drv, CMD_COLUMN_ADDR_SET);
 	spi_tx16(drv->cfg.spi, x);
-	spi_tx16(drv->cfg.spi, x + w);
+	spi_tx16(drv->cfg.spi, x + w - 1);
 	wr_cmd(drv, CMD_PAGE_ADDR_SET);
 	spi_tx16(drv->cfg.spi, y);
-	spi_tx16(drv->cfg.spi, y + h);
+	spi_tx16(drv->cfg.spi, y + h - 1);
 	wr_cmd(drv, CMD_MEM_WR);
 }
 
@@ -296,7 +296,7 @@ int ili9341_init(struct ili9341_drv *drv, struct ili9341_cfg *cfg) {
 void lcd_fill_rect(struct ili9341_drv *drv, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color) {
 	lcd_cs_assert(drv);
 	set_wr_region(drv, x, y, w, h);
-	for (size_t i = 0; i < w * h; i++) {
+	for (int i = 0; i < w * h; i++) {
 		spi_tx16(drv->cfg.spi, color);
 	}
 	lcd_cs_deassert(drv);

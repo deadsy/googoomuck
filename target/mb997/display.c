@@ -53,41 +53,11 @@ static struct ili9341_cfg lcd_cfg = {
 
 //-----------------------------------------------------------------------------
 
-#define TOFS 10
-#define TSIZE 100
+#define TOFS 20
 
 static void lcd_test(struct ili9341_drv *drv) {
-	//uint16_t x, y;
-
-#if 0
-
-	// top left
-	x = TOFS;
-	y = TOFS;
-	lcd_fill_rect(drv, x, y, TSIZE, TSIZE, ILI9341_RED);
-
-	// top right
-	x = drv->width - TOFS - TSIZE;
-	y = TOFS;
-	lcd_fill_rect(drv, x, y, TSIZE, TSIZE, ILI9341_GREEN);
-
-	// bottom right
-	x = drv->width - TOFS - TSIZE;
-	y = drv->height - TOFS - TSIZE;
-	lcd_fill_rect(drv, x, y, TSIZE, TSIZE, ILI9341_WHITE);
-
-	// bottom left
-	x = TOFS;
-	y = drv->height - TOFS - TSIZE;
-	lcd_fill_rect(drv, x, y, TSIZE, TSIZE, ILI9341_BLUE);
-
-#endif
-
-	for (int x = 0; x < 320; x++) {
-		lcd_fill_rect(drv, x, 0, 1, x, ILI9341_ORANGE);
-	}
-
-	//lcd_draw_rect(drv, TOFS, TOFS, drv->width - (2 * TOFS), drv->height - (2 * TOFS), ILI9341_ORANGE);
+	lcd_fill_screen(drv, ILI9341_NAVY);
+	lcd_draw_rect(drv, TOFS, TOFS, drv->width - (2 * TOFS), drv->height - (2 * TOFS), ILI9341_ORANGE);
 }
 
 //-----------------------------------------------------------------------------
