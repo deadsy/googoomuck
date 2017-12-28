@@ -66,6 +66,10 @@ SRC += $(GGM_DIR)/sin.c \
 	$(GGM_DIR)/patch5.c \
 	$(GGM_DIR)/patch6.c \
 
+# ui
+UI_DIR = $(TOP)/ui
+SRC += $(UI_DIR)/nokia_large.c \
+
 OBJ = $(patsubst %.c, %.o, $(SRC))
 OBJ += $(TARGET_DIR)/start.o
 OBJ += $(GGM_DIR)/p4wave.o
@@ -81,6 +85,7 @@ INCLUDE += -I$(TARGET_DIR)
 INCLUDE += -I$(COMMON_DIR)
 INCLUDE += -I$(COMMON_DIR)/rtt
 INCLUDE += -I$(GGM_DIR)
+INCLUDE += -I$(UI_DIR)
 
 # defines
 DEFINE = -DSTM32F407xx

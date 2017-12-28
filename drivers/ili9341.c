@@ -290,7 +290,7 @@ int ili9341_init(struct ili9341_drv *drv, struct ili9341_cfg *cfg) {
 }
 
 //-----------------------------------------------------------------------------
-// graphics operations
+// hw direct graphics operations
 
 // fill a rectangle with a color
 void lcd_fill_rect(struct ili9341_drv *drv, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color) {
@@ -309,6 +309,28 @@ void lcd_set_pixel(struct ili9341_drv *drv, uint16_t x, uint16_t y, uint16_t col
 	spi_tx16(drv->cfg.spi, color);
 	lcd_cs_deassert(drv);
 }
+
+void lcd_draw_bitmap(struct ili9341_drv *drv, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color, uint16_t bg, const uint32_t * buf) {
+	lcd_cs_assert(drv);
+	set_wr_region(drv, x, y, w, h);
+	uint32_t count = w * h;
+	int i = 0;
+	while (count) {
+		uint32_t bitmap = buf[i];
+		uint32_t mask = 1U << 31;
+		uint32_t n = (count > 32) ? 32 : count;
+		for (uint32_t j = 0; j < n; j++) {
+			spi_tx16(drv->cfg.spi, (bitmap & mask) ? color : bg);
+			mask >>= 1;
+		}
+		count -= n;
+		i += 1;
+	}
+	lcd_cs_deassert(drv);
+}
+
+//-----------------------------------------------------------------------------
+// derived graphics operations
 
 // fill the screen with a color
 void lcd_fill_screen(struct ili9341_drv *drv, uint16_t color) {

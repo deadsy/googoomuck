@@ -58,6 +58,8 @@ int ili9341_init(struct ili9341_drv *lcd, struct ili9341_cfg *cfg);
 
 void lcd_fill_rect(struct ili9341_drv *drv, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color);
 void lcd_set_pixel(struct ili9341_drv *drv, uint16_t x, uint16_t y, uint16_t color);
+void lcd_draw_bitmap(struct ili9341_drv *drv, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color, uint16_t bg, const uint32_t * buf);
+
 void lcd_fill_screen(struct ili9341_drv *drv, uint16_t color);
 void lcd_draw_vline(struct ili9341_drv *drv, uint16_t x, uint16_t y, uint16_t h, uint16_t color);
 void lcd_draw_hline(struct ili9341_drv *drv, uint16_t x, uint16_t y, uint16_t w, uint16_t color);

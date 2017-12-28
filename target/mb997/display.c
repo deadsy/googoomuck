@@ -8,6 +8,7 @@ Display Control
 
 #include "display.h"
 #include "io.h"
+#include "font.h"
 
 #define DEBUG
 #include "logging.h"
@@ -56,7 +57,11 @@ static struct ili9341_cfg lcd_cfg = {
 #define TOFS 20
 
 static void lcd_test(struct ili9341_drv *drv) {
+
+	const struct glyph *g = &nokia_large.glyphs['J'];
+
 	lcd_fill_screen(drv, ILI9341_NAVY);
+	lcd_draw_bitmap(drv, 100, 100, g->width, g->height, ILI9341_GREEN, ILI9341_NAVY, g->data);
 	lcd_draw_rect(drv, TOFS, TOFS, drv->width - (2 * TOFS), drv->height - (2 * TOFS), ILI9341_ORANGE);
 }
 

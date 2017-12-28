@@ -11,6 +11,7 @@ src_dirs = (
   'common',
   'drivers',
   'ggm',
+  'ui',
   'usb/files/tinyusb/host',
   'usb/files/tinyusb/hal',
   'usb/files/tinyusb/device',
