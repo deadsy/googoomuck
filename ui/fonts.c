@@ -8,7 +8,7 @@ Font Functions
 
 #include <string.h>
 
-#include "font.h"
+#include "lcd.h"
 
 //-----------------------------------------------------------------------------
 // available fonts
@@ -32,13 +32,15 @@ void lcd_string(struct lcd_drv *drv, uint16_t x, uint16_t y, int font, uint16_t 
 
 //-----------------------------------------------------------------------------
 
-// reset the cursor position, set the font
+// Reset the cursor position, set the current font.
 void lcd_set_font(struct lcd_drv *drv, int font) {
 	drv->font = fonts[font];
 	drv->x = 0;
 	drv->y = drv->font->ascent;
 }
 
+// Print a string at the current cursor position.
+// The lcd is used like a terminal.
 void lcd_print(struct lcd_drv *drv, char *str) {
 	for (size_t i = 0; i < strlen(str); i++) {
 		if (str[i] == '\n') {

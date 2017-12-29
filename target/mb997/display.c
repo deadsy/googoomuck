@@ -8,7 +8,6 @@ Display Control
 
 #include "display.h"
 #include "io.h"
-#include "font.h"
 
 #define DEBUG
 #include "logging.h"

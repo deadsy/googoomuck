@@ -58,15 +58,9 @@ struct lcd_drv {
 //-----------------------------------------------------------------------------
 
 int lcd_init(struct lcd_drv *lcd, struct lcd_cfg *cfg);
-
 void lcd_fill_rect(struct lcd_drv *drv, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color);
 void lcd_set_pixel(struct lcd_drv *drv, uint16_t x, uint16_t y, uint16_t color);
 void lcd_draw_bitmap(struct lcd_drv *drv, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color, uint16_t bg, const uint32_t * buf);
-
-void lcd_fill_screen(struct lcd_drv *drv, uint16_t color);
-void lcd_draw_vline(struct lcd_drv *drv, uint16_t x, uint16_t y, uint16_t h, uint16_t color);
-void lcd_draw_hline(struct lcd_drv *drv, uint16_t x, uint16_t y, uint16_t w, uint16_t color);
-void lcd_draw_rect(struct lcd_drv *drv, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color);
 
 //-----------------------------------------------------------------------------
 
