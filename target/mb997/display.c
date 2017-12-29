@@ -50,17 +50,17 @@ static struct lcd_cfg lcd_cfg = {
 	.dc = IO_LCD_DATA_CMD,	// gpio for d/c line
 	.cs = IO_LCD_CS,	// gpio for chip select
 	.led = IO_LCD_LED,	// gpio for led backlight control
+	.fg = LCD_COLOR_GREEN,
+	.bg = LCD_COLOR_NAVY,
 };
 
 //-----------------------------------------------------------------------------
 
-#define TOFS 20
-
 static void lcd_test(struct lcd_drv *drv) {
-	char tmp[40] = "Hello Worl  d  !";
-	lcd_fill_screen(drv, ILI9341_NAVY);
-	font_draw_string(drv, 100, 150, 0, ILI9341_GREEN, ILI9341_NAVY, tmp);
-	lcd_draw_rect(drv, TOFS, TOFS, drv->width - (2 * TOFS), drv->height - (2 * TOFS), ILI9341_ORANGE);
+	lcd_set_font(drv, 0);
+	for (int i = 0; i < 17; i++) {
+		lcd_print(drv, "GooGooMuck! GooGooMuck! GooGooMuck!\n");
+	}
 }
 
 //-----------------------------------------------------------------------------

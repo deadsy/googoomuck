@@ -90,7 +90,7 @@ INCLUDE += -I$(UI_DIR)
 
 # defines
 DEFINE = -DSTM32F407xx
-DEFINE += -DSTDIO_SERIAL
+DEFINE += -DSTDIO_RTT
 
 # linker flags
 LDSCRIPT = stm32f407vg_flash.ld

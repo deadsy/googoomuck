@@ -21,12 +21,36 @@ static const struct font *fonts[] = {
 
 //-----------------------------------------------------------------------------
 
-void font_draw_string(struct lcd_drv *drv, uint16_t x, uint16_t y, uint8_t font, uint16_t fg, uint16_t bg, char *str) {
+void lcd_string(struct lcd_drv *drv, uint16_t x, uint16_t y, int font, uint16_t fg, uint16_t bg, char *str) {
 	const struct font *f = fonts[font];
 	for (size_t i = 0; i < strlen(str); i++) {
 		const struct glyph *g = &f->glyphs[(uint8_t) str[i]];
 		lcd_draw_bitmap(drv, x + g->xofs, y - g->yofs - g->height, g->width, g->height, fg, bg, g->data);
-		x += g->dwidth;
+		x += (g->dwidth + 1);
+	}
+}
+
+//-----------------------------------------------------------------------------
+
+// reset the cursor position, set the font
+void lcd_set_font(struct lcd_drv *drv, int font) {
+	drv->font = fonts[font];
+	drv->x = 0;
+	drv->y = drv->font->ascent;
+}
+
+void lcd_print(struct lcd_drv *drv, char *str) {
+	for (size_t i = 0; i < strlen(str); i++) {
+		if (str[i] == '\n') {
+			drv->x = 0;
+			drv->y += (drv->font->ascent - drv->font->descent);
+		} else {
+			const struct glyph *g = &drv->font->glyphs[(uint8_t) str[i]];
+			uint16_t bx = drv->x + g->xofs;
+			uint16_t by = drv->y - g->yofs - g->height;
+			lcd_draw_bitmap(drv, bx, by, g->width, g->height, drv->cfg.fg, drv->cfg.bg, g->data);
+			drv->x += (g->dwidth + 1);
+		}
 	}
 }
 

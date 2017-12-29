@@ -274,22 +274,6 @@ static void set_wr_region(struct lcd_drv *drv, uint16_t x, uint16_t y, uint16_t 
 }
 
 //-----------------------------------------------------------------------------
-
-int lcd_init(struct lcd_drv *drv, struct lcd_cfg *cfg) {
-	memset(drv, 0, sizeof(struct lcd_drv));
-	drv->cfg = *cfg;
-
-	lcd_reset(drv);
-	lcd_backlight_on(drv);
-
-	lcd_configure(drv);
-	lcd_exit_standby(drv);
-	lcd_set_rotation(drv, 3);
-
-	return 0;
-}
-
-//-----------------------------------------------------------------------------
 // hw direct graphics operations
 
 // fill a rectangle with a color
@@ -327,6 +311,25 @@ void lcd_draw_bitmap(struct lcd_drv *drv, uint16_t x, uint16_t y, uint16_t w, ui
 		i += 1;
 	}
 	lcd_cs_deassert(drv);
+}
+
+//-----------------------------------------------------------------------------
+
+int lcd_init(struct lcd_drv *drv, struct lcd_cfg *cfg) {
+	memset(drv, 0, sizeof(struct lcd_drv));
+	drv->cfg = *cfg;
+
+	lcd_reset(drv);
+	lcd_backlight_on(drv);
+
+	lcd_configure(drv);
+	lcd_exit_standby(drv);
+	lcd_set_rotation(drv, 3);
+
+	// set the background color
+	lcd_fill_rect(drv, 0, 0, drv->width, drv->height, drv->cfg.bg);
+
+	return 0;
 }
 
 //-----------------------------------------------------------------------------

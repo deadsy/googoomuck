@@ -127,7 +127,8 @@ class ggm_font(object):
     pad = ((bits + 31) & ~31) - bits
     i <<= pad
     # return the data string
-    s = '%0x' % i
+    fmt = '%%0%dx' % ((bits + pad) / 4)
+    s = fmt % i
     s = ['0x%s,' % s[k:k+8] for k in range(0, len(s), 8)]
     return 'static const uint32_t %s[] = {%s};' % (self.glyph_name(code), ''.join(s))
 
