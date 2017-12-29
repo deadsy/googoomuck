@@ -47,7 +47,6 @@ static inline uint32_t spi_bsy(struct spi_drv *spi) {
 
 // wait for the spi operation to complete
 void spi_wait4_done(struct spi_drv *spi) {
-	while (!spi_txe(spi)) ;
 	while (spi_bsy(spi)) ;
 }
 

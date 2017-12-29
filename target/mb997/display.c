@@ -49,17 +49,28 @@ static struct lcd_cfg lcd_cfg = {
 	.dc = IO_LCD_DATA_CMD,	// gpio for d/c line
 	.cs = IO_LCD_CS,	// gpio for chip select
 	.led = IO_LCD_LED,	// gpio for led backlight control
-	.fg = LCD_COLOR_GREEN,
+	.fg = LCD_COLOR_WHITE,
 	.bg = LCD_COLOR_NAVY,
+	.rotation = 0,
 };
 
 //-----------------------------------------------------------------------------
 
 static void lcd_test(struct lcd_drv *drv) {
 	lcd_set_font(drv, 0);
-	for (int i = 0; i < 17; i++) {
-		lcd_print(drv, "GooGooMuck! GooGooMuck! GooGooMuck!\n");
+	for (int i = 0; i < 10; i++) {
+		lcd_print(drv, "GooGooMuck! GooGooMuck!\n");
 	}
+
+#if 0
+	while (1) {
+		for (int i = 0; i < drv->height; i++) {
+			lcd_scroll(drv, i);
+			mdelay(20);
+		}
+	}
+#endif
+
 }
 
 //-----------------------------------------------------------------------------
@@ -76,7 +87,7 @@ int display_init(struct display_drv *display) {
 	lcd_cfg.spi = &display->spi;
 	rc = lcd_init(&display->lcd, &lcd_cfg);
 	if (rc != 0) {
-		DBG("ili9341_init failed %d\r\n", rc);
+		DBG("lcd_init failed %d\r\n", rc);
 		goto exit;
 	}
 

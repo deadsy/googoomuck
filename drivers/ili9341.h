@@ -46,6 +46,7 @@ struct lcd_cfg {
 	int led;		// gpio for led backlight control
 	uint16_t fg;		// foreground color
 	uint16_t bg;		// background color
+	int rotation;		// screen rotation
 };
 
 struct lcd_drv {
@@ -61,6 +62,8 @@ int lcd_init(struct lcd_drv *lcd, struct lcd_cfg *cfg);
 void lcd_fill_rect(struct lcd_drv *drv, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color);
 void lcd_set_pixel(struct lcd_drv *drv, uint16_t x, uint16_t y, uint16_t color);
 void lcd_draw_bitmap(struct lcd_drv *drv, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color, uint16_t bg, const uint32_t * buf);
+void lcd_set_scroll_region(struct lcd_drv *drv, uint16_t tfa, uint16_t vsa);
+void lcd_scroll(struct lcd_drv *drv, uint16_t vsp);
 
 //-----------------------------------------------------------------------------
 

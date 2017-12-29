@@ -17,6 +17,17 @@ LED                 IO_LCD_LED, on=1, off=0
 GND                 Ground
 VCC                 3.3v
 
+Notes:
+
+Don't change the CS line or D/C line until the SPI operation is complete.
+This isn't a problem for bit banged SPI, but in HW based SPI the SPI and
+GPIO operations are asynchronous, so you have to wait for SPI completion.
+
+The ili9341 supports hardware scrolling. This remaps the way the driver
+moves the graphics ram onto the display. This only works on the long axis of
+the LCD (320 pixels). If you want to use it for scrolling a screen of
+text, you'll have to be in portrait mode (rotation = 0/2).
+
 */
 //-----------------------------------------------------------------------------
 
@@ -230,7 +241,7 @@ static uint8_t rd_cmd8(struct lcd_drv *drv, uint8_t cmd, uint8_t index) {
 //-----------------------------------------------------------------------------
 
 // set the rotation of the screen
-void lcd_set_rotation(struct lcd_drv *drv, int mode) {
+static void lcd_set_rotation(struct lcd_drv *drv, int mode) {
 	uint32_t mac;
 	switch (mode & 3) {
 	case 0:
@@ -314,21 +325,40 @@ void lcd_draw_bitmap(struct lcd_drv *drv, uint16_t x, uint16_t y, uint16_t w, ui
 	lcd_cs_deassert(drv);
 }
 
+// set the scrolling region
+void lcd_set_scroll_region(struct lcd_drv *drv, uint16_t tfa, uint16_t vsa) {
+	lcd_cs_assert(drv);
+	wr_cmd(drv, CMD_VSCROLL_DEFN);
+	spi_tx16(drv->cfg.spi, tfa);
+	spi_tx16(drv->cfg.spi, vsa);
+	spi_tx16(drv->cfg.spi, ILI9341_TFTHEIGHT - tfa - vsa);	// tfa + vsa + bfa == 320
+	lcd_cs_deassert(drv);
+}
+
+// set the display scrolling offset
+void lcd_scroll(struct lcd_drv *drv, uint16_t vsp) {
+	lcd_cs_assert(drv);
+	wr_cmd(drv, CMD_VSCROLL_START_ADDR);
+	spi_tx16(drv->cfg.spi, vsp);
+	lcd_cs_deassert(drv);
+}
+
 //-----------------------------------------------------------------------------
 
 int lcd_init(struct lcd_drv *drv, struct lcd_cfg *cfg) {
 	memset(drv, 0, sizeof(struct lcd_drv));
 	drv->cfg = *cfg;
 
+	// lcd driver init
 	lcd_reset(drv);
 	lcd_backlight_on(drv);
-
 	lcd_configure(drv);
 	lcd_exit_standby(drv);
-	lcd_set_rotation(drv, 3);
 
-	// set the background color
+	// screen setup
+	lcd_set_rotation(drv, drv->cfg.rotation);
 	lcd_fill_rect(drv, 0, 0, drv->width, drv->height, drv->cfg.bg);
+	lcd_set_scroll_region(drv, 0, ILI9341_TFTHEIGHT);
 
 	return 0;
 }
