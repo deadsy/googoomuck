@@ -57,17 +57,30 @@ static struct lcd_cfg lcd_cfg = {
 //-----------------------------------------------------------------------------
 
 static void lcd_test(struct lcd_drv *drv) {
-	lcd_set_font(drv, 0);
-	for (int i = 0; i < 10; i++) {
-		lcd_print(drv, "GooGooMuck! GooGooMuck!\n");
-	}
+
+	lcd_terminal_init(drv, 0, 22, 0);
+	lcd_print(drv, "GooGooMuck!");
 
 #if 0
 	while (1) {
-		for (int i = 0; i < drv->height; i++) {
-			lcd_scroll(drv, i);
-			mdelay(20);
-		}
+		lcd_print(drv, "line 0 asdfasdfasdfasfd\n");
+		mdelay(100);
+		lcd_print(drv, "line 1 asdfasfd\n");
+		mdelay(100);
+		lcd_print(drv, "line 2  12312341234\n");
+		mdelay(100);
+		lcd_print(drv, "line 3  xcvbxcvb\n");
+		mdelay(100);
+		lcd_print(drv, "line 4 ghjkghkj\n");
+		mdelay(100);
+		lcd_print(drv, "line 5 &*&(&(\n");
+		mdelay(100);
+		lcd_print(drv, "line 6 [][][]\n");
+		mdelay(100);
+		lcd_print(drv, "line 7 @@##$$\n");
+		mdelay(100);
+		lcd_print(drv, "line 8 zxcvzxv\n");
+		mdelay(100);
 	}
 #endif
 

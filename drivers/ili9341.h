@@ -52,8 +52,13 @@ struct lcd_cfg {
 struct lcd_drv {
 	struct lcd_cfg cfg;
 	int width, height;	// screen width/height in pixels
-	int x, y;		// current cursor position
 	const struct font *font;	// current font
+	int x, y;		// current cursor position
+	int y0;			// top position for the terminal window
+	int dy;			// line height for the current font
+	int line;		// current line number
+	int maxline;		// maximum line number
+	int scrolling;		// are we scrolling yet?
 };
 
 //-----------------------------------------------------------------------------

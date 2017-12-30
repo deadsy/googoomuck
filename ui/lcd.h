@@ -34,7 +34,7 @@ struct font {
 };
 
 void lcd_string(struct lcd_drv *drv, uint16_t x, uint16_t y, int font, uint16_t fg, uint16_t bg, char *str);
-void lcd_set_font(struct lcd_drv *drv, int font);
+void lcd_terminal_init(struct lcd_drv *drv, uint16_t y, int lines, int font);
 void lcd_print(struct lcd_drv *drv, char *str);
 
 //-----------------------------------------------------------------------------

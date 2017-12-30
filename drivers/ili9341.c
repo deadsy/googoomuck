@@ -358,7 +358,6 @@ int lcd_init(struct lcd_drv *drv, struct lcd_cfg *cfg) {
 	// screen setup
 	lcd_set_rotation(drv, drv->cfg.rotation);
 	lcd_fill_rect(drv, 0, 0, drv->width, drv->height, drv->cfg.bg);
-	lcd_set_scroll_region(drv, 0, ILI9341_TFTHEIGHT);
 
 	return 0;
 }
