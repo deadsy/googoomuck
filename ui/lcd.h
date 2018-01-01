@@ -33,6 +33,8 @@ struct font {
 	struct glyph glyphs[256];
 };
 
+const struct font *font_get(int idx);
+
 //-----------------------------------------------------------------------------
 // STDIO to LCD terminal driver
 

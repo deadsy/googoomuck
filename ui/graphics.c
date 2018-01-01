@@ -6,7 +6,9 @@ Graphics Functions
 */
 //-----------------------------------------------------------------------------
 
-#include "ui.h"
+#include <string.h>
+
+#include "lcd.h"
 
 //-----------------------------------------------------------------------------
 
@@ -42,6 +44,18 @@ void lcd_draw_rect(struct lcd_drv *drv, uint16_t x, uint16_t y, uint16_t w, uint
 	lcd_draw_hline(drv, x, y + h - 1, w, color);
 	lcd_draw_vline(drv, x, y, h, color);
 	lcd_draw_vline(drv, x + w - 1, y, h, color);
+}
+
+//-----------------------------------------------------------------------------
+
+// print a string to the lcd
+void lcd_string(struct lcd_drv *drv, uint16_t x, uint16_t y, int font, uint16_t fg, uint16_t bg, char *str) {
+	const struct font *f = font_get(font);
+	for (size_t i = 0; i < strlen(str); i++) {
+		const struct glyph *g = &f->glyphs[(uint8_t) str[i]];
+		lcd_draw_bitmap(drv, x + g->xofs, y - g->yofs - g->height, g->width, g->height, fg, bg, g->data);
+		x += (g->dwidth + 1);
+	}
 }
 
 //-----------------------------------------------------------------------------
