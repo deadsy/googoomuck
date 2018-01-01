@@ -35,45 +35,53 @@ void lcd_string(struct lcd_drv *drv, uint16_t x, uint16_t y, int font, uint16_t 
 
 //-----------------------------------------------------------------------------
 
-// use a region of the screen for stdio output
-void lcd_terminal_init(struct lcd_drv *drv, uint16_t y, int lines, int font) {
-	drv->line = 0;
-	drv->maxline = lines - 1;
-	drv->scrolling = 0;
-	drv->font = fonts[font];
+// initialise a region of the lcd to be used for stdio output
+int term_init(struct term_drv *drv, struct term_cfg *cfg) {
+	memset(drv, 0, sizeof(struct term_drv));
+	drv->cfg = *cfg;
+	drv->font = fonts[drv->cfg.font];
 	drv->dy = drv->font->ascent - drv->font->descent;
-	drv->y0 = y + drv->font->ascent;
-	drv->x = 0;
+	drv->y0 = drv->cfg.yofs + drv->font->ascent;
 	drv->y = drv->y0;
-	lcd_set_scroll_region(drv, y, lines * drv->dy);
+	// setup the lcd
+	uint16_t h = drv->cfg.lines * drv->dy;
+	lcd_set_scroll_region(drv->cfg.lcd, drv->cfg.yofs, h);
+	lcd_fill_rect(drv->cfg.lcd, 0, drv->cfg.yofs, drv->cfg.lcd->width, h, drv->cfg.bg);
+	return 0;
 }
 
 // Print a string at the current cursor position.
-// The lcd is used like a terminal.
-void lcd_print(struct lcd_drv *drv, char *str) {
+void term_print(struct term_drv *drv, char *str) {
 	for (size_t i = 0; i < strlen(str); i++) {
 		if (str[i] == '\n') {
-			// increment the line
-			if (drv->line == drv->maxline) {
-				drv->scrolling = 1;
-				drv->line = 0;
-			} else {
-				drv->line += 1;
-			}
-			// set the cursor
-			drv->x = 0;
-			drv->y = drv->y0 + (drv->line * drv->dy);
-			// clear the line
-			lcd_fill_rect(drv, drv->x, drv->y - drv->y0, drv->width, drv->dy, drv->cfg.bg);
-			// scroll the screen
-			if (drv->scrolling) {
-				lcd_scroll(drv, drv->y - drv->y0 + drv->dy);
-			}
+			// Process the CR when we see the next character.
+			// This prevents the empty-last-line issue.
+			drv->cr_flag = 1;
 		} else {
+			// handle the previous CR
+			if (drv->cr_flag) {
+				// increment the line
+				drv->line += 1;
+				if (drv->line == drv->cfg.lines) {
+					drv->scrolling = 1;
+					drv->line = 0;
+				}
+				// set the cursor
+				drv->x = 0;
+				drv->y = drv->y0 + (drv->line * drv->dy);
+				// clear the line
+				lcd_fill_rect(drv->cfg.lcd, drv->x, drv->y - drv->y0, drv->cfg.lcd->width, drv->dy, drv->cfg.bg);
+				// scroll the screen
+				if (drv->scrolling) {
+					lcd_scroll(drv->cfg.lcd, drv->y - drv->y0 + drv->dy);
+				}
+				drv->cr_flag = 0;
+			}
+			// print the character
 			const struct glyph *g = &drv->font->glyphs[(uint8_t) str[i]];
 			uint16_t bx = drv->x + g->xofs;
 			uint16_t by = drv->y - g->yofs - g->height;
-			lcd_draw_bitmap(drv, bx, by, g->width, g->height, drv->cfg.fg, drv->cfg.bg, g->data);
+			lcd_draw_bitmap(drv->cfg.lcd, bx, by, g->width, g->height, drv->cfg.fg, drv->cfg.bg, g->data);
 			drv->x += g->dwidth;
 		}
 	}

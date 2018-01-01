@@ -49,37 +49,45 @@ static struct lcd_cfg lcd_cfg = {
 	.dc = IO_LCD_DATA_CMD,	// gpio for d/c line
 	.cs = IO_LCD_CS,	// gpio for chip select
 	.led = IO_LCD_LED,	// gpio for led backlight control
-	.fg = LCD_COLOR_WHITE,
 	.bg = LCD_COLOR_NAVY,
 	.rotation = 0,
 };
 
 //-----------------------------------------------------------------------------
 
-static void lcd_test(struct lcd_drv *drv) {
+static struct term_cfg term_cfg = {
+	.font = 0,
+	.lines = 22,
+	.yofs = 0,
+	.bg = LCD_COLOR_NAVY,
+	.fg = LCD_COLOR_WHITE,
+};
 
-	lcd_terminal_init(drv, 0, 22, 0);
-	lcd_print(drv, "GooGooMuck!");
+//-----------------------------------------------------------------------------
+
+static void term_test(struct term_drv *drv) {
+
+	term_print(drv, "GooGooMuck!");
 
 #if 0
 	while (1) {
-		lcd_print(drv, "line 0 asdfasdfasdfasfd\n");
+		term_print(drv, "line 0 asdfasdfasdfasfd\n");
 		mdelay(100);
-		lcd_print(drv, "line 1 asdfasfd\n");
+		term_print(drv, "line 1 asdfasfd\n");
 		mdelay(100);
-		lcd_print(drv, "line 2  12312341234\n");
+		term_print(drv, "line 2 12312341234\n");
 		mdelay(100);
-		lcd_print(drv, "line 3  xcvbxcvb\n");
+		term_print(drv, "line 3 xcvbxcvb\n");
 		mdelay(100);
-		lcd_print(drv, "line 4 ghjkghkj\n");
+		term_print(drv, "line 4 ghjkghkj\n");
 		mdelay(100);
-		lcd_print(drv, "line 5 &*&(&(\n");
+		term_print(drv, "line 5 &*&(&(\n");
 		mdelay(100);
-		lcd_print(drv, "line 6 [][][]\n");
+		term_print(drv, "line 6 [][][]\n");
 		mdelay(100);
-		lcd_print(drv, "line 7 @@##$$\n");
+		term_print(drv, "line 7 @@##$$\n");
 		mdelay(100);
-		lcd_print(drv, "line 8 zxcvzxv\n");
+		term_print(drv, "line 8 zxcvzxv\n");
 		mdelay(100);
 	}
 #endif
@@ -103,8 +111,15 @@ int display_init(struct display_drv *display) {
 		DBG("lcd_init failed %d\r\n", rc);
 		goto exit;
 	}
+	// setup the stdio terminal
+	term_cfg.lcd = &display->lcd;
+	rc = term_init(&display->term, &term_cfg);
+	if (rc != 0) {
+		DBG("term_init failed %d\r\n", rc);
+		goto exit;
+	}
 
-	lcd_test(&display->lcd);
+	term_test(&display->term);
 
  exit:
 	return rc;

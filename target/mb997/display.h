@@ -19,6 +19,7 @@ Display Control
 struct display_drv {
 	struct spi_drv spi;
 	struct lcd_drv lcd;
+	struct term_drv term;
 };
 
 extern struct display_drv ggm_display;

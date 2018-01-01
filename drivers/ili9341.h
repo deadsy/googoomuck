@@ -44,21 +44,13 @@ struct lcd_cfg {
 	int dc;			// gpio for d/c line
 	int cs;			// gpio for chip select
 	int led;		// gpio for led backlight control
-	uint16_t fg;		// foreground color
-	uint16_t bg;		// background color
 	int rotation;		// screen rotation
+	uint16_t bg;		// background color
 };
 
 struct lcd_drv {
 	struct lcd_cfg cfg;
 	int width, height;	// screen width/height in pixels
-	const struct font *font;	// current font
-	int x, y;		// current cursor position
-	int y0;			// top position for the terminal window
-	int dy;			// line height for the current font
-	int line;		// current line number
-	int maxline;		// maximum line number
-	int scrolling;		// are we scrolling yet?
 };
 
 //-----------------------------------------------------------------------------
