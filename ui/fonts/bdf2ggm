@@ -17,22 +17,22 @@ _ofile = None
 #------------------------------------------------------------------------------
 
 def print_usage(argv):
-  print('Usage: %s [options]' % argv[0])
-  print('Options:')
-  print('%-18s%s' % ('-i <input_file>', 'input file'))
-  print('%-18s%s' % ('-o <output_file>', 'output file'))
+  print 'Usage: %s [options]' % argv[0]
+  print 'Options:'
+  print '%-18s%s' % ('-i <input_file>', 'input file')
+  print '%-18s%s' % ('-o <output_file>', 'output file')
 
-def error(msg, usage = False):
-  print('error: %s' % msg)
+def error(msg, usage=False):
+  print 'error: %s' % msg
   if usage:
     print_usage(sys.argv)
   sys.exit(1)
 
-def warning(msg, fname = True):
+def warning(msg, fname=True):
   if fname:
-    print('%s: warning: %s' % (_ifile, msg))
+    print '%s: warning: %s' % (_ifile, msg)
   else:
-    print('warning: %s' % msg)
+    print 'warning: %s' % msg
 
 def process_options(argv):
   """process command line options"""
@@ -53,31 +53,72 @@ def process_options(argv):
     error('specify an input file', True)
 
   if not _ofile:
-    name =  os.path.split(_ifile)[1].split('.')[0]
-    _ofile =  '%s.c' % name
+    name = os.path.split(_ifile)[1].split('.')[0]
+    _ofile = '%s.c' % name
 
 #------------------------------------------------------------------------------
 
 class glyph(object):
 
-  def __init__(self, name):
-    self.name = name
+  def __init__(self, fname):
+    self.fname = fname
     self.encoding = None
-    self.bb_w = None
-    self.bb_h = None
-    self.bb_xofs = None
-    self.bb_yofs = None
+    self.bbx_w = None
+    self.bbx_h = None
+    self.bbx_xofs = None
+    self.bbx_yofs = None
     self.dwidth_x = None
     self.dwidth_y = None
-    self.bitmap = 0;
+    self.bitmap = 0
+    self.shl = None
+    self.shr = None
+
+  def cname(self):
+    return '%s_%02x' % (self.fname, self.encoding)
+
+  def set_bbx(self, l, n):
+    x = l.split()
+    if len(x) != 4:
+      error('wrong number of BBX parameters at line %d' % n)
+    self.bbx_w = int(x[0])
+    self.bbx_h = int(x[1])
+    self.bbx_xofs = int(x[2])
+    self.bbx_yofs = int(x[3])
+    self.shl = (self.bbx_w + 7) & ~7
+    self.shr = self.shl - self.bbx_w
+
+  def add_bits(self, l, n):
+    """add bits to the bitmap"""
+    if len(l) != 1:
+      error('too much bitmap data at line %d' % n)
+    if len(l[0]) != self.shl / 4:
+      error('bad bitmap data length at line %d' % n)
+    self.bitmap <<= self.shl
+    self.bitmap |= int(l[0], 16)
+    self.bitmap >>= self.shr
 
   def encode_bitmap(self):
-    return 'static const uint32_t %s[] = {};' % self.name
+    if self.bbx_h:
+      # how many bits?
+      bits = self.bbx_h * self.bbx_w
+      # pad the data to a multiple of 32 bits
+      pad = ((bits + 31) & ~31) - bits
+      bitmap = self.bitmap << pad
+      # return the data string
+      fmt = '%%0%dx' % ((bits + pad) / 4)
+      s = fmt % bitmap
+      s = ['0x%s,' % s[k:k+8] for k in range(0, len(s), 8)]
+      return 'static const uint32_t %s[] = {%s};' % (self.cname(), ''.join(s))
+    else:
+      return None
 
   def encode_meta(self):
     s = []
-    s.append('%d,%d,%d,%d,%d' % (self.bb_w, self.bb_h, self.bb_xofs, self.bb_yofs, self.dwidth_x))
-    s.append(self.name)
+    s.append('%d,%d,%d,%d,%d' % (self.bbx_w, self.bbx_h, self.bbx_xofs, self.bbx_yofs, self.dwidth_x))
+    if self.bbx_h:
+      s.append(self.cname())
+    else:
+      s.append('NULL')
     return '{%s}, // 0x%02x' % (','.join(s), self.encoding)
 
 
@@ -91,18 +132,20 @@ class font(object):
     self.hex_to_get = None
     self.properties = {}
     self.glyphs = {}
+    self.glyphs_by_code = None
     # read the file
     f = open(fname, 'r')
     lines = f.readlines()
-    f.close
+    f.close()
     lines = [l.strip() for l in lines]
     # parse the file
     self.parse_bdf(lines)
+    self.sort_glyphs()
 
   def parse_startfont(self, l, n):
     if l[0] == 'STARTFONT' and l[1] == '2.1':
       return 'global'
-    return 'startfont'
+    error('no STARTFONT found at line %d' % n)
 
   def parse_global(self, l, n):
     if l[0] == 'FONT':
@@ -138,36 +181,31 @@ class font(object):
       self.current_glyph.dwidth_x = int(x[0])
       self.current_glyph.dwidth_y = int(x[1])
     elif l[0] == 'BBX':
-      x = l[1].split()
-      if len(x) != 4:
-        error('wrong number of BBX parameters at line %d' % n)
-      self.current_glyph.bb_w = int(x[0])
-      self.current_glyph.bb_h = int(x[1])
-      self.current_glyph.bb_xofs = int(x[2])
-      self.current_glyph.bb_yofs = int(x[3])
+      self.current_glyph.set_bbx(l[1], n)
     elif l[0] == 'BITMAP':
-      if self.current_glyph.bb_h:
-        self.hex_to_get = self.current_glyph.bb_h
+      if self.current_glyph.bbx_h:
+        self.hex_to_get = self.current_glyph.bbx_h
         return 'bitmap'
     elif l[0] == 'ENDCHAR':
       self.current_glyph = None
       return 'chars'
     else:
-      error ('unknown char field %s at line %d' % (l[0], n))
+      error('unknown char field %s at line %d' % (l[0], n))
     return 'char'
 
   def parse_chars(self, l, n):
     if l[0] == 'STARTCHAR':
       if self.current_glyph is None:
         name = '%s_%s' % (self.name, l[1])
-        self.glyphs[name] = glyph(name)
+        self.glyphs[name] = glyph(self.name)
         self.current_glyph = self.glyphs[name]
         return 'char'
       else:
-        error ('need an ENDCHAR before the STARTCHAR at line %d' % n)
+        error('need an ENDCHAR before the STARTCHAR at line %d' % n)
     return 'chars'
 
   def parse_bitmap(self, l, n):
+    self.current_glyph.add_bits(l, n)
     self.hex_to_get -= 1
     if self.hex_to_get == 0:
       return 'char'
@@ -195,15 +233,35 @@ class font(object):
       else:
         error('bad state %s' % state)
 
+  def sort_glyphs(self):
+    # sort the glyphs by the encoding value: assume 0..255
+    self.glyphs_by_code = [None,] * 256
+    for g in self.glyphs.values():
+      if g.encoding < 0 or g.encoding > 255:
+        error('glyph encoding %d is out of range' % g.encoding)
+      if self.glyphs_by_code[g.encoding] is None:
+        self.glyphs_by_code[g.encoding] = g
+      else:
+        error('multiple glyphs have %d for their encoding' % g.encoding)
+
   def max_ascent(self):
     if self.properties.has_key('FONT_ASCENT'):
       return int(self.properties['FONT_ASCENT'])
+    if len(self.glyphs) == 0:
+      error('no glyphs defined')
     assert False, 'TODO: work out max font ascent'
 
   def max_descent(self):
     if self.properties.has_key('FONT_DESCENT'):
       return -int(self.properties['FONT_DESCENT'])
+    if len(self.glyphs) == 0:
+      error('no glyphs defined')
     assert False, 'TODO: work out max font descent'
+
+  def default_glyph(self):
+    if self.properties.has_key('DEFAULT_CHAR'):
+      return self.glyphs_by_code[int(self.properties['DEFAULT_CHAR'])]
+    assert False, "what's the default glyph?"
 
   def encode_preamble(self):
     s = []
@@ -214,25 +272,24 @@ class font(object):
     return '\n'.join(s)
 
   def encode_bitmaps(self):
-    # sort the glyphs by encoding
-    l = [(v.encoding, v) for v in self.glyphs.values()]
-    l.sort()
     s = []
-    for _, v in l:
-      s.append(v.encode_bitmap())
+    for g in self.glyphs_by_code:
+      if g is not None:
+        bmp = g.encode_bitmap()
+        if bmp:
+          s.append(bmp)
     return '\n'.join(s)
 
   def encode_font(self):
-    # sort the glyphs by encoding
-    l = [(v.encoding, v) for v in self.glyphs.values()]
-    l.sort()
     s = []
     s.append('const struct font %s = {' % self.name)
     s.append('  .ascent = %d,' % self.max_ascent())
     s.append('  .descent = %d,' % self.max_descent())
     s.append('  .glyphs = {')
-    for _, v in l:
-      s.append('    %s' % v.encode_meta())
+    for g in self.glyphs_by_code:
+      if g is None:
+        g = self.default_glyph()
+      s.append('    %s' % g.encode_meta())
     s.append('  }, ')
     s.append('};')
     return '\n'.join(s)
@@ -249,7 +306,10 @@ class font(object):
 def main():
   process_options(sys.argv)
   f = font(_ifile)
-  print f.encode_ggm()
+  code = f.encode_ggm()
+  x = open(_ofile, 'w')
+  x.write(code)
+  x.close()
 
 main()
 
