@@ -122,17 +122,15 @@ class glyph(object):
 
 class font(object):
 
-  def __init__(self, fname):
-    self.name = None
+  def __init__(self, data, cname):
+    self.cname = cname
     self.current_glyph = None
     self.hex_to_get = None
     self.properties = {}
     self.glyphs = {}
     self.glyphs_by_code = None
-    # read the file
-    f = open(fname, 'r')
-    lines = f.readlines()
-    f.close()
+    # break the bdf data into lines
+    lines = data.split('\n')
     lines = [l.strip() for l in lines]
     # parse the file
     self.parse_bdf(lines)
@@ -145,7 +143,7 @@ class font(object):
 
   def parse_global(self, l, n):
     if l[0] == 'FONT':
-      self.name = l[1].lower()
+      pass
     elif l[0] == 'SIZE':
       pass
     elif l[0] == 'FONTBOUNDINGBOX':
@@ -192,8 +190,8 @@ class font(object):
   def parse_chars(self, l, n):
     if l[0] == 'STARTCHAR':
       if self.current_glyph is None:
-        name = '%s_%s' % (self.name, l[1])
-        self.glyphs[name] = glyph(self.name)
+        name = '%s_%s' % (self.cname, l[1])
+        self.glyphs[name] = glyph(self.cname)
         self.current_glyph = self.glyphs[name]
         return 'char'
       else:
@@ -271,13 +269,13 @@ class font(object):
     s = [g.encode_bitmap() for g in self.glyphs_by_code if g.bbx_h > 0]
     for g in self.glyphs_by_code:
       if g.bbx_h == 0:
-        s.append('static const uint32_t %s_null[] = {0};' % self.name)
+        s.append('static const uint32_t %s_null[] = {0};' % self.cname)
         break
     return '\n'.join(s)
 
   def encode_font(self):
     s = []
-    s.append('const struct font %s = {' % self.name)
+    s.append('const struct font %s = {' % self.cname)
     s.append('  .ascent = %d,' % self.max_ascent())
     s.append('  .descent = %d,' % self.max_descent())
     s.append('  .glyphs = {')
@@ -298,13 +296,27 @@ class font(object):
 
 #------------------------------------------------------------------------------
 
+def get_cname(fname):
+  """derive the c-code font name from the input filename"""
+  x = os.path.split(fname)[1]
+  return os.path.splitext(x)[0]
+
+#------------------------------------------------------------------------------
+
 def main():
   process_options(sys.argv)
-  f = font(_ifile)
-  code = f.encode_ggm()
-  x = open(_ofile, 'w')
-  x.write(code)
-  x.close()
+  cname = get_cname(_ifile)
+  # read the input bdf data
+  f = open(_ifile, 'r')
+  data = f.read()
+  f.close()
+  # parse the date and re-encode as a ggm structure
+  x = font(data, cname)
+  code = x.encode_ggm()
+  # write the output
+  f = open(_ofile, 'w')
+  f.write(code)
+  f.close()
 
 main()
 
