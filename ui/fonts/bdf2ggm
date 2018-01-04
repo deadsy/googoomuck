@@ -168,10 +168,15 @@ class font(object):
       pass
     elif l[0] == 'DWIDTH':
       x = l[1].split()
-      if len(x) != 2:
+      if len(x) == 1:
+        # implicit y == 0, probably invalid BDF, but I've seen it.
+        self.current_glyph.dwidth_x = int(x[0])
+        self.current_glyph.dwidth_y = 0
+      elif len(x) == 2:
+        self.current_glyph.dwidth_x = int(x[0])
+        self.current_glyph.dwidth_y = int(x[1])
+      else:
         error('wrong number of DWIDTH parameters at line %d' % n)
-      self.current_glyph.dwidth_x = int(x[0])
-      self.current_glyph.dwidth_y = int(x[1])
     elif l[0] == 'BBX':
       self.current_glyph.set_bbx(l[1], n)
     elif l[0] == 'BITMAP':
@@ -257,6 +262,10 @@ class font(object):
     """return the default glyph for unspecified encodings"""
     if self.properties.has_key('DEFAULT_CHAR'):
       return self.glyphs_by_code[int(self.properties['DEFAULT_CHAR'])]
+    # use a space character for the default
+    g = self.glyphs_by_code[0x20]
+    if g is not None:
+      return g
     assert False, "what's the default glyph?"
 
   def encode_preamble(self):
@@ -318,7 +327,7 @@ def main():
   f = open(_ifile, 'r')
   data = f.read()
   f.close()
-  # parse the date and re-encode as a ggm structure
+  # parse the bdf data and re-encode as a ggm structure
   x = font(data, cname)
   code = x.encode_ggm()
   # write the output
