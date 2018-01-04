@@ -74,7 +74,10 @@ class glyph(object):
     self.shr = None
 
   def cname(self):
-    return '%s_%02x' % (self.fname, self.encoding)
+    if self.bbx_h:
+      return '%s_%02x' % (self.fname, self.encoding)
+    else:
+      return '%s_null' % self.fname
 
   def set_bbx(self, l, n):
     x = l.split()
@@ -98,29 +101,22 @@ class glyph(object):
     self.bitmap >>= self.shr
 
   def encode_bitmap(self):
-    if self.bbx_h:
-      # how many bits?
-      bits = self.bbx_h * self.bbx_w
-      # pad the data to a multiple of 32 bits
-      pad = ((bits + 31) & ~31) - bits
-      bitmap = self.bitmap << pad
-      # return the data string
-      fmt = '%%0%dx' % ((bits + pad) / 4)
-      s = fmt % bitmap
-      s = ['0x%s,' % s[k:k+8] for k in range(0, len(s), 8)]
-      return 'static const uint32_t %s[] = {%s};' % (self.cname(), ''.join(s))
-    else:
-      return None
+    # how many bits?
+    bits = self.bbx_h * self.bbx_w
+    # pad the data to a multiple of 32 bits
+    pad = ((bits + 31) & ~31) - bits
+    bitmap = self.bitmap << pad
+    # return the data string
+    fmt = '%%0%dx' % ((bits + pad) / 4)
+    s = fmt % bitmap
+    s = ['0x%s,' % s[k:k+8] for k in range(0, len(s), 8)]
+    return 'static const uint32_t %s[] = {%s};' % (self.cname(), ''.join(s))
 
   def encode_meta(self):
     s = []
     s.append('%d,%d,%d,%d,%d' % (self.bbx_w, self.bbx_h, self.bbx_xofs, self.bbx_yofs, self.dwidth_x))
-    if self.bbx_h:
-      s.append(self.cname())
-    else:
-      s.append('NULL')
+    s.append(self.cname())
     return '{%s}, // 0x%02x' % (','.join(s), self.encoding)
-
 
 #------------------------------------------------------------------------------
 
@@ -272,12 +268,11 @@ class font(object):
     return '\n'.join(s)
 
   def encode_bitmaps(self):
-    s = []
+    s = [g.encode_bitmap() for g in self.glyphs_by_code if g.bbx_h > 0]
     for g in self.glyphs_by_code:
-      if g is not None:
-        bmp = g.encode_bitmap()
-        if bmp:
-          s.append(bmp)
+      if g.bbx_h == 0:
+        s.append('static const uint32_t %s_null[] = {0};' % self.name)
+        break
     return '\n'.join(s)
 
   def encode_font(self):

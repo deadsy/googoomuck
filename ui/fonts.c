@@ -11,10 +11,10 @@ Font Functions
 //-----------------------------------------------------------------------------
 // available fonts
 
-extern const struct font nokia_large;
+extern const struct font profont22;
 
 static const struct font *fonts[] = {
-	&nokia_large,
+	&profont22,
 };
 
 const struct font *font_get(int idx) {
