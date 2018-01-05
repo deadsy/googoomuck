@@ -57,7 +57,7 @@ static struct lcd_cfg lcd_cfg = {
 
 static struct term_cfg term_cfg = {
 	.font = 0,
-	.lines = 22,
+	.lines = 11,
 	.yofs = 0,
 	.bg = LCD_COLOR_NAVY,
 	.fg = LCD_COLOR_WHITE,
@@ -66,32 +66,11 @@ static struct term_cfg term_cfg = {
 //-----------------------------------------------------------------------------
 
 static void term_test(struct term_drv *drv) {
-
-	term_print(drv, "GooGooMuck!");
-
-#if 0
-	while (1) {
-		term_print(drv, "line 0 asdfasdfasdfasfd\n");
-		mdelay(100);
-		term_print(drv, "line 1 asdfasfd\n");
-		mdelay(100);
-		term_print(drv, "line 2 12312341234\n");
-		mdelay(100);
-		term_print(drv, "line 3 xcvbxcvb\n");
-		mdelay(100);
-		term_print(drv, "line 4 ghjkghkj\n");
-		mdelay(100);
-		term_print(drv, "line 5 &*&(&(\n");
-		mdelay(100);
-		term_print(drv, "line 6 [][][]\n");
-		mdelay(100);
-		term_print(drv, "line 7 @@##$$\n");
-		mdelay(100);
-		term_print(drv, "line 8 zxcvzxv\n");
-		mdelay(100);
-	}
-#endif
-
+	term_print(drv, "GooGooMuck!\n");
+	term_print(drv, "Attack\n");
+	term_print(drv, "Decay\n");
+	term_print(drv, "Sustain\n");
+	term_print(drv, "Release\n");
 }
 
 //-----------------------------------------------------------------------------

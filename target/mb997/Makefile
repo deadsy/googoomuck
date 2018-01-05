@@ -71,7 +71,7 @@ UI_DIR = $(TOP)/ui
 SRC += $(UI_DIR)/fonts.c \
 	$(UI_DIR)/term.c \
 	$(UI_DIR)/graphics.c \
-	$(UI_DIR)/profont22.c \
+	$(UI_DIR)/profont29.c \
 
 OBJ = $(patsubst %.c, %.o, $(SRC))
 OBJ += $(TARGET_DIR)/start.o
