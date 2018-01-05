@@ -50,7 +50,7 @@ static struct lcd_cfg lcd_cfg = {
 	.cs = IO_LCD_CS,	// gpio for chip select
 	.led = IO_LCD_LED,	// gpio for led backlight control
 	.bg = LCD_COLOR_NAVY,
-	.rotation = 0,
+	.rotation = 3,
 };
 
 //-----------------------------------------------------------------------------
