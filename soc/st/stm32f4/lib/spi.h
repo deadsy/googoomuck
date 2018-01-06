@@ -182,8 +182,8 @@ struct spi_drv {
 int spi_init(struct spi_drv *spi, struct spi_cfg *cfg);
 void spi_wait4_done(struct spi_drv *spi);
 
-void spi_tx8(struct spi_drv *spi, uint8_t data);
-void spi_tx16(struct spi_drv *spi, uint16_t data);
+void spi_tx8(struct spi_drv *spi, uint8_t data, size_t n);
+void spi_tx16(struct spi_drv *spi, uint16_t data, size_t n);
 void spi_txbuf8(struct spi_drv *spi, const uint8_t * buf, size_t n);
 void spi_txbuf16(struct spi_drv *spi, const uint16_t * buf, size_t n);
 

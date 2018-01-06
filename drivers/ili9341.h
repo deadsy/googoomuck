@@ -11,6 +11,7 @@ ILI9341 LCD Driver
 
 //-----------------------------------------------------------------------------
 
+#include <stddef.h>
 #include <inttypes.h>
 
 //-----------------------------------------------------------------------------
@@ -37,6 +38,57 @@ ILI9341 LCD Driver
 #define LCD_COLOR_PINK        0xF81F
 
 //-----------------------------------------------------------------------------
+// LCD operations queue
+
+#define NUM_OPS 32		// must be a power of 2
+
+enum {
+	LCD_OP_NOP,		// 0, no operation
+	LCD_OP_CSASSERT,	// chip selected
+	LCD_OP_CSDEASSERT,	// chip deselected
+	LCD_OP_DATAMODE,	// switch to datamode
+	LCD_OP_CMD,		// command byte
+	LCD_OP_TXBUF8,		// n x uint8_t (buffer)
+	LCD_OP_TX8,		// n x uint8_t (same value)
+	LCD_OP_TX16,		// n x uint16_t (same value)
+};
+
+struct lcd_op_cmd {
+	uint8_t cmd;
+};
+
+struct lcd_op_txbuf8 {
+	size_t n;
+	const uint8_t *buf;
+};
+
+struct lcd_op_tx8 {
+	size_t n;
+	uint8_t data;
+};
+
+struct lcd_op_tx16 {
+	size_t n;
+	uint16_t data;
+};
+
+struct lcd_op {
+	uint8_t type;		// type of lcd operation
+	union op_data {
+		struct lcd_op_cmd cmd;
+		struct lcd_op_txbuf8 txbuf8;
+		struct lcd_op_tx8 tx8;
+		struct lcd_op_tx16 tx16;
+	} u;
+};
+
+struct lcd_op_queue {
+	struct lcd_op queue[NUM_OPS];
+	size_t rd;
+	size_t wr;
+};
+
+//-----------------------------------------------------------------------------
 
 struct lcd_cfg {
 	struct spi_drv *spi;	// spi bus
@@ -50,6 +102,7 @@ struct lcd_cfg {
 
 struct lcd_drv {
 	struct lcd_cfg cfg;
+	struct lcd_op_queue opq;
 	int width, height;	// screen width/height in pixels
 };
 

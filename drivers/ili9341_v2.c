@@ -17,6 +17,15 @@ LED                 IO_LCD_LED, on=1, off=0
 GND                 Ground
 VCC                 3.3v
 
+Operation:
+
+This driver queues a set of operations for the LCD driver chip.
+Processing of the operations is interrupt driven. Either an interrupt
+on the SPI tx buffer empty or an interrupt on the SPI tx operation
+completion. The high level code can add operations to the queue without
+waiting for hardware. Upon the HW interrupt the queue will be processed.
+Typically a DMA will be setup to write data to the device.
+
 Notes:
 
 Don't change the CS line or D/C line until the SPI operation is complete.
@@ -35,9 +44,6 @@ text, you'll have to be in portrait mode (rotation = 0/2).
 
 #include "ili9341.h"
 #include "stm32f4_soc.h"
-
-#define DEBUG
-#include "logging.h"
 
 //-----------------------------------------------------------------------------
 // Command Set
@@ -142,29 +148,128 @@ text, you'll have to be in portrait mode (rotation = 0/2).
 
 //-----------------------------------------------------------------------------
 
-// turn the led backlight on
-static void lcd_backlight_on(struct lcd_drv *drv) {
-	gpio_set(drv->cfg.led);
+// execute an operation
+// return 0 - operation is complete
+// return 1 - wait for spi completion
+static int exec_op(struct lcd_drv *drv, struct lcd_op *op) {
+	switch (op->type) {
+	case LCD_OP_CSASSERT:
+		gpio_clr(drv->cfg.cs);
+		return 0;
+	case LCD_OP_CSDEASSERT:
+		gpio_set(drv->cfg.cs);
+		return 0;
+	case LCD_OP_DATAMODE:
+		gpio_set(drv->cfg.dc);	// 1 = data mode
+		return 0;
+	case LCD_OP_CMD:
+		gpio_clr(drv->cfg.dc);	// 0 = command mode
+		spi_tx8(drv->cfg.spi, op->u.cmd.cmd, 1);
+		return 1;
+	case LCD_OP_TXBUF8:
+		spi_txbuf8(drv->cfg.spi, op->u.txbuf8.buf, op->u.txbuf8.n);
+		return 1;
+	case LCD_OP_TX8:
+		spi_tx8(drv->cfg.spi, op->u.tx8.data, op->u.tx8.n);
+		return 1;
+	case LCD_OP_TX16:
+		spi_tx16(drv->cfg.spi, op->u.tx16.data, op->u.tx16.n);
+		return 1;
+	}
+	return 0;
 }
 
-// assert chip select
+// flush the operations queue
+static void lcd_flush(struct lcd_drv *drv) {
+	struct lcd_op_queue *q = &drv->opq;
+	while (q->rd != q->wr) {
+		struct lcd_op *op = &q->queue[q->rd];
+		int wait = exec_op(drv, op);
+		if (wait) {
+			spi_wait4_done(drv->cfg.spi);
+		}
+		// advance the read index
+		q->rd = (q->rd + 1) & (NUM_OPS - 1);
+	}
+}
+
+//-----------------------------------------------------------------------------
+
+// enqueue an operation
+static int op_enqueue(struct lcd_drv *drv, struct lcd_op *op) {
+	struct lcd_op_queue *q = &drv->opq;
+	uint32_t saved;
+	size_t wr;
+	int rc = 0;
+	// mask interrupts
+	saved = disable_irq();
+	wr = (q->wr + 1) & (NUM_OPS - 1);
+	if (wr == q->rd) {
+		// the queue is full
+		rc = -1;
+		goto exit;
+	}
+	// copy the operation data
+	q->queue[q->wr] = *op;
+	// advance the write index
+	q->wr = wr;
+ exit:
+	// restore interrupts and return
+	restore_irq(saved);
+	return rc;
+}
+
+// assert the chip select
 static void lcd_cs_assert(struct lcd_drv *drv) {
-	gpio_clr(drv->cfg.cs);
+	struct lcd_op op;
+	op.type = LCD_OP_CSASSERT;
+	op_enqueue(drv, &op);
 }
 
-// deassert chip select
+// deassert the chip select
 static void lcd_cs_deassert(struct lcd_drv *drv) {
-	spi_wait4_done(drv->cfg.spi);
-	gpio_set(drv->cfg.cs);
+	struct lcd_op op;
+	op.type = LCD_OP_CSDEASSERT;
+	op_enqueue(drv, &op);
 }
 
-// write a command byte
-static void wr_cmd(struct lcd_drv *drv, uint8_t cmd) {
-	spi_wait4_done(drv->cfg.spi);
-	gpio_clr(drv->cfg.dc);	// 0 = command mode
-	spi_tx8(drv->cfg.spi, cmd, 1);
-	spi_wait4_done(drv->cfg.spi);
-	gpio_set(drv->cfg.dc);	// 1 = data mode
+// send a driver command byte
+static void lcd_cmd(struct lcd_drv *drv, uint8_t cmd) {
+	struct lcd_op op;
+	op.type = LCD_OP_CMD;
+	op.u.cmd.cmd = cmd;
+	op_enqueue(drv, &op);
+	// switch back to data mode
+	op.type = LCD_OP_DATAMODE;
+	op_enqueue(drv, &op);
+}
+
+// Tx a buffer of uint8_t data
+// Note: the buffer needs to be valid until this operation is complete.
+static void lcd_txbuf8(struct lcd_drv *drv, const uint8_t * buf, size_t n) {
+	struct lcd_op op;
+	op.type = LCD_OP_TXBUF8;
+	op.u.txbuf8.buf = buf;
+	op.u.txbuf8.n = n;
+	op_enqueue(drv, &op);
+}
+
+// Tx n x uint8_t (same value)
+static void lcd_tx8(struct lcd_drv *drv, uint8_t data, size_t n) {
+	struct lcd_op op;
+	op.type = LCD_OP_TX8;
+	op.u.tx8.data = data;
+	op.u.tx8.n = n;
+	op_enqueue(drv, &op);
+}
+
+// Tx n x uint16_t (same value)
+static void lcd_tx16(struct lcd_drv *drv, uint16_t data, size_t n) {
+	struct lcd_op op;
+	op.type = LCD_OP_TX16;
+	op.u.tx16.data = data;
+	op.u.tx16.n = n;
+	op_enqueue(drv, &op);
 }
 
 //-----------------------------------------------------------------------------
@@ -198,11 +303,16 @@ static void lcd_configure(struct lcd_drv *drv) {
 	const uint8_t *ptr = init_table;
 	lcd_cs_assert(drv);
 	while (ptr[0] != 0) {
-		wr_cmd(drv, ptr[1]);
-		spi_txbuf8(drv->cfg.spi, &ptr[2], ptr[0] - 2);
+		lcd_cmd(drv, ptr[1]);
+		lcd_txbuf8(drv, &ptr[2], ptr[0] - 2);
 		ptr += ptr[0];
 	}
 	lcd_cs_deassert(drv);
+}
+
+// turn the led backlight on
+static void lcd_backlight_on(struct lcd_drv *drv) {
+	gpio_set(drv->cfg.led);
 }
 
 // reset the ili9341 chip
@@ -215,28 +325,13 @@ static void lcd_reset(struct lcd_drv *drv) {
 
 static void lcd_exit_standby(struct lcd_drv *drv) {
 	lcd_cs_assert(drv);
-	wr_cmd(drv, CMD_SLEEP_OUT);
+	lcd_cmd(drv, CMD_SLEEP_OUT);
+	lcd_flush(drv);
 	mdelay(120);
-	wr_cmd(drv, CMD_DISP_ON);
+	lcd_cmd(drv, CMD_DISP_ON);
 	lcd_cs_deassert(drv);
+	lcd_flush(drv);
 }
-
-//-----------------------------------------------------------------------------
-
-#if 0
-// Reading back from this chip is a bit of a mystery.
-// Here's some code I found - but it's not obvious from the data sheet.
-static uint8_t rd_cmd8(struct lcd_drv *drv, uint8_t cmd, uint8_t index) {
-	uint8_t data;
-	lcd_cs_assert(drv);
-	wr_cmd(drv, 0xD9);	// secret command?
-	spi_tx8(drv->cfg.spi, 0x10 + index);
-	wr_cmd(drv, cmd);
-	spi_rx8(drv->cfg.spi, &data);
-	lcd_cs_deassert(drv);
-	return data;
-}
-#endif
 
 //-----------------------------------------------------------------------------
 
@@ -266,22 +361,23 @@ static void lcd_set_rotation(struct lcd_drv *drv, int mode) {
 		break;
 	}
 	lcd_cs_assert(drv);
-	wr_cmd(drv, CMD_MEM_ACCESS_CTRL);
-	spi_tx8(drv->cfg.spi, mac, 1);
+	lcd_cmd(drv, CMD_MEM_ACCESS_CTRL);
+	lcd_tx8(drv, mac, 1);
 	lcd_cs_deassert(drv);
+	lcd_flush(drv);
 }
 
 //-----------------------------------------------------------------------------
 
 // set the region of the graphics ram to write to
 static void set_wr_region(struct lcd_drv *drv, uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
-	wr_cmd(drv, CMD_COLUMN_ADDR_SET);
-	spi_tx16(drv->cfg.spi, x, 1);
-	spi_tx16(drv->cfg.spi, x + w - 1, 1);
-	wr_cmd(drv, CMD_PAGE_ADDR_SET);
-	spi_tx16(drv->cfg.spi, y, 1);
-	spi_tx16(drv->cfg.spi, y + h - 1, 1);
-	wr_cmd(drv, CMD_MEM_WR);
+	lcd_cmd(drv, CMD_COLUMN_ADDR_SET);
+	lcd_tx16(drv, x, 1);
+	lcd_tx16(drv, x + w - 1, 1);
+	lcd_cmd(drv, CMD_PAGE_ADDR_SET);
+	lcd_tx16(drv, y, 1);
+	lcd_tx16(drv, y + h - 1, 1);
+	lcd_cmd(drv, CMD_MEM_WR);
 }
 
 //-----------------------------------------------------------------------------
@@ -291,20 +387,34 @@ static void set_wr_region(struct lcd_drv *drv, uint16_t x, uint16_t y, uint16_t 
 void lcd_fill_rect(struct lcd_drv *drv, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color) {
 	lcd_cs_assert(drv);
 	set_wr_region(drv, x, y, w, h);
-	spi_tx16(drv->cfg.spi, color, w * h);
+	lcd_tx16(drv, color, w * h);
 	lcd_cs_deassert(drv);
+	lcd_flush(drv);
 }
 
-// set a pixel value
-void lcd_set_pixel(struct lcd_drv *drv, uint16_t x, uint16_t y, uint16_t color) {
+// set the scrolling region
+void lcd_set_scroll_region(struct lcd_drv *drv, uint16_t tfa, uint16_t vsa) {
 	lcd_cs_assert(drv);
-	set_wr_region(drv, x, y, 1, 1);
-	spi_tx16(drv->cfg.spi, color, 1);
+	lcd_cmd(drv, CMD_VSCROLL_DEFN);
+	lcd_tx16(drv, tfa, 1);
+	lcd_tx16(drv, vsa, 1);
+	lcd_tx16(drv, ILI9341_TFTHEIGHT - tfa - vsa, 1);	// tfa + vsa + bfa == 320
 	lcd_cs_deassert(drv);
+	lcd_flush(drv);
+}
+
+// set the display scrolling offset
+void lcd_scroll(struct lcd_drv *drv, uint16_t vsp) {
+	lcd_cs_assert(drv);
+	lcd_cmd(drv, CMD_VSCROLL_START_ADDR);
+	lcd_tx16(drv, vsp, 1);
+	lcd_cs_deassert(drv);
+	lcd_flush(drv);
 }
 
 // draw a bitmap
 void lcd_draw_bitmap(struct lcd_drv *drv, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color, uint16_t bg, const uint32_t * buf) {
+#if 0
 	lcd_cs_assert(drv);
 	set_wr_region(drv, x, y, w, h);
 	uint32_t count = w * h;
@@ -314,31 +424,14 @@ void lcd_draw_bitmap(struct lcd_drv *drv, uint16_t x, uint16_t y, uint16_t w, ui
 		uint32_t mask = 1U << 31;
 		uint32_t n = (count > 32) ? 32 : count;
 		for (uint32_t j = 0; j < n; j++) {
-			spi_tx16(drv->cfg.spi, (bitmap & mask) ? color : bg, 1);
+			spi_tx16(drv->cfg.spi, (bitmap & mask) ? color : bg);
 			mask >>= 1;
 		}
 		count -= n;
 		i += 1;
 	}
 	lcd_cs_deassert(drv);
-}
-
-// set the scrolling region
-void lcd_set_scroll_region(struct lcd_drv *drv, uint16_t tfa, uint16_t vsa) {
-	lcd_cs_assert(drv);
-	wr_cmd(drv, CMD_VSCROLL_DEFN);
-	spi_tx16(drv->cfg.spi, tfa, 1);
-	spi_tx16(drv->cfg.spi, vsa, 1);
-	spi_tx16(drv->cfg.spi, ILI9341_TFTHEIGHT - tfa - vsa, 1);	// tfa + vsa + bfa == 320
-	lcd_cs_deassert(drv);
-}
-
-// set the display scrolling offset
-void lcd_scroll(struct lcd_drv *drv, uint16_t vsp) {
-	lcd_cs_assert(drv);
-	wr_cmd(drv, CMD_VSCROLL_START_ADDR);
-	spi_tx16(drv->cfg.spi, vsp, 1);
-	lcd_cs_deassert(drv);
+#endif
 }
 
 //-----------------------------------------------------------------------------

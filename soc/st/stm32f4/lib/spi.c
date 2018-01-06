@@ -92,10 +92,12 @@ static void spi_set_bits(struct spi_drv *spi, int bits) {
 //-----------------------------------------------------------------------------
 
 // Tx 8 bits
-void spi_tx8(struct spi_drv *spi, uint8_t data) {
+void spi_tx8(struct spi_drv *spi, uint8_t data, size_t n) {
 	spi_set_bits(spi, 8);
-	while (!spi_txe(spi)) ;
-	spi->regs->DR = data;
+	for (size_t i = 0; i < n; i++) {
+		while (!spi_txe(spi)) ;
+		spi->regs->DR = data;
+	}
 }
 
 // Tx an 8 bit buffer
@@ -108,10 +110,12 @@ void spi_txbuf8(struct spi_drv *spi, const uint8_t * buf, size_t n) {
 }
 
 // Tx 16 bits
-void spi_tx16(struct spi_drv *spi, uint16_t data) {
+void spi_tx16(struct spi_drv *spi, uint16_t data, size_t n) {
 	spi_set_bits(spi, 16);
-	while (!spi_txe(spi)) ;
-	spi->regs->DR = data;
+	for (size_t i = 0; i < n; i++) {
+		while (!spi_txe(spi)) ;
+		spi->regs->DR = data;
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -235,8 +239,10 @@ static uint32_t spi_txrx_n(struct spi_drv *spi, uint32_t tx, int n) {
 // Tx
 
 // Tx 8 bits
-void spi_tx8(struct spi_drv *spi, uint8_t data) {
-	spi_txrx_n(spi, data, 8);
+void spi_tx8(struct spi_drv *spi, uint8_t data, size_t n) {
+	for (size_t i = 0; i < n; i++) {
+		spi_txrx_n(spi, data, 8);
+	}
 }
 
 // Tx an 8 bit buffer
@@ -247,8 +253,10 @@ void spi_txbuf8(struct spi_drv *spi, const uint8_t * buf, size_t n) {
 }
 
 // Tx 16 bits
-void spi_tx16(struct spi_drv *spi, uint16_t data) {
-	spi_txrx_n(spi, data, 16);
+void spi_tx16(struct spi_drv *spi, uint16_t data, size_t n) {
+	for (size_t i = 0; i < n; i++) {
+		spi_txrx_n(spi, data, 16);
+	}
 }
 
 // Tx a 16 bit buffer
