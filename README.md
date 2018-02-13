@@ -39,4 +39,8 @@ have a 32 bit (single precision) FPU. E.g. ARM Cortex M4 or better.
 * https://github.com/MrBlueXav/Dekrispator_v2
 * https://github.com/hotchk155/Voici-Le-Strum
 
-
+## Resources
+* http://www.earlevel.com/main/
+* http://www.musicdsp.com/
+* https://www.dsprelated.com/
+* https://www.soundonsound.com/techniques/synth-secrets
