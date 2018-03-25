@@ -142,6 +142,7 @@ int ggm_run(struct ggm *s) {
 				midi_handler(s, &e);
 				break;
 			case EVENT_TYPE_AUDIO:
+				seq_exec(&s->seq0);
 				audio_handler(s, &e);
 				break;
 			default:
@@ -199,6 +200,14 @@ int ggm_init(struct ggm *s, struct audio_drv *audio, struct usart_drv *serial) {
 		v->channel = 255;
 		v->note = 255;
 	}
+
+	// setup the sequencer
+	rc = seq_init(&s->seq0);
+	if (rc != 0) {
+		DBG("seq_init failed %d\r\n", rc);
+		goto exit;
+	}
+	s->seq0.ggm = s;
 
  exit:
 	return rc;

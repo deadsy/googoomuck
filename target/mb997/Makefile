@@ -48,6 +48,7 @@ SRC += $(DRIVERS_DIR)/cs43l22.c \
 GGM_DIR = $(TOP)/ggm
 SRC += $(GGM_DIR)/sin.c \
 	$(GGM_DIR)/midi.c \
+	$(GGM_DIR)/seq.c \
 	$(GGM_DIR)/ggm.c \
 	$(GGM_DIR)/event.c \
 	$(GGM_DIR)/adsr.c \

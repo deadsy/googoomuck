@@ -186,6 +186,31 @@ void svf2_init(struct svf2 *f);
 void svf2_gen(struct svf2 *f, float *out, const float *in, size_t n);
 
 //-----------------------------------------------------------------------------
+// Note Sequencer
+
+// per sequence state machine
+struct seq_sm {
+	uint8_t *prog;		// program memory
+	int pc;			// program counter
+	int s_state;		// sequencer state
+	int op_state;		// operation state
+	int duration;		// operation duration
+};
+
+// sequencer
+struct seq {
+	struct ggm *ggm;	// pointer back to the parent ggm state
+	float beats_per_min;
+	float secs_per_tick;
+	float tick_error;
+	uint32_t ticks;
+	struct seq_sm m0;
+};
+
+int seq_init(struct seq *s);
+void seq_exec(struct seq *s);
+
+//-----------------------------------------------------------------------------
 // midi
 
 // midi message receiver
@@ -292,6 +317,7 @@ struct ggm {
 	struct audio_drv *audio;	// audio output
 	struct usart_drv *serial;	// serial port for midi interface
 	struct midi_rx midi_rx0;	// midi rx from the serial port
+	struct seq seq0;	// note sequencer
 	struct patch patches[NUM_CHANNELS];	// current patch set
 	struct voice voices[NUM_VOICES];	// voices
 	int voice_idx;		// FIXME round robin voice allocation
