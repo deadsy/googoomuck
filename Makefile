@@ -1,7 +1,9 @@
 TOP = .
 include $(TOP)/mk/common.mk
 
-TARGET_DIR = $(TOP)/target/mb997
+TARGET?=mb997
+
+TARGET_DIR = $(TOP)/target/$(TARGET)
 BIN_FILE = $(TARGET_DIR)/ggm.bin
 
 .PHONY: all program clean
