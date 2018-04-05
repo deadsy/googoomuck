@@ -18,8 +18,6 @@ GPIO Control for the STM32F4 Discovery Board
 #include <inttypes.h>
 #include <stddef.h>
 
-#include "stm32f407xx.h"
-
 //-----------------------------------------------------------------------------
 // port numbers
 
