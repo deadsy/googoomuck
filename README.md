@@ -24,6 +24,13 @@ have a 32 bit (single precision) FPU. E.g. ARM Cortex M4 or better.
   * STM32F4Discovery Board (MB997) http://www.st.com/en/evaluation-tools/stm32f4discovery.html
   * MIDI to serial breakout board http://ubld.it/products/midi-breakout-board/
 
+## Build tools:
+* [GNU Make](https://www.gnu.org/software/make/)
+* [GNU Embedded Toolchain for ARM](https://developer.arm.com/open-source/gnu-toolchain/gnu-rm/downloads)
+* [STLink Device Programming Tool](https://github.com/texane/stlink)
+
+The path to the GNU cross compilation tools is set in ./mk/common.mk
+
 ## Source Layout
  * common - common souces (target/SoC independent)
  * drivers - device drivers (non SoC)

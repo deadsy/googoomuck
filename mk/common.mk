@@ -3,9 +3,15 @@
 HOST_GCC = gcc
 
 # cross compilation tools
-XTOOLS_DIR = /opt/gcc-arm-none-eabi-5_4-2016q2
+
+# set the path
+XTOOLS_DIR = /opt/gcc-arm-none-eabi-7-2017-q4-major
+
+# set the version
+X_LIBGCC_DIR = $(XTOOLS_DIR)/lib/gcc/arm-none-eabi/7.2.1/armv7e-m/fpu
+
+# should be ok
 X_LIBC_DIR = $(XTOOLS_DIR)/arm-none-eabi/lib/armv7e-m/fpu
-X_LIBGCC_DIR = $(XTOOLS_DIR)/lib/gcc/arm-none-eabi/5.4.1/armv7e-m/fpu
 X_GCC = $(XTOOLS_DIR)/bin/arm-none-eabi-gcc
 X_OBJCOPY = $(XTOOLS_DIR)/bin/arm-none-eabi-objcopy
 X_AR = $(XTOOLS_DIR)/bin/arm-none-eabi-ar
