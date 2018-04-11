@@ -8,7 +8,6 @@ MB997C Board
 
 #include "stm32f4_soc.h"
 #include "audio.h"
-#include "display.h"
 #include "debounce.h"
 #include "ggm.h"
 #include "utils.h"
@@ -31,22 +30,6 @@ static const struct gpio_info gpios[] = {
 	// serial port (usart2 function)
 	{IO_UART_TX, GPIO_MODER_AF, GPIO_OTYPER_PP, GPIO_OSPEEDR_HI, GPIO_PUPD_NONE, GPIO_AF7, 0},
 	{IO_UART_RX, GPIO_MODER_AF, GPIO_OTYPER_PP, GPIO_OSPEEDR_HI, GPIO_PUPD_NONE, GPIO_AF7, 0},
-	// display
-#if defined(SPI_DRIVER_HW)
-	{IO_LCD_SDO, GPIO_MODER_AF, GPIO_OTYPER_PP, GPIO_OSPEEDR_LO, GPIO_PUPD_NONE, GPIO_AF5, 0},
-	{IO_LCD_SCK, GPIO_MODER_AF, GPIO_OTYPER_PP, GPIO_OSPEEDR_LO, GPIO_PUPD_NONE, GPIO_AF5, 0},
-	{IO_LCD_SDI, GPIO_MODER_AF, GPIO_OTYPER_PP, GPIO_OSPEEDR_LO, GPIO_PUPD_NONE, GPIO_AF5, 0},
-#elif defined(SPI_DRIVER_BITBANG)
-	{IO_LCD_SDO, GPIO_MODER_IN, GPIO_OTYPER_PP, GPIO_OSPEEDR_FAST, GPIO_PUPD_NONE, GPIO_AF0, 0},
-	{IO_LCD_SCK, GPIO_MODER_OUT, GPIO_OTYPER_PP, GPIO_OSPEEDR_FAST, GPIO_PUPD_NONE, GPIO_AF0, 0},
-	{IO_LCD_SDI, GPIO_MODER_OUT, GPIO_OTYPER_PP, GPIO_OSPEEDR_FAST, GPIO_PUPD_NONE, GPIO_AF0, 0},
-#else
-#error "what kind of SPI driver are we building?"
-#endif
-	{IO_LCD_DATA_CMD, GPIO_MODER_OUT, GPIO_OTYPER_PP, GPIO_OSPEEDR_FAST, GPIO_PUPD_NONE, GPIO_AF0, 1},
-	{IO_LCD_RESET, GPIO_MODER_OUT, GPIO_OTYPER_PP, GPIO_OSPEEDR_LO, GPIO_PUPD_NONE, GPIO_AF0, 1},
-	{IO_LCD_CS, GPIO_MODER_OUT, GPIO_OTYPER_PP, GPIO_OSPEEDR_FAST, GPIO_PUPD_NONE, GPIO_AF0, 1},
-	{IO_LCD_LED, GPIO_MODER_OUT, GPIO_OTYPER_PP, GPIO_OSPEEDR_LO, GPIO_PUPD_NONE, GPIO_AF0, 0},
 	// audio
 	{IO_AUDIO_RESET, GPIO_MODER_OUT, GPIO_OTYPER_PP, GPIO_OSPEEDR_LO, GPIO_PUPD_NONE, GPIO_AF0, 0},
 	{IO_AUDIO_I2C_SCL, GPIO_MODER_IN, GPIO_OTYPER_PP, GPIO_OSPEEDR_LO, GPIO_PUPD_NONE, GPIO_AF0, 0},
@@ -277,12 +260,6 @@ int main(void) {
 	rc = audio_init(&ggm_audio);
 	if (rc != 0) {
 		DBG("audio_init failed %d\r\n", rc);
-		goto exit;
-	}
-
-	rc = display_init(&ggm_display);
-	if (rc != 0) {
-		DBG("display_init failed %d\r\n", rc);
 		goto exit;
 	}
 

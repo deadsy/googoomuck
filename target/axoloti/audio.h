@@ -12,7 +12,7 @@ Audio Control for the STM32F4 Discovery Board
 //-----------------------------------------------------------------------------
 
 #include "stm32f4_soc.h"
-#include "cs43l22.h"
+#include "adau1361.h"
 #include "utils.h"
 
 //-----------------------------------------------------------------------------
@@ -50,7 +50,7 @@ struct audio_drv {
 	struct dma_drv dma;
 	struct i2s_drv i2s;
 	struct i2c_drv i2c;
-	struct cs4x_drv dac;
+	struct adau1361_drv codec;
 	struct audio_stats stats;
 	int16_t buffer[AUDIO_BUFFER_SIZE] ALIGN(4);	// dma->i2s buffer
 };

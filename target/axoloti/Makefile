@@ -28,7 +28,6 @@ SRC += $(LIB_DIR)/gpio.c \
 TARGET_DIR = $(TOP)/target/axoloti
 SRC += $(TARGET_DIR)/main.c \
 	$(TARGET_DIR)/audio.c \
-	$(TARGET_DIR)/display.c \
 
 # common
 COMMON_DIR = $(TOP)/common
@@ -41,8 +40,7 @@ SRC += $(COMMON_DIR)/logging.c \
 
 # drivers
 DRIVERS_DIR = $(TOP)/drivers
-SRC += $(DRIVERS_DIR)/cs43l22.c \
-	$(DRIVERS_DIR)/ili9341.c \
+SRC += $(DRIVERS_DIR)/adau1361.c \
 
 # googoomuck
 GGM_DIR = $(TOP)/ggm
@@ -67,13 +65,6 @@ SRC += $(GGM_DIR)/sin.c \
 	$(GGM_DIR)/patch5.c \
 	$(GGM_DIR)/patch6.c \
 
-# ui
-UI_DIR = $(TOP)/ui
-SRC += $(UI_DIR)/fonts.c \
-	$(UI_DIR)/term.c \
-	$(UI_DIR)/graphics.c \
-	$(UI_DIR)/profont29.c \
-
 OBJ = $(patsubst %.c, %.o, $(SRC))
 OBJ += $(TARGET_DIR)/start.o
 OBJ += $(GGM_DIR)/p4wave.o
@@ -89,7 +80,6 @@ INCLUDE += -I$(TARGET_DIR)
 INCLUDE += -I$(COMMON_DIR)
 INCLUDE += -I$(COMMON_DIR)/rtt
 INCLUDE += -I$(GGM_DIR)
-INCLUDE += -I$(UI_DIR)
 
 # defines
 DEFINE = -DSTM32F427xx

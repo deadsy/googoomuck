@@ -99,11 +99,9 @@ static struct i2c_cfg audio_i2c_cfg = {
 
 //-----------------------------------------------------------------------------
 
-// cs43l22 DAC setup
-static struct cs4x_cfg audio_dac_cfg = {
+// adau1361 CODEC setup
+static struct adau1361_cfg audio_codec_cfg = {
 	.adr = 0x94,
-	.rst = IO_AUDIO_RESET,
-	.out = DAC_OUTPUT_AUTO,
 };
 
 //-----------------------------------------------------------------------------
@@ -141,10 +139,10 @@ int audio_init(struct audio_drv *audio) {
 		goto exit;
 	}
 	// setup the dac
-	audio_dac_cfg.i2c = &audio->i2c;
-	rc = cs4x_init(&audio->dac, &audio_dac_cfg);
+	audio_codec_cfg.i2c = &audio->i2c;
+	rc = adau1361_init(&audio->codec, &audio_codec_cfg);
 	if (rc != 0) {
-		DBG("cs4x_init failed %d\r\n", rc);
+		DBG("adau1361_init failed %d\r\n", rc);
 		goto exit;
 	}
 	// setup the stats
@@ -174,9 +172,9 @@ int audio_start(struct audio_drv *audio) {
 	DBG("fs %d Hz\r\n", i2s_get_fsclk(&audio->i2s));
 
 	// start the dac
-	rc = cs4x_start(&audio->dac);
+	rc = adau1361_start(&audio->codec);
 	if (rc != 0) {
-		DBG("cs4x_start failed %d\r\n", rc);
+		DBG("adau1361_start failed %d\r\n", rc);
 		goto exit;
 	}
 
@@ -265,7 +263,7 @@ void audio_stats(struct audio_drv *audio, int16_t * buf) {
 // set the master volume
 void audio_master_volume(struct audio_drv *audio, uint8_t vol) {
 	DBG("audio_master_volume %d\r\n", vol);
-	cs4x_master_volume(&audio->dac, vol);
+	adau1361_master_volume(&audio->codec, vol);
 }
 
 //-----------------------------------------------------------------------------
