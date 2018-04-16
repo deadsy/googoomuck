@@ -56,7 +56,6 @@ SRC += $(GGM_DIR)/sin.c \
 	$(GGM_DIR)/noise.c \
 	$(GGM_DIR)/block.c \
 	$(GGM_DIR)/pow.c \
-	$(GGM_DIR)/bmark.c \
 	$(GGM_DIR)/patch0.c \
 	$(GGM_DIR)/patch1.c \
 	$(GGM_DIR)/patch2.c \

@@ -69,13 +69,11 @@ void update_voices(struct patch *p, void (*func) (struct voice *)) {
 // handle a key down event
 static void key_dn_handler(struct ggm *s, struct event *e) {
 	DBG("key down %d\r\n", EVENT_KEY(e->type));
-	gpio_set(IO_LED_BLUE);
 }
 
 // handle a key up event
 static void key_up_handler(struct ggm *s, struct event *e) {
 	DBG("key up %d\r\n", EVENT_KEY(e->type));
-	gpio_clr(IO_LED_BLUE);
 }
 
 //-----------------------------------------------------------------------------
