@@ -10,6 +10,7 @@ SRC += $(HAL_DIR)/stm32f4xx_hal.c \
 	$(HAL_DIR)/stm32f4xx_hal_rcc_ex.c \
 	$(HAL_DIR)/stm32f4xx_hal_cortex.c \
 	$(HAL_DIR)/stm32f4xx_hal_gpio.c \
+	$(HAL_DIR)/stm32f4xx_hal_pwr_ex.c \
 	$(TOP)/soc/st/stm32f4/system_stm32f4xx.c \
 
 # soc library sources

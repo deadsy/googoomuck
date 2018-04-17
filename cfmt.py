@@ -6,6 +6,7 @@ import subprocess
 import os
 
 src_dirs = (
+  'target/axoloti',
   'target/mb997',
   'soc/st/stm32f4/lib',
   'common',
@@ -21,6 +22,8 @@ src_dirs = (
 src_filter_out = (
   'target/mb997/stm32f4xx_hal_conf.h',
   'target/mb997/system_stm32f4xx.c',
+  'target/axoloti/stm32f4xx_hal_conf.h',
+  'target/axoloti/system_stm32f4xx.c',
   'usb/files/boards/st/mb997/stm32f4xx_hal_conf.h',
 )
 

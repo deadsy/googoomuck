@@ -101,7 +101,7 @@ static struct i2c_cfg audio_i2c_cfg = {
 
 // adau1361 CODEC setup
 static struct adau1361_cfg audio_codec_cfg = {
-	.adr = 0x94,
+	.adr = 0x70,
 };
 
 //-----------------------------------------------------------------------------
