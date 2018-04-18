@@ -216,6 +216,15 @@ void USART6_IRQHandler(void) {
 
 //-----------------------------------------------------------------------------
 
+static void dump_clocks() {
+	DBG("sysclk %d Hz\r\n", HAL_RCC_GetSysClockFreq());
+	DBG("pclk1 %d Hz\r\n", HAL_RCC_GetPCLK1Freq());
+	DBG("pclk2 %d Hz\r\n", HAL_RCC_GetPCLK2Freq());
+	DBG("i2sclk %d Hz\r\n", get_i2sclk());
+}
+
+//-----------------------------------------------------------------------------
+
 int main(void) {
 	uint32_t val;
 	int rc;
@@ -227,8 +236,6 @@ int main(void) {
 	if (rc != 0) {
 		goto exit;
 	}
-
-	DBG("sysclk %d Hz\r\n", HAL_RCC_GetSysClockFreq());
 
 	rc = gpio_init(gpios, sizeof(gpios) / sizeof(struct gpio_info));
 	if (rc != 0) {
@@ -294,6 +301,8 @@ int main(void) {
 		DBG("rng_rd failed %d\r\n", rc);
 		goto exit;
 	}
+
+	dump_clocks();
 
 	DBG("init good\r\n");
 

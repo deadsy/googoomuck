@@ -124,8 +124,6 @@ int audio_init(struct audio_drv *audio) {
 		DBG("i2sclk_init failed %d\r\n", rc);
 		goto exit;
 	}
-	DBG("i2sclk %d Hz\r\n", get_i2sclk());
-
 	// setup the i2s interface
 	rc = i2s_init(&audio->i2s, &audio_i2s_cfg);
 	if (rc != 0) {
