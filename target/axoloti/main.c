@@ -24,7 +24,8 @@ static const struct gpio_info gpios[] = {
 	{IO_LED_RED, GPIO_MODER_OUT, GPIO_OTYPER_PP, GPIO_OSPEEDR_FAST, GPIO_PUPD_NONE, GPIO_AF0, 0},
 	{IO_LED_GREEN, GPIO_MODER_OUT, GPIO_OTYPER_PP, GPIO_OSPEEDR_FAST, GPIO_PUPD_NONE, GPIO_AF0, 0},
 	// push buttons
-	{IO_PUSH_BUTTON, GPIO_MODER_IN, GPIO_OTYPER_PP, GPIO_OSPEEDR_LO, GPIO_PUPD_PD, GPIO_AF0, 0},
+	{IO_SWITCH_1, GPIO_MODER_IN, GPIO_OTYPER_PP, GPIO_OSPEEDR_LO, GPIO_PUPD_PD, GPIO_AF0, 0},
+	{IO_SWITCH_2, GPIO_MODER_IN, GPIO_OTYPER_PP, GPIO_OSPEEDR_LO, GPIO_PUPD_PD, GPIO_AF0, 0},
 	// serial port
 	{IO_UART_TX, GPIO_MODER_AF, GPIO_OTYPER_PP, GPIO_OSPEEDR_HI, GPIO_PUPD_NONE, GPIO_AF8, 0},
 	{IO_UART_RX, GPIO_MODER_AF, GPIO_OTYPER_PP, GPIO_OSPEEDR_HI, GPIO_PUPD_NONE, GPIO_AF8, 0},
@@ -134,25 +135,32 @@ static void SystemClock_Config(void) {
 //-----------------------------------------------------------------------------
 // key debouncing (called from the system tick isr)
 
-#define PUSH_BUTTON_BIT 0
+#define SWITCH_1_BIT 0
+#define SWITCH_2_BIT 1
 
 // handle a key down
 void debounce_on_handler(uint32_t bits) {
-	if (bits & (1 << PUSH_BUTTON_BIT)) {
-		event_wr(EVENT_TYPE_KEY_DN | 0U, NULL);
+	if (bits & (1 << SWITCH_1_BIT)) {
+		event_wr(EVENT_TYPE_KEY_DN | 1U, NULL);
+	}
+	if (bits & (1 << SWITCH_2_BIT)) {
+		event_wr(EVENT_TYPE_KEY_DN | 2U, NULL);
 	}
 }
 
 // handle a key up
 void debounce_off_handler(uint32_t bits) {
-	if (bits & (1 << PUSH_BUTTON_BIT)) {
-		event_wr(EVENT_TYPE_KEY_UP | 0U, NULL);
+	if (bits & (1 << SWITCH_1_BIT)) {
+		event_wr(EVENT_TYPE_KEY_UP | 1U, NULL);
+	}
+	if (bits & (1 << SWITCH_2_BIT)) {
+		event_wr(EVENT_TYPE_KEY_UP | 2U, NULL);
 	}
 }
 
 // map the gpio inputs to be debounced into the 32 bit debounce state
 uint32_t debounce_input(void) {
-	return gpio_rd(IO_PUSH_BUTTON) << PUSH_BUTTON_BIT;
+	return (gpio_rd(IO_SWITCH_1) << SWITCH_1_BIT) | (gpio_rd(IO_SWITCH_2) << SWITCH_2_BIT);
 }
 
 //-----------------------------------------------------------------------------

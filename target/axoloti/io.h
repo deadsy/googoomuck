@@ -15,7 +15,8 @@ IO Pin Assignments
 
 //-----------------------------------------------------------------------------
 
-#define IO_PUSH_BUTTON    GPIO_NUM(PORTA, 10)	// GPIO: pushbutton (0=open,1=pressed)
+#define IO_SWITCH_1       GPIO_NUM(PORTB, 5)	// GPIO: pushbutton (0=open,1=pressed)
+#define IO_SWITCH_2       GPIO_NUM(PORTA, 10)	// GPIO: pushbutton (0=open,1=pressed)
 #define IO_UART_TX        GPIO_NUM(PORTG, 14)	// AF8: serial port tx
 #define IO_UART_RX        GPIO_NUM(PORTG, 9)	// AF8: serial port rx
 #define IO_LED_GREEN      GPIO_NUM(PORTG, 6)	// GPIO: green led
