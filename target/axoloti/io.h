@@ -23,11 +23,11 @@ IO Pin Assignments
 #define IO_LED_RED        GPIO_NUM(PORTC, 6)	// GPIO: red led
 #define IO_AUDIO_I2C_SCL  GPIO_NUM(PORTH, 7)	// GPIO: I2C clock (bitbanged)
 #define IO_AUDIO_I2C_SDA  GPIO_NUM(PORTH, 8)	// GPIO: I2C data (bitbanged)
-
-//#define IO_AUDIO_I2S_WS GPIO_NUM(PORTE, 4)    // AF6: I2S3 channel clock
-//#define IO_AUDIO_I2S_MCK GPIO_NUM(PORTC, 7)   // AF6: I2S3 master clock
-//#define IO_AUDIO_I2S_SCK GPIO_NUM(PORTC, 10)  // AF6: I2S3 serial clock
-//#define IO_AUDIO_I2S_SD GPIO_NUM(PORTC, 12)   // AF6: I2S3 serial data
+#define IO_AUDIO_MCLK     GPIO_NUM(PORTA, 8)	// AF0: MCO1
+#define IO_AUDIO_ADC      GPIO_NUM(PORTE, 3)	// AF6: SAI1_SD_B
+#define IO_AUDIO_LRCLK    GPIO_NUM(PORTE, 4)	// AF6: SAI1_FS_A
+#define IO_AUDIO_BCLK     GPIO_NUM(PORTE, 5)	// AF6: SAI1_SCK_A
+#define IO_AUDIO_DAC      GPIO_NUM(PORTE, 6)	// AF6: SAI1_SD_A
 
 //-----------------------------------------------------------------------------
 
