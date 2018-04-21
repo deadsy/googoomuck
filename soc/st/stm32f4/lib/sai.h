@@ -24,6 +24,9 @@ struct sai_cfg {
 
 struct sai_drv {
 	struct sai_cfg cfg;	// configuration values
+	SAI_TypeDef *global;
+	SAI_Block_TypeDef *blocka;
+	SAI_Block_TypeDef *blockb;
 };
 
 int sai_init(struct sai_drv *sai, struct sai_cfg *cfg);
