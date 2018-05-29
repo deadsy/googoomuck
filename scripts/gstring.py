@@ -76,8 +76,17 @@ class gstring(object):
     return 4.0 * self.ldensity * l * l * f * f
 
   def __str__(self):
-    return '%s l %f v %f' % (self.name, self.ldensity, self.vdensity)
+    return '%s (%d)' % (self.name, self.gauge)
 
+
+def string_setup(s, l, n):
+  f = note_to_freq(n)
+  x = []
+  x.append(str(s))
+  x.append(n)
+  x.append('%.2fHz' % f)
+  x.append('%.2fN' % s.t_string(l, f))
+  return ' '.join(x)
 
 def main():
 
@@ -89,12 +98,23 @@ def main():
   s5 = gstring('EB1010', 10, (0.571 - 0.166) * GRAMS, 1.0) # E4
 
   d = 25.0 * INCHES
-  print s0.t_string(d, note_to_freq('e2'))
-  print s1.t_string(d, note_to_freq('a2'))
-  print s2.t_string(d, note_to_freq('d3'))
-  print s3.t_string(d, note_to_freq('g3'))
-  print s4.t_string(d, note_to_freq('b3'))
-  print s5.t_string(d, note_to_freq('e4'))
+
+  print 'standard 6-string tuning'
+  print string_setup(s0, d, 'e2')
+  print string_setup(s1, d, 'a2')
+  print string_setup(s2, d, 'd3')
+  print string_setup(s3, d, 'g3')
+  print string_setup(s4, d, 'b3')
+  print string_setup(s5, d, 'e4')
+
+
+  print 'open G 3-string options'
+  print string_setup(s1, d, 'g2')
+  print string_setup(s3, d, 'g3')
+  print string_setup(s5, d, 'g4')
+  print string_setup(s2, d, 'd3')
+  print string_setup(s5, d, 'd4')
+
 
 main()
 
