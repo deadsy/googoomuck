@@ -62,7 +62,7 @@ extern uint32_t rand_state;
 // seed the PRNG
 void rand_init(uint32_t seed);
 
-// return a random uint32_t
+// return a random uint32_t (0..0x7fffffff)
 static inline uint32_t rand_uint32(void) {
 	rand_state = ((rand_state * 1103515245) + 12345) & 0x7fffffff;
 	return rand_state;

@@ -21,7 +21,10 @@ STM32F4 SoC top-level include file
 #include "adc.h"
 #include "usart.h"
 #include "rng.h"
+
+#if defined(STM32F427xx)
 #include "sai.h"
+#endif
 
 //-----------------------------------------------------------------------------
 
